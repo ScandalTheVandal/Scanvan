@@ -52,7 +52,7 @@ public class CruiserXLController : VehicleController
     public bool hasDeliveredVehicle;
     public float maxBrakingPower;
     public float baseSteeringWheelTurnSpeed = 4.5f;
-    //public float odoMileage;
+    //public float odoMileage; unused
     public bool centerKeyPressed;
 
     [Header("Multiplayer")]
