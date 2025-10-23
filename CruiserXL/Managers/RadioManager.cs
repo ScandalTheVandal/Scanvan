@@ -55,7 +55,7 @@ namespace CruiserXL.Managers
             return _stations.FirstOrDefault(x => x.StationUuid == guid);
         }
 
-        // huge kudos to zaggy for helping me diagnose and fix this!
+        // huge kudos to zaggy for helping me diagnose, and fix this!
         private static async Task<string> GetRadioBrowserApiUrl()
         {
             // get fastest ip of dns
