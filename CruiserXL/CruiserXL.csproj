@@ -44,18 +44,6 @@
 		<PathMap>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))=./</PathMap>
 	</PropertyGroup>
 
-	<!-- Unused -->
-	<ItemGroup>
-		<None Include="Compatibility\LCVRCompatibility.cs" />
-		<None Include="Compatibility\SCVR\Physics\Interactions\Scanvan\ScanvanButton.cs" />
-		<None Include="Compatibility\SCVR\Physics\Interactions\Scanvan\ScanvanEjector.cs" />
-		<None Include="Compatibility\SCVR\Physics\Interactions\Scanvan\ScanvanHorn.cs" />
-		<None Include="Compatibility\SCVR\Physics\Interactions\Scanvan\ScanvanManager.cs" />
-		<None Include="Compatibility\SCVR\Physics\Interactions\Scanvan\ScanvanShifter.cs" />
-		<None Include="Compatibility\SCVR\Physics\Interactions\Scanvan\ScanvanSteeringWheel.cs" />
-		<None Include="Compatibility\SCVR\Physics\Interactions\Scanvan\StartScanvanIgnition.cs" />
-	</ItemGroup>
-
 	<!-- Primary Package References -->
 	<ItemGroup>
 		<PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
