@@ -101,7 +101,7 @@ public class EVAModule : NetworkBehaviour
 
             if (hasJustPlayedSixBeepChime)
             {
-                // only trigger "All systems OK" once after engine start
+                // only trigger "all systems OK" once after engine start
                 if (!hasAlertedOnEngineStart && controller.ignitionStarted &&
                     !WasClipPlayed(ElectronicVoiceAlert.AllSystemsOk) && controller.carHP > 27)
                 {
