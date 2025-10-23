@@ -30,7 +30,7 @@ public class CruiserXLCollisionTrigger : MonoBehaviour
             if (playerComponent == null)
                 return;
 
-            // Prevent hitting players standing on/in the cruiser
+            // prevent hitting players standing on/in the cruiser
             Transform physicsTransform = mainScript.physicsRegion.physicsTransform;
             if (playerComponent.physicsParent == physicsTransform || playerComponent.overridePhysicsParent == physicsTransform)
                 return;
