@@ -41,7 +41,7 @@ public class DrivetrainModule : NetworkBehaviour
     {
         upShiftThreshold = 4500f;
         downShiftThreshold = 1100f;
-        diffRatio = 5.2f;
+        diffRatio = 5.2f; // diff?
     }
 
     public void FixedUpdate()
