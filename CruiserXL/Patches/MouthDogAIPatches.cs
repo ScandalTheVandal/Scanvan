@@ -9,9 +9,6 @@ namespace CruiserXL.Patches;
 [HarmonyPatch(typeof(MouthDogAI))]
 public static class MouthDogAIPatches
 {
-    // special function to protect players from being grabbed
-    // by an old-bird, if they're in our truck, and they're
-    // considered 'protected'.
     [HarmonyPatch("OnCollideWithPlayer")]
     [HarmonyPrefix]
     static bool OnCollideWithPlayer_Prefix(MouthDogAI __instance, Collider other)
