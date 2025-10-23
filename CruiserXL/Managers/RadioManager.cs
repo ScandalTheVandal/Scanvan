@@ -11,6 +11,10 @@ using System.Net.NetworkInformation;
 using System.Net.Http;
 using UnityEngine.Experimental.GlobalIllumination;
 
+/// <summary>
+///  Available from RadioFurniture, licensed under GNU General Public License.
+///  Source: https://github.com/legoandmars/RadioFurniture/tree/master/RadioFurniture
+/// </summary>
 namespace CruiserXL.Managers
 {
     public static class RadioManager
@@ -51,9 +55,10 @@ namespace CruiserXL.Managers
             return _stations.FirstOrDefault(x => x.StationUuid == guid);
         }
 
+        // huge kudos to zaggy for helping me diagnose and fix this!
         private static async Task<string> GetRadioBrowserApiUrl()
         {
-            // Get fastest ip of dns
+            // get fastest ip of dns
             const string baseUrl = @"all.api.radio-browser.info";
             var ips = Dns.GetHostAddresses(baseUrl);
             var lastRoundTripTime = long.MaxValue;

@@ -1,6 +1,4 @@
-﻿// originally from naudio, some parts taken from MSCModLoader
-
-using System;
+﻿using System;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -8,6 +6,10 @@ using System.Threading;
 using NAudio.Wave;
 using UnityEngine;
 
+/// <summary>
+///  Available from RadioFurniture, licensed under GNU General Public License.
+///  Source: https://github.com/legoandmars/RadioFurniture/tree/master/RadioFurniture
+/// </summary>
 namespace CruiserXL.ClipLoading
 {
     public class MP3Stream

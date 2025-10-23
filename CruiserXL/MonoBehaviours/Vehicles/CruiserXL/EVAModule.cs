@@ -11,22 +11,21 @@ using static Unity.Properties.TypeUtility;
 
 namespace CruiserXL.MonoBehaviours.Vehicles.CruiserXL;
 
-//[MovedFrom("CruiserXL.MonoBehaviours.Vehicles.CruiserXL")]
 public class EVAModule : NetworkBehaviour
 {
     [Header("EVA System")]
 
     public CruiserXLController controller = null!;
-    // Voice alerts
+    // voice alerts
     public AudioClip[] voiceAudioClips = null!;
     public AudioSource voiceAudio = null!;
 
-    // Misc chimes & beeps
+    // misc chimes & beeps
     public AudioClip sixBeepAlert = null!;
     public AudioClip singleAlert = null!;
     public AudioClip highToneAlert = null!;
 
-    // Extra misc stuff
+    // extra misc stuff
     public Coroutine audioTimedCoroutine = null!;
     public TextMeshPro clusterScreen = null!;
 
@@ -85,7 +84,7 @@ public class EVAModule : NetworkBehaviour
 
     private void SetIgnitionClips()
     {
-        // Ignition on
+        // ignition on
         if (controller.keyIsInIgnition)
         {
             if (isSpecialAlert)
@@ -102,7 +101,7 @@ public class EVAModule : NetworkBehaviour
 
             if (hasJustPlayedSixBeepChime)
             {
-                // Only trigger "All systems OK" once after engine start
+                // only trigger "All systems OK" once after engine start
                 if (!hasAlertedOnEngineStart && controller.ignitionStarted &&
                     !WasClipPlayed(ElectronicVoiceAlert.AllSystemsOk) && controller.carHP > 27)
                 {
@@ -121,7 +120,7 @@ public class EVAModule : NetworkBehaviour
             }
             else if (currentClipId != (int)ElectronicVoiceAlert.ThankYou)
             {
-                // Play the six, long beeps upon vehicle startup
+                // play the six, long beeps upon vehicle startup
                 hasJustPlayedSixBeepChime = true;
                 ResetAudioClip(ElectronicVoiceAlert.HeadlampsOn);
                 SetIgnitionChime();

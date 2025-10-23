@@ -10,7 +10,6 @@ using UnityEngine.Scripting.APIUpdating;
 
 namespace CruiserXL.MonoBehaviours.Vehicles.CruiserXL;
 
-//[MovedFrom("CruiserXL.MonoBehaviours.Vehicles.CruiserXL")]
 public class TruckMirrorRenderer : MonoBehaviour
 {
     public CruiserXLController mainTruckScript = null!;
@@ -28,6 +27,7 @@ public class TruckMirrorRenderer : MonoBehaviour
     public int nextCameraToRender = 0;
     public float cameraRenderCountRemainder = 0f;
 
+    // zaggy zagster, thank you so much for helping me out with this!
     public void Awake()
     {
         mirrorCameras[0].farClipPlane = 30f;
@@ -42,17 +42,9 @@ public class TruckMirrorRenderer : MonoBehaviour
         mirrorCameras[1].gameObject.GetComponent<HDAdditionalCameraData>().antialiasing = HDAdditionalCameraData.AntialiasingMode.None;
         mirrorCameras[2].gameObject.GetComponent<HDAdditionalCameraData>().antialiasing = HDAdditionalCameraData.AntialiasingMode.None;
 
-        mirrorCameras[0].gameObject.GetComponent<HDAdditionalCameraData>().volumeLayerMask = LayerMask.GetMask("Nothing");
-        mirrorCameras[1].gameObject.GetComponent<HDAdditionalCameraData>().volumeLayerMask = LayerMask.GetMask("Nothing");
-        mirrorCameras[2].gameObject.GetComponent<HDAdditionalCameraData>().volumeLayerMask = LayerMask.GetMask("Nothing");
-
         mirrorCameras[0].gameObject.GetComponent<HDAdditionalCameraData>().volumeAnchorOverride = null;
         mirrorCameras[1].gameObject.GetComponent<HDAdditionalCameraData>().volumeAnchorOverride = null;
         mirrorCameras[2].gameObject.GetComponent<HDAdditionalCameraData>().volumeAnchorOverride = null;
-
-        mirrorCameras[0].gameObject.GetComponent<HDAdditionalCameraData>().clearColorMode = HDAdditionalCameraData.ClearColorMode.Color;
-        mirrorCameras[1].gameObject.GetComponent<HDAdditionalCameraData>().clearColorMode = HDAdditionalCameraData.ClearColorMode.Color;
-        mirrorCameras[2].gameObject.GetComponent<HDAdditionalCameraData>().clearColorMode = HDAdditionalCameraData.ClearColorMode.Color;
 
         mirrorCameras[0].gameObject.GetComponent<HDAdditionalCameraData>().stopNaNs = false;
         mirrorCameras[1].gameObject.GetComponent<HDAdditionalCameraData>().stopNaNs = false;
@@ -74,7 +66,6 @@ public class TruckMirrorRenderer : MonoBehaviour
     /// </summary>
     public void LateUpdate()
     {
-        // Zaggy Zagster so cool, thank you so much for helping me out with this!
         if (mainTruckScript == null)
             return;
 

@@ -13,7 +13,6 @@ using Unity.Netcode;
 using CruiserXL.Managers;
 using CruiserXL.Utils;
 using System.IO;
-//using CruiserXL.Compatibility.SCVR.Physics.Interactions.Scanvan;
 
 namespace CruiserXL
 {
@@ -22,8 +21,6 @@ namespace CruiserXL
     public class Plugin : BaseUnityPlugin
     {
         public static Plugin Instance { get; private set; } = null!;
-
-        //public ScanvanManager ScanvanManager { get; private set; }
         internal new static ManualLogSource Logger { get; private set; } = null!;
         internal static Harmony? Harmony { get; set; }
 
@@ -43,12 +40,6 @@ namespace CruiserXL
             VehicleControlsInstance = new VehicleControls();
 
             UserConfig.InitConfig();
-
-            //if (LCVRCompatibility.inVrSession)
-            //{
-            //  ScanvanManager = new ScanvanManager();
-            //}
-
             AssetBundle PlayerAnimationBundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Info.Location), "scanvananimationbundle"));
             if (PlayerAnimationBundle == null)
             {

@@ -13,14 +13,8 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.XR;
 using UnityEngine.Rendering.HighDefinition;
-
-using BepInEx.Bootstrap;
-using HarmonyLib;
 using System.Linq;
-using System.Reflection;
-using System.Reflection.Emit;
 using CruiserXL.MonoBehaviours.Vehicles.CruiserXL;
 
 public class CruiserXLController : VehicleController
@@ -374,8 +368,6 @@ public class CruiserXLController : VehicleController
         mainRigidbody.automaticInertiaTensor = false;
         mainRigidbody.maxDepenetrationVelocity = 1f;
 
-        //Plugin.Logger.LogMessage($"Scanvan: Max linear velocity: {mainRigidbody.maxLinearVelocity}; dep: {mainRigidbody.maxDepenetrationVelocity}");
-
         JointSpring suspensionSpring = new JointSpring
         {
             spring = 32000f, //32000x2 = 64000
@@ -414,7 +406,7 @@ public class CruiserXLController : VehicleController
         syncedPosition = transform.position;
         syncedRotation = transform.rotation;
 
-        // Set interior offsets
+        // set interior offsets
         driverSeatTrigger.playerPositionNode.transform.localPosition += seatNodePositionOffset;
         middlePassengerSeatTrigger.playerPositionNode.transform.localPosition += seatNodePositionOffset;
         passengerSeatTrigger.playerPositionNode.transform.localPosition += seatNodePositionOffset;
@@ -454,24 +446,19 @@ public class CruiserXLController : VehicleController
             References.stormyRainParticles == null || 
             References.stormyRainHitParticles == null)
         {
-            Plugin.Logger.LogWarning($"Rain particles are null! is application editor? {Application.isEditor}");
+            Plugin.Logger.LogWarning($"rain particles are null! is application editor? {Application.isEditor}");
             if (Application.isEditor)
             {
-                Plugin.Logger.LogDebug($"Application is editor, this is ignorable");
+                Plugin.Logger.LogDebug($"application is editor, this is ignorable");
             }
             return;
         }
 
-        var rainParticleTrigger = References.rainParticles.trigger;
-        var rainHitParticleTrigger = References.rainHitParticles.trigger;
-        var stormyRainParticleTrigger = References.stormyRainParticles.trigger;
-        var stormyRainHitParticleTrigger = References.stormyRainHitParticles.trigger;
-
         var particleTriggers = new[] {
-            rainParticleTrigger, 
-            rainHitParticleTrigger, 
-            stormyRainParticleTrigger, 
-            stormyRainHitParticleTrigger};
+            References.rainParticles.trigger,
+            References.rainHitParticles.trigger,
+            References.stormyRainParticles.trigger,
+            References.stormyRainHitParticles.trigger};
 
         for (int i = 0; i < particleTriggers.Length; i++)
         {
@@ -483,6 +470,7 @@ public class CruiserXLController : VehicleController
         }
     }
 
+    // completely broken and unused
     public void SendClientSyncData()
     {
         if (StartOfRound.Instance.attachedVehicle.TryGetComponent<CruiserXLController>(out var vehicle))
@@ -549,11 +537,9 @@ public class CruiserXLController : VehicleController
                     GameNetworkManager.Instance.localPlayerController.playerBodyAnimator.SetInteger("SA_CarAnim", 12);
                 }
             }
-            //yield return new WaitForSeconds(keyIsInTryIgnitionFirstSpeed);
             yield return new WaitForSeconds(0.02f);
             carKeySounds.PlayOneShot(twistKey);
             SetKeyIgnitionValues(trying: true, keyInHand: true, keyInSlot: true);
-            //yield return new WaitForSeconds(0.1467f);
             yield return new WaitForSeconds(keyIsInTryIgnitionSecondSpeed);
         }
         else
@@ -563,7 +549,6 @@ public class CruiserXLController : VehicleController
                 GameNetworkManager.Instance.localPlayerController.playerBodyAnimator.SetInteger("SA_CarAnim", 2);
             }
             SetKeyIgnitionValues(trying: false, keyInHand: true, keyInSlot: false);
-            //yield return new WaitForSeconds(keyIsNotInTryIgnitionFirstSpeed);
             yield return new WaitForSeconds(0.6f);
             carKeySounds.PlayOneShot(insertKey);
             SetKeyIgnitionValues(trying: false, keyInHand: true, keyInSlot: true);
@@ -578,7 +563,6 @@ public class CruiserXLController : VehicleController
             {
                 dashboardSymbolPreStartup = StartCoroutine(PreIgnitionSymbolCheck());
             }
-            //yield return new WaitForSeconds(0.2f);
             yield return new WaitForSeconds(keyIsNotInTryIgnitionSecondSpeed);
             carKeySounds.PlayOneShot(twistKey);
             SetKeyIgnitionValues(trying: true, keyInHand: true, keyInSlot: true);
@@ -586,23 +570,9 @@ public class CruiserXLController : VehicleController
         SetKeyIgnitionValues(trying: true, keyInHand: true, keyInSlot: true);
         SetFrontCabinLightOn(setOn: keyIsInIgnition);
 
-        if (!isLocalDriver)
-        {
-            //keyIgnitionCoroutine = null;
-            yield break;
-        }
-
-        if (!brakePedalPressed)
-        {
-            //keyIgnitionCoroutine = null;
-            yield break;
-        }
-
-        if (truckAlarmCoroutine != null)
-        {
-            //keyIgnitionCoroutine = null;
-            yield break;
-        }
+        if (!isLocalDriver) yield break;
+        if (!brakePedalPressed) yield break;
+        if (truckAlarmCoroutine != null) yield break;
 
         engineAudio1.Stop();
         engineAudio1.clip = revEngineStart;
@@ -632,7 +602,6 @@ public class CruiserXLController : VehicleController
         {
             chanceToStartIgnition = (float)UnityEngine.Random.Range(12, 22);
         }
-        //keyIgnitionCoroutine = null;
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -686,6 +655,7 @@ public class CruiserXLController : VehicleController
         if (ignitionStarted)
             return;
 
+        // hopefully fix a bug where the wrong animation can play?
         if (GameNetworkManager.Instance.localPlayerController.playerBodyAnimator.GetInteger("SA_CarAnim") == 2 && 
             keyIsInIgnition)
             GameNetworkManager.Instance.localPlayerController.playerBodyAnimator.SetInteger("SA_CarAnim", 3);
@@ -694,7 +664,6 @@ public class CruiserXLController : VehicleController
         else
             GameNetworkManager.Instance.localPlayerController.playerBodyAnimator.SetInteger("SA_CarAnim", 0);
 
-        //GameNetworkManager.Instance.localPlayerController.playerBodyAnimator.SetInteger("SA_CarAnim", keyIsInIgnition ? 3 : 0);
         CancelIgnitionAnimation(ignitionOn: false);
         SetFrontCabinLightOn(setOn: keyIsInIgnition);
         CancelTryIgnitionServerRpc((int)GameNetworkManager.Instance.localPlayerController.playerClientId, keyIsInIgnition);
@@ -845,6 +814,7 @@ public class CruiserXLController : VehicleController
         keyIgnitionCoroutine = StartCoroutine(RemoveKey(driverId));
     }
 
+    // there will be a better way to go about this
     private IEnumerator PreIgnitionSymbolCheck()
     {
         parkingBrakeSymbol.SetActive(true);
@@ -924,9 +894,6 @@ public class CruiserXLController : VehicleController
     {
         trigger.hoverTip = tip;
     }
-
-
-
 
     public void SetDriverInCar()
     {
@@ -1438,6 +1405,9 @@ public class CruiserXLController : VehicleController
 
     public new void ShiftGearForwardInput(InputAction.CallbackContext context)
     {
+        if (!localPlayerInControl)
+            return;
+
         if (!context.performed)
             return;
 
@@ -1445,9 +1415,6 @@ public class CruiserXLController : VehicleController
             return;
 
         if (Time.realtimeSinceStartup - timeAtLastGearShift < 0.15f)
-            return;
-
-        if (!localPlayerInControl)
             return;
 
         ShiftGearForward();
@@ -1455,6 +1422,9 @@ public class CruiserXLController : VehicleController
 
     public new void ShiftGearBackInput(InputAction.CallbackContext context)
     {
+        if (!localPlayerInControl)
+            return;
+
         if (!context.performed)
             return;
 
@@ -1462,9 +1432,6 @@ public class CruiserXLController : VehicleController
             return;
 
         if (Time.realtimeSinceStartup - timeAtLastGearShift < 0.15f)
-            return;
-
-        if (!localPlayerInControl)
             return;
 
         ShiftGearBack();
@@ -1550,22 +1517,14 @@ public class CruiserXLController : VehicleController
         if (currentDriver == null) return;
         if (currentDriver.isTypingChat || currentDriver.quickMenuManager.isMenuOpen) return;
 
-        // TO-DO: re-work the pedal sync, which is only used to play the "Your parking brake is on" EVA clip, and properly implement BVC controls.
-        if (syncedDrivePedalPressed != drivePedalPressed || syncedBrakePedalPressed != brakePedalPressed)
+        // figure out a better solution for this
+        if (syncedDrivePedalPressed != drivePedalPressed || 
+            syncedBrakePedalPressed != brakePedalPressed)
         {
             syncedDrivePedalPressed = drivePedalPressed;
             syncedBrakePedalPressed = brakePedalPressed;
             SyncDriverPedalInputsServerRpc(drivePedalPressed, brakePedalPressed);
         }
-
-        //if (LCVRCompatibility.inVrSession)
-        //{
-        //    var wheel = Plugin.Instance.ScanvanManager.FindWheelForVehicle(this);
-        //    if (wheel)
-        //        wheel.GetSteeringInput();
-
-        //    return;
-        //}
 
         moveInputVector = IngamePlayerSettings.Instance.playerInput.actions.FindAction("Move").ReadValue<Vector2>();
         moveInputVector.x = Mathf.Round(moveInputVector.x);
@@ -1576,6 +1535,7 @@ public class CruiserXLController : VehicleController
         if (!ignitionStarted)
             return;
 
+        // needs reworking and reconsideration
         engineModule.throttleInput = drivePedalPressed ? Mathf.MoveTowards(engineModule.throttleInput, 1f, 8f * Time.deltaTime) : Mathf.MoveTowards(engineModule.throttleInput, 0f, 8f * Time.deltaTime);
         int targetDirection = 0;
         if (Plugin.VehicleControlsInstance.GasPedalKey.IsPressed())
@@ -1609,12 +1569,7 @@ public class CruiserXLController : VehicleController
             }
         }
 
-        //if (!centerKeyPressed && Plugin.VehicleControlsInstance.WheelCenterKey.triggered)
-        //{
-        //    centerKeyPressed = true;
-        //}
-
-        if (moveInputVector.x == 0f && (UserConfig.RecenterWheel.Value)) //|| centerKeyPressed
+        if (moveInputVector.x == 0f && UserConfig.RecenterWheel.Value)
         {
             if (UserConfig.RecenterWheelSpeed.Value < 0f)
             {
@@ -1629,11 +1584,6 @@ public class CruiserXLController : VehicleController
                 steeringAnimValue = moveInputVector.x;
                 steeringWheelAnimFloat = steeringAnimValue;
             }
-
-            //if (centerKeyPressed && steeringWheelAnimFloat == 0f)
-            //{
-            //    centerKeyPressed = false;
-            //}
         }
     }
 
@@ -1662,22 +1612,8 @@ public class CruiserXLController : VehicleController
         magnetStartPosition = transform.position;
         magnetStartRotation = transform.rotation;
 
-        //Quaternion rotation = transform.rotation;
         Quaternion rotation = magnetTargetRotation;
-        //transform.rotation = magnetTargetRotation;
         transform.rotation = rotation;
-
-        //Vector3 eulerAngles = transform.eulerAngles;
-        //eulerAngles.y = Mathf.Round((eulerAngles.y + 90f) / 180f) * 180f - 90f;
-        //eulerAngles.z = Mathf.Round(eulerAngles.z / 90f) * 90f;
-        //float x = Mathf.Repeat(eulerAngles.x + UnityEngine.Random.Range(-5f, 5f) + 180, 360) - 180;
-        //eulerAngles.x = Mathf.Clamp(x, -20f, 20f);
-        //magnetTargetRotation = Quaternion.Euler(eulerAngles);
-
-        //Vector3 offset = new(0f, -0.5f, -boundsCollider.size.x * 0.5f * boundsCollider.transform.lossyScale.x);
-        //Vector3 localPos = StartOfRound.Instance.magnetPoint.position + offset;
-        //magnetTargetPosition = StartOfRound.Instance.elevatorTransform.InverseTransformPoint(localPos);
-
 
         CollectItemsInTruck();
 
@@ -1726,8 +1662,12 @@ public class CruiserXLController : VehicleController
         for (int i = 0; i < array.Length; i++)
         {
             GrabbableObject component = array[i].GetComponent<GrabbableObject>();
-            if (component != null && !component.isHeld && !component.isHeldByEnemy && array[i].transform.parent == transform)
+            if (component != null && 
+                !component.isHeld && 
+                !component.isHeldByEnemy && 
+                array[i].transform.parent == transform)
             {
+                // only credit the last driver (credit to buttery for figuring this out!)
                 if (References.lastDriver != null)
                 {
                     References.lastDriver.SetItemInElevator(magnetedToShip, magnetedToShip, component);
@@ -1819,12 +1759,13 @@ public class CruiserXLController : VehicleController
         CabinLightSwitchAudio.PlayOneShot(CabinLightSwitchToggle);
     }
 
+    // i need to re-write all this boost ability stuff
     public void DoJump(InputAction.CallbackContext context)
     {
-        if (!context.performed)
+        if (!localPlayerInControl)
             return;
 
-        if (!localPlayerInControl)
+        if (!context.performed)
             return;
 
         if (!ignitionStarted)
@@ -1952,6 +1893,7 @@ public class CruiserXLController : VehicleController
         if (!context.performed)
             return;
 
+        // this needs to be cached, but i'm too lazy right now
         InteractTrigger? windscreenWipers = transform.Find("Meshes/BodyContainer/Interior_XL/XLColumn/RightStockAnimContainer/RightStock/ToggleWiper")?.GetComponent<InteractTrigger>();
         windscreenWipers?.onInteract.Invoke(StartOfRound.Instance.localPlayerController);
     }
@@ -1964,7 +1906,8 @@ public class CruiserXLController : VehicleController
         if (truckAlarmCoroutine != null)
             return;
 
-        if (((context.performed && !honkingHorn) || (context.canceled && honkingHorn)))
+        if (((context.performed && !honkingHorn) || 
+            (context.canceled && honkingHorn)))
         {
             SetHonkingLocalClient(!honkingHorn);
         }
@@ -1972,11 +1915,10 @@ public class CruiserXLController : VehicleController
 
     public new void OnDisable()
     {
+        RemoveCarRainCollision();
         DisableControl();
         if (localPlayerInControl || localPlayerInPassengerSeat || localPlayerInMiddlePassengerSeat)
-        {
             GameNetworkManager.Instance.localPlayerController.CancelSpecialTriggerAnimations();
-        }
         GrabbableObject[] componentsInChildren = physicsRegion.physicsTransform.GetComponentsInChildren<GrabbableObject>();
         for (int i = 0; i < componentsInChildren.Length; i++)
         {
@@ -1998,13 +1940,9 @@ public class CruiserXLController : VehicleController
         {
             StartOfRound.Instance.CurrentPlayerPhysicsRegions.Remove(physicsRegion);
         }
-        // TO-DO: reimplement VR
-        //if (LCVRCompatibility.inVrSession)
-        //{
-        //    Plugin.Instance.ScanvanManager.OnCarDestroyed(this);
-        //}
     }
 
+    // drivetrain misc stuff
     private void UpdateDrivetrainState()
     {
         float vehicleStress = 0f;
@@ -2087,9 +2025,6 @@ public class CruiserXLController : VehicleController
         {
             if (base.IsOwner)
             {
-                Plugin.Logger.LogMessage($"Is truck networkobject spawned?: {NetworkObject.IsSpawned}");
-                Plugin.Logger.LogMessage("Destroying truck on local client");
-                RemoveCarRainCollision();
                 UnityEngine.Object.Destroy(base.windwiperPhysicsBody1.gameObject);
                 UnityEngine.Object.Destroy(base.windwiperPhysicsBody2.gameObject);
                 UnityEngine.Object.Destroy(base.ragdollPhysicsBody.gameObject);
@@ -2099,15 +2034,14 @@ public class CruiserXLController : VehicleController
         }
         if (base.NetworkObject != null && !base.NetworkObject.IsSpawned)
         {
+            RemoveCarRainCollision();
             physicsRegion.disablePhysicsRegion = true;
             if (StartOfRound.Instance.CurrentPlayerPhysicsRegions.Contains(physicsRegion))
-            {
                 StartOfRound.Instance.CurrentPlayerPhysicsRegions.Remove(physicsRegion);
-            }
-            if (localPlayerInControl || localPlayerInPassengerSeat)
-            {
+
+            if (localPlayerInControl || localPlayerInPassengerSeat || localPlayerInMiddlePassengerSeat)
                 GameNetworkManager.Instance.localPlayerController.CancelSpecialTriggerAnimations();
-            }
+
             GrabbableObject[] componentsInChildren = physicsRegion.physicsTransform.GetComponentsInChildren<GrabbableObject>();
             for (int i = 0; i < componentsInChildren.Length; i++)
             {
@@ -2124,11 +2058,13 @@ public class CruiserXLController : VehicleController
                     componentsInChildren[i].FallToGround(false, false, default(Vector3));
                 }
             }
-            Plugin.Logger.LogMessage("Destroying truck on local client, next frame");
             destroyNextFrame = true;
             return;
         }
-        if (!hasBeenSpawned) return;
+
+        if (!hasBeenSpawned) 
+            return;
+
         if (magnetedToShip)
         {
             if (!StartOfRound.Instance.magnetOn)
@@ -2214,7 +2150,7 @@ public class CruiserXLController : VehicleController
                 {
                     currentDriver.playerBodyAnimator.SetInteger("SA_CarAnim", 1);
                 }
-                //currentDriver.playerBodyAnimator.SetInteger("SA_CarHonk", (int)((honkingHorn && currentDriver.ladderCameraHorizontal > -25f) ? 1 : 0));
+                //currentDriver.playerBodyAnimator.SetInteger("SA_CarHonk", (int)((honkingHorn && currentDriver.ladderCameraHorizontal > -25f) ? 1 : 0)); old animation
             }
         }
 
@@ -2232,6 +2168,7 @@ public class CruiserXLController : VehicleController
         liveRadioController.ToggleStationLocalClient();
         return;
 
+        // completely unused, needs rewriting and reworking
         currentSongTime = 0f;
         if (!radioOn)
         {
@@ -2336,6 +2273,7 @@ public class CruiserXLController : VehicleController
         }
         return;
 
+        // completely unused, needs rewriting and reworking
         radioOn = !radioOn;
         if (radioOn)
         {
@@ -2377,6 +2315,8 @@ public class CruiserXLController : VehicleController
             RoundManager.Instance.PlayAudibleNoise(radioAudio.transform.position, 16f, Mathf.Min((radioAudio.volume + radioInterference.volume) * 0.5f, 0.9f), 0, false, 2692);
         }
         return;
+
+        // completely unused, needs rewriting and reworking
         if (!radioOn)
         {
             return;
@@ -2385,7 +2325,7 @@ public class CruiserXLController : VehicleController
         {
             currentSongTime += Time.deltaTime;
         }
-        //Sync radio time once per second
+        // sync radio time once per second
         if (IsHost && (Time.realtimeSinceStartup - timeLastSyncedRadio > 1f))
         {
             timeLastSyncedRadio = Time.realtimeSinceStartup;
@@ -2461,6 +2401,7 @@ public class CruiserXLController : VehicleController
         radioSignalQuality = signalQuality;
     }
 
+    // improved wheel mesh --> collider
     private void MatchWheelMeshToCollider(MeshRenderer wheelMesh, MeshRenderer brakeMesh, WheelCollider wheelCollider)
     {
         Vector3 position;
@@ -2471,11 +2412,6 @@ public class CruiserXLController : VehicleController
         wheelMesh.transform.rotation = rotation;
         brakeMesh.transform.position = wheelMesh.transform.position;
     }
-
-    //public static void MatchBrakeMeshToWheelMesh(MeshRenderer brakeMesh, MeshRenderer wheelMesh)
-    //{
-    //    brakeMesh.transform.position = wheelMesh.transform.position;
-    //}
 
     [ServerRpc(RequireOwnership = false)]
     public void SetTyreStressOnServerRpc(float stress, bool wheelSkidding)
@@ -2495,9 +2431,7 @@ public class CruiserXLController : VehicleController
         wheelSlipping = wheelSkidding;
     }
 
-
-
-
+    // alarm :3
     public void TryBeginAlarm()
     {
         if (truckAlarmCoroutine != null)
@@ -2531,9 +2465,7 @@ public class CruiserXLController : VehicleController
         alarmDebounce = false;
     }
 
-
-
-
+    // set vehicle effects (i.e. wheels, steering, etc)
     public new void SetCarEffects(float setSteering)
     {
         setSteering = IsOwner ? setSteering : 0f;
@@ -2553,11 +2485,6 @@ public class CruiserXLController : VehicleController
         MatchWheelMeshToCollider(backLeftWheelMesh, backLeftBrakeMesh, BackLeftWheel);
         MatchWheelMeshToCollider(backRightWheelMesh, backRightBrakeMesh, BackRightWheel);
 
-        //MatchBrakeMeshToWheelMesh(leftBrakeMesh, leftWheelMesh);
-        //MatchBrakeMeshToWheelMesh(rightBrakeMesh, rightWheelMesh);
-        //MatchBrakeMeshToWheelMesh(backLeftBrakeMesh, backLeftWheelMesh);
-        //MatchBrakeMeshToWheelMesh(backRightBrakeMesh, backRightWheelMesh);
-
         leftBrakeMesh.transform.localEulerAngles = new Vector3(leftBrakeMesh.transform.localEulerAngles.x, FrontLeftWheel.steerAngle, 0f);
         rightBrakeMesh.transform.localEulerAngles = new Vector3(rightBrakeMesh.transform.localEulerAngles.x, FrontRightWheel.steerAngle, 0f);
         backLeftBrakeMesh.transform.localEulerAngles = new Vector3(backLeftBrakeMesh.transform.localEulerAngles.x, 0f, 0f);
@@ -2566,9 +2493,6 @@ public class CruiserXLController : VehicleController
         if (base.IsOwner)
         {
             SyncCarEffectsToOtherClients();
-            //SyncCarDrivetrainToOtherClients();
-            //SyncCarWheelSpeedToOtherClients();
-            //SyncCarWheelTorqueToOtherClients();
             if (!syncedExtremeStress && underExtremeStress && extremeStressAudio.volume > 0.35f)
             {
                 syncedExtremeStress = true;
@@ -2585,6 +2509,7 @@ public class CruiserXLController : VehicleController
         steeringWheelAnimFloat = Mathf.MoveTowards(steeringWheelAnimFloat, syncedWheelRotation, steeringWheelTurnSpeed * Time.deltaTime / 6f);
     }
 
+    // vehicle gauge stuff
     public void SetCarGauges()
     {
         if (ignitionStarted)
@@ -2617,9 +2542,10 @@ public class CruiserXLController : VehicleController
         oilPressureTransform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(0f, -135f, oilPressureFloat));
     }
 
+    // radio text stuff
     public void SetCarRadio()
     {
-        // Time & Radio Frequency on dash
+        // time & radio Frequency on dash
         if (!keyIsInIgnition && !liveRadioController._radioOn)
         {
             radioTime.text = "";
@@ -2643,6 +2569,7 @@ public class CruiserXLController : VehicleController
         radioFrequency.text = "RADIO OFF";
     }
 
+    // display the current radio volume
     private string SetRadioVolume(float vol)
     {
         if (vol <= 0f)
@@ -2654,6 +2581,8 @@ public class CruiserXLController : VehicleController
         return $"VOL {display:00}";
     }
 
+    // trim the radio time text to not display 
+    // "PM" "AM" or a space
     private string SetRadioClock(string clockText)
     {
         return clockText
@@ -2664,6 +2593,7 @@ public class CruiserXLController : VehicleController
             .Trim();
     }
 
+    // automatic shifter position
     public void SetCarAutomaticShifter()
     {
         switch (drivetrainModule.autoGear)
@@ -2692,11 +2622,14 @@ public class CruiserXLController : VehicleController
         gearStickAnimator.SetFloat("gear", Mathf.Clamp(gearStickAnimValue, 0.01f, 0.99f));
     }
 
+    // unused
     public void SetCarManualShifter()
     {
         //TBD
     }
 
+    // brake-lights and reverse-lights, any additional
+    // lights can be added here i guess
     public void SetCarLightingEffects()
     {
         bool brakeLightsOn = drivetrainModule.autoGear != TruckGearShift.Park && wheelBrakeTorque > 100f && ignitionStarted;
@@ -2792,6 +2725,7 @@ public class CruiserXLController : VehicleController
         }
     }
 
+    // tyre skid effects
     public void CalculateTyreSlip()
     {
         if (base.IsOwner)
@@ -2854,6 +2788,8 @@ public class CruiserXLController : VehicleController
         SetVehicleAudioProperties(skiddingAudio, wheelSlipping, 0f, tyreStress, 3f, true, 1f);
     }
 
+    // what a mess, but it works, and it's
+    // better than whatever i had before
     public void SetCarKeyEffects()
     {
         Transform ignBarrelRot = (ignitionStarted || engineModule.tryingIgnition)
@@ -2929,7 +2865,7 @@ public class CruiserXLController : VehicleController
 
     public new void FixedUpdate()
     {
-        // Legacy code
+        // legacy code
         //foreach (WheelCollider wheel in wheels)
         //{
         //    if (wheel.GetGroundHit(out var hit))
@@ -2970,17 +2906,20 @@ public class CruiserXLController : VehicleController
         }
         groundNormal.Normalize();
 
-        if (!StartOfRound.Instance.inShipPhase && !loadedVehicleFromSave && !hasDeliveredVehicle)
+        if (!StartOfRound.Instance.inShipPhase && 
+            !loadedVehicleFromSave && 
+            !hasDeliveredVehicle)
         {
-            // Optimisation stuff.
+            // optimisation
             if (itemShip == null && References.itemShip != null)
                 itemShip = References.itemShip;
 
-            if (itemShip != null && !hasBeenSpawned)
+            if (itemShip != null && 
+                !hasBeenSpawned)
             {
                 if (itemShip.untetheredVehicle)
                 {
-                    // Truck has been released from the ropes
+                    // release the truck
                     inDropshipAnimation = false;
                     mainRigidbody.MovePosition(itemShip.deliverVehiclePoint.position);
                     mainRigidbody.MoveRotation(itemShip.deliverVehiclePoint.rotation);
@@ -2991,7 +2930,7 @@ public class CruiserXLController : VehicleController
                 }
                 else if (itemShip.deliveringVehicle)
                 {
-                    // Truck is being delivered by the dropship
+                    // in delivery animation
                     inDropshipAnimation = true;
                     mainRigidbody.isKinematic = true;
                     mainRigidbody.MovePosition(itemShip.deliverVehiclePoint.position);
@@ -3002,7 +2941,7 @@ public class CruiserXLController : VehicleController
             }
             else if (itemShip == null)
             {
-                // Fail-safe
+                // failsafe idk
                 inDropshipAnimation = false;
                 mainRigidbody.isKinematic = true;
                 mainRigidbody.MovePosition(StartOfRound.Instance.notSpawnedPosition.position + Vector3.forward * 30f);
@@ -3012,7 +2951,7 @@ public class CruiserXLController : VehicleController
         }
         if (magnetedToShip)
         {
-            // Truck is magnetised to the ship, so move it to the magnet point
+            // move the truck to its magnetised point
             syncedPosition = transform.position;
             syncedRotation = transform.rotation;
             mainRigidbody.MovePosition(Vector3.Lerp(magnetStartPosition, StartOfRound.Instance.elevatorTransform.position + magnetTargetPosition, magnetPositionCurve.Evaluate(magnetTime)));
@@ -3026,7 +2965,7 @@ public class CruiserXLController : VehicleController
         {
             if (!base.IsOwner && !inDropshipAnimation)
             {
-                // Move n' groove the truck for non-owner clients
+                // move the truck for non-owner clients
                 mainRigidbody.isKinematic = true;
 
                 float syncMultiplier = Mathf.Clamp(syncSpeedMultiplier * Vector3.Distance(transform.position, syncedPosition), 1.3f, 300f);
@@ -3044,15 +2983,16 @@ public class CruiserXLController : VehicleController
 
         if (carDestroyed) return;
 
-        // Apply angle to the front wheels dependant on the position
-        // of the steering wheel
+        // apply angle to the front wheels dependant
+        // on the rotation of the steering wheel
         float steeringAngle = steeringWheelCurve.Evaluate(Mathf.Abs(steeringWheelAnimFloat)) * 50f;
         float steeringSign = Mathf.Sign(steeringWheelAnimFloat);
         FrontLeftWheel.steerAngle = steeringAngle * steeringSign;
         FrontRightWheel.steerAngle = steeringAngle * steeringSign;
 
-        // Loop over each powered wheel, and apply motor, brake torque
-        // and clamp how fast they can spin
+        // loop over each powered wheel, and apply motor,
+        // brake torque and clamp how fast they can spin
+        // (for our gear system)
         foreach (WheelCollider drivenWheel in wheels)
         {
             drivenWheel.motorTorque = wheelTorque;
@@ -3078,10 +3018,11 @@ public class CruiserXLController : VehicleController
         }
         
         UpdateDrivetrainState();
-        if (mainRigidbody.IsSleeping() || magnetedToShip) return;
+        if (mainRigidbody.IsSleeping() || magnetedToShip) return; // minor optimisation stuff
         forwardsSlip = (wheelHits[2].forwardSlip + wheelHits[3].forwardSlip) * 0.5f;
         sidewaysSlip = (wheelHits[2].sidewaysSlip + wheelHits[3].sidewaysSlip) * 0.5f;
-        // Limit the trucks rigidbody velocity, so we don't exceed lightspeed!
+
+        // limit the trucks rigidbody velocity, so we don't exceed lightspeed
         if (limitTruckVelocityTimer <= 0f)
         {
             mainRigidbody.maxAngularVelocity = 4f;
@@ -3092,16 +3033,16 @@ public class CruiserXLController : VehicleController
         {
             limitTruckVelocityTimer -= Time.deltaTime * 0.5f;
             clampedLimitTruckVelocity = Mathf.Clamp(limitTruckVelocityTimer, 0f, 1f);
-
             mainRigidbody.maxDepenetrationVelocity = Mathf.Lerp(0.3f, 7f, clampedLimitTruckVelocity);
             mainRigidbody.maxAngularVelocity = Mathf.Lerp(0.1f, 4f, clampedLimitTruckVelocity);
             mainRigidbody.maxLinearVelocity = Mathf.Lerp(0.1f, 60f, clampedLimitTruckVelocity);
         }
         
+        // anti-slip slide
         if (groundedWheelCount < 3 || Vector3.Angle(-groundNormal, Physics.gravity) > 30f) return;
         Vector3 carFrontHillDirection = Vector3.ProjectOnPlane(transform.forward, groundNormal).normalized;
         Vector3 hillGravity = -groundNormal * Physics.gravity.magnitude;
-        Vector3 force = hillGravity - Physics.gravity; // Difference between real gravity and hill gravity
+        Vector3 force = hillGravity - Physics.gravity; // difference between real gravity & hill gravity
         if (drivetrainModule.autoGear != TruckGearShift.Park)
         {
             force = Vector3.ProjectOnPlane(force, carFrontHillDirection);
@@ -3111,6 +3052,8 @@ public class CruiserXLController : VehicleController
 
     private void SetWheelStiffness(WheelCollider wheel, bool isSnow)
     {
+        // set the tyres to be slippy, should the
+        // truck be on a snowy surface
         WheelFrictionCurve forwardFriction = wheel.forwardFriction;
         WheelFrictionCurve sidewaysFriction = wheel.sidewaysFriction;
 
@@ -3121,6 +3064,8 @@ public class CruiserXLController : VehicleController
         wheel.sidewaysFriction = sidewaysFriction;
     }
 
+    // sync the position of the steering wheel to
+    // non-owner clients
     public void SyncCarEffectsToOtherClients()
     {
         if (syncCarEffectsInterval > 0.045f)
@@ -3139,95 +3084,24 @@ public class CruiserXLController : VehicleController
         }
     }
 
-    //public void SyncCarDrivetrainToOtherClients()
-    //{
-    //    if (!ignitionStarted)
-    //        return;
+    [ServerRpc(RequireOwnership = false)]
+    public void SyncCarEffectsServerRpc(float wheelRotation)
+    {
+        SyncCarEffectsClientRpc(wheelRotation);
+    }
 
-    //    if (syncCarDrivetrainInterval > 0.15f)
-    //    {
-    //        int engineSpeedToSync = Mathf.RoundToInt(EngineRPM / 100f);
-    //        if (syncedEngineRPM != engineSpeedToSync)
-    //        {
-    //            syncCarDrivetrainInterval = 0f;
-    //            syncedEngineRPM = engineSpeedToSync;
-    //            SyncCarDrivetrainServerRpc((float)engineSpeedToSync);
-    //            return;
-    //        }
-    //    }
-    //    else
-    //    {
-    //        syncCarDrivetrainInterval += Time.deltaTime;
-    //    }
-    //}
+    [ClientRpc]
+    public void SyncCarEffectsClientRpc(float wheelRotation)
+    {
+        if (base.IsOwner)
+            return;
 
-    //public void SyncCarWheelSpeedToOtherClients()
-    //{
-    //    if (syncCarWheelSpeedInterval > 0.14f)
-    //    {
-    //        if (syncedWheelRPM != wheelRPM)
-    //        {
-    //            syncCarWheelSpeedInterval = 0f;
-    //            syncedWheelRPM = wheelRPM;
-    //            SyncCarWheelSpeedServerRpc(wheelRPM);
-    //            return;
-    //        }
-    //    }
-    //    else
-    //    {
-    //        syncCarWheelSpeedInterval += Time.deltaTime;
-    //    }
-    //}
+        syncedWheelRotation = wheelRotation;
+    }
 
-    //public void SyncCarWheelTorqueToOtherClients()
-    //{
-    //    if (syncWheelTorqueInterval > 0.16f)
-    //    {
-    //        if (syncedMotorTorque != FrontLeftWheel.motorTorque || syncedBrakeTorque != FrontLeftWheel.brakeTorque)
-    //        {
-    //            syncWheelTorqueInterval = 0f;
-    //            syncedMotorTorque = FrontLeftWheel.motorTorque;
-    //            syncedBrakeTorque = FrontLeftWheel.brakeTorque;
-    //            SyncWheelTorqueServerRpc(FrontLeftWheel.motorTorque, FrontLeftWheel.brakeTorque);
-    //            return;
-    //        }
-    //    }
-    //    else
-    //    {
-    //        syncWheelTorqueInterval += Time.deltaTime;
-    //    }
-    //}
-
-    //[ServerRpc(RequireOwnership = false)]
-    //public void SyncCarDrivetrainServerRpc(float engineSpeed)
-    //{
-    //    SyncCarDrivetrainClientRpc(engineSpeed);
-    //}
-
-    //[ClientRpc]
-    //public void SyncCarDrivetrainClientRpc(float engineSpeed)
-    //{
-    //    if (base.IsOwner)
-    //        return;
-
-    //    syncedEngineRPM = engineSpeed * 100f;
-    //}
-
-    //[ServerRpc(RequireOwnership = false)]
-    //public void SyncCarWheelSpeedServerRpc(float wheelSpeed)
-    //{
-    //    SyncCarWheelSpeedClientRpc(wheelSpeed);
-    //}
-
-    //[ClientRpc]
-    //public void SyncCarWheelSpeedClientRpc(float wheelSpeed)
-    //{
-    //    if (base.IsOwner)
-    //        return;
-
-    //    syncedWheelRPM = wheelSpeed;
-    //}
-
+    // sync the state of the pedals to
+    // non-owner clients (also used for the
+    // EVA module)
     [ServerRpc(RequireOwnership = false)]
     public void SyncDriverPedalInputsServerRpc(bool gasPressed, bool brakePressed)
     {
@@ -3244,37 +3118,8 @@ public class CruiserXLController : VehicleController
         brakePedalPressed = brakePressed;
     }
 
-    [ServerRpc(RequireOwnership = false)]
-    public void SyncCarEffectsServerRpc(float wheelRotation)
-    {
-        SyncCarEffectsClientRpc(wheelRotation);
-    }
-
-    [ClientRpc]
-    public void SyncCarEffectsClientRpc(float wheelRotation)
-    {
-        if (base.IsOwner)
-            return;
-
-        syncedWheelRotation = wheelRotation;
-    }
-
-    //[ServerRpc(RequireOwnership = false)]
-    //public void SyncWheelTorqueServerRpc(float motorTorque, float brakeTorque)
-    //{
-    //    SyncWheelTorqueClientRpc(motorTorque, brakeTorque);
-    //}
-
-    //[ClientRpc]
-    //public void SyncWheelTorqueClientRpc(float motorTorque, float brakeTorque)
-    //{
-    //    if (base.IsOwner)
-    //        return;
-
-    //    syncedMotorTorque = motorTorque;
-    //    syncedBrakeTorque = brakeTorque;
-    //}
-
+    // sync the position of the truck to 
+    // non-owner clients
     private void SyncCarPositionToOtherClients()
     {
         mainRigidbody.isKinematic = false;
@@ -3323,7 +3168,7 @@ public class CruiserXLController : VehicleController
         syncedMovementSpeed = averageSpeed;
     }
 
-
+    // car reaction to damage (enemies, objs, players, etc)
     public new bool CarReactToObstacle(Vector3 vel, Vector3 position, Vector3 impulse, CarObstacleType type, float obstacleSize = 1f, EnemyAI enemyScript = null!, bool dealDamage = true)
     {
         switch (type)
@@ -3390,13 +3235,10 @@ public class CruiserXLController : VehicleController
                             mainRigidbody.velocity = Vector3.Normalize(-impulse * 100000000f) * 9f;
                             PlayerControllerB playerControllerB;
                             if (currentDriver != null)
-                            {
                                 playerControllerB = currentDriver;
-                            }
                             else
-                            {
                                 playerControllerB = null!;
-                            }
+
                             if (vel.magnitude > 2f && dealDamage)
                             {
                                 enemyScript.HitEnemyOnLocalClient(2, Vector3.zero, playerControllerB, playHitSFX: true, 331);
@@ -3417,13 +3259,10 @@ public class CruiserXLController : VehicleController
                         }
                         PlayerControllerB playerWhoHit;
                         if (currentDriver != null)
-                        {
                             playerWhoHit = currentDriver;
-                        }
                         else
-                        {
                             playerWhoHit = null!;
-                        }
+
                         enemyScript.HitEnemyOnLocalClient(12, Vector3.zero, playerWhoHit, false, -1);
                     }
                     PlayCollisionAudio(position, 5, 1f);
@@ -3434,73 +3273,40 @@ public class CruiserXLController : VehicleController
         }
     }
 
+    // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
     public new void LateUpdate()
     {
         if (carDestroyed)
             return;
 
         SetDashboardSymbols();
-
-        //if (currentDriver != null) FixPlayerArms(currentDriver);
-        //if (currentMiddlePassenger != null) FixPlayerArms(currentMiddlePassenger);
-        //if (currentPassenger != null) FixPlayerArms(currentPassenger);
-
-        if (magnetedToShip && (StartOfRound.Instance.inShipPhase || !StartOfRound.Instance.shipDoorsEnabled))
-        {
-            hornAudio.mute = true;
-            engineAudio1.mute = true;
-            engineAudio2.mute = true;
-            //engineAudio3.mute = true;
-
-            carKeySounds.mute = true;
-            CabinLightSwitchAudio.mute = true;
-            voiceModule.voiceAudio.mute = true;
-            wiperAudio.mute = true;
-
-            rollingAudio.mute = true;
-            skiddingAudio.mute = true;
-            turbulenceAudio.mute = true;
-            hoodFireAudio.mute = true;
-            extremeStressAudio.mute = true;
-            pushAudio.mute = true;
-            radioAudio.mute = true;
-            radioInterference.mute = true;
-        }
-        else
-        {
-            hornAudio.mute = false;
-            engineAudio1.mute = false;
-            engineAudio2.mute = false;
-            //engineAudio3.mute = false;
-
-            carKeySounds.mute = false;
-            CabinLightSwitchAudio.mute = false;
-            voiceModule.voiceAudio.mute = false;
-            wiperAudio.mute = false;
-
-            rollingAudio.mute = false;
-            skiddingAudio.mute = false;
-            turbulenceAudio.mute = false;
-            hoodFireAudio.mute = false;
-            extremeStressAudio.mute = false;
-            pushAudio.mute = false;
-            radioAudio.mute = false;
-            radioInterference.mute = false;
-        }
+        bool inOrbit = magnetedToShip && 
+            (StartOfRound.Instance.inShipPhase || !StartOfRound.Instance.shipDoorsEnabled);
+        hornAudio.mute = inOrbit;
+        engineAudio1.mute = inOrbit;
+        engineAudio2.mute = inOrbit;
+        carKeySounds.mute = inOrbit;
+        CabinLightSwitchAudio.mute = inOrbit;
+        voiceModule.voiceAudio.mute = inOrbit;
+        wiperAudio.mute = inOrbit;
+        rollingAudio.mute = inOrbit;
+        skiddingAudio.mute = inOrbit;
+        turbulenceAudio.mute = inOrbit;
+        hoodFireAudio.mute = inOrbit;
+        extremeStressAudio.mute = inOrbit;
+        pushAudio.mute = inOrbit;
+        radioAudio.mute = inOrbit;
+        radioInterference.mute = inOrbit;
 
         if (windshieldBroken && StartOfRound.Instance.inShipPhase)
             RegenerateWindshield();
 
-        if (currentDriver != null && References.lastDriver != currentDriver && !magnetedToShip)
+        if (currentDriver != null && References.lastDriver != currentDriver && 
+            !magnetedToShip)
             References.lastDriver = currentDriver;
     }
 
-    public void FixPlayerArms(PlayerControllerB player)
-    {
-        player.localArmsTransform.localPosition = new Vector3(0, -0.008f, -0.43f);
-        player.localArmsTransform.localRotation = Quaternion.Euler(84.78056f, 0f, 0f);
-    }
-
+    // there's probably a better way to go about doing this
     public void SetDashboardSymbols()
     {
         if (!hasSweepedDashboard)
@@ -3519,16 +3325,23 @@ public class CruiserXLController : VehicleController
             if (highBeamLightSymbol.activeSelf) highBeamLightSymbol.SetActive(false);
             return;
         }
-        dippedBeamLightSymbol.SetActive(currentSweepStage > 1 && lowBeamsOn);
-        highBeamLightSymbol.SetActive(currentSweepStage > 1 && highBeamsOn);
-        parkingBrakeSymbol.SetActive(currentSweepStage > 2 && drivetrainModule.autoGear == TruckGearShift.Park);
-        oilLevelLightSymbol.SetActive(currentSweepStage > 3 && carHP <= 15);
-        batteryLightSymbol.SetActive(currentSweepStage > 3 && batteryCharge < 0.44);
-        coolantLevelLightSymbol.SetActive(currentSweepStage > 3 && carHP <= 19);
-        alertLightSymbol.SetActive(currentSweepStage > 3 && carHP <= 12);
-        checkEngineLightSymbol.SetActive(currentSweepStage > 3 && carHP <= 21);
+        SetSymbolActive(dippedBeamLightSymbol, currentSweepStage > 1 && lowBeamsOn);
+        SetSymbolActive(highBeamLightSymbol, currentSweepStage > 1 && highBeamsOn);
+        SetSymbolActive(parkingBrakeSymbol, currentSweepStage > 2 && drivetrainModule.autoGear == TruckGearShift.Park);
+        SetSymbolActive(oilLevelLightSymbol, currentSweepStage > 3 && carHP <= 15);
+        SetSymbolActive(batteryLightSymbol, currentSweepStage > 3 && batteryCharge < 0.44);
+        SetSymbolActive(coolantLevelLightSymbol, currentSweepStage > 3 && carHP <= 19);
+        SetSymbolActive(alertLightSymbol, currentSweepStage > 3 && carHP <= 12);
+        SetSymbolActive(checkEngineLightSymbol, currentSweepStage > 3 && carHP <= 21);
     }
 
+    public void SetSymbolActive(GameObject obj, bool active)
+    {
+        if (obj.activeSelf != active)
+            obj.SetActive(active);
+    }
+
+    // truck collision stuff
     public new void OnCollisionEnter(Collision collision)
     {
         if (!base.IsOwner)
@@ -3594,26 +3407,24 @@ public class CruiserXLController : VehicleController
             }
         }
 
-        if (carBump > maximumBumpForce && averageVelocity.magnitude > 11f)
+        if (carBump > maximumBumpForce && 
+            averageVelocity.magnitude > 11f)
         {
             audioType = 2;
             setVolume = Mathf.Clamp((carBump - maximumBumpForce) / 20000f, 0.8f, 1f);
             setVolume = Mathf.Clamp(setVolume + UnityEngine.Random.Range(-0.15f, 0.25f), 0.7f, 1f);
-            Plugin.Logger.LogDebug("Col A?");
             if (differenceInVelocity > 10f)
             {
                 DamagePlayerInVehicle(Vector3.ClampMagnitude(-collision.relativeVelocity, 60f), differenceInVelocity);
                 CarCollisionServerRpc(Vector3.ClampMagnitude(-collision.relativeVelocity, 60f), differenceInVelocity);
                 DealPermanentDamage(2);
-                Plugin.Logger.LogDebug("Col A1?");
             }
-            else if (differenceInVelocity > 6f && differenceInVelocity < 10f)
+            else if (differenceInVelocity > 6f && 
+                differenceInVelocity < 10f)
             {
                 DamagePlayerInVehicle(Vector3.ClampMagnitude(-collision.relativeVelocity, 60f), differenceInVelocity);
                 CarCollisionServerRpc(Vector3.ClampMagnitude(-collision.relativeVelocity, 60f), differenceInVelocity);
-                Plugin.Logger.LogDebug("Col A2?");
             }
-            Plugin.Logger.LogDebug("Col A3?");
         }
         else if (carBump > mediumBumpForce && averageVelocity.magnitude > 3f)
         {
@@ -3625,15 +3436,13 @@ public class CruiserXLController : VehicleController
                 DamagePlayerInVehicle(Vector3.ClampMagnitude(-collision.relativeVelocity, 60f), differenceInVelocity);
                 CarCollisionServerRpc(Vector3.ClampMagnitude(-collision.relativeVelocity, 60f), differenceInVelocity);
                 DealPermanentDamage(2);
-                Plugin.Logger.LogDebug("Col A1");
             }
-            else if (differenceInVelocity > 6f && differenceInVelocity < 10f)
+            else if (differenceInVelocity > 6f && 
+                differenceInVelocity < 10f)
             {
                 DamagePlayerInVehicle(Vector3.ClampMagnitude(-collision.relativeVelocity, 60f), differenceInVelocity);
                 CarCollisionServerRpc(Vector3.ClampMagnitude(-collision.relativeVelocity, 60f), differenceInVelocity);
-                Plugin.Logger.LogDebug("Col A2");
             }
-            Plugin.Logger.LogDebug("Col A3");
         }
         else if (averageVelocity.magnitude > 1.5f)
         {
@@ -3645,21 +3454,20 @@ public class CruiserXLController : VehicleController
                 DamagePlayerInVehicle(Vector3.ClampMagnitude(-collision.relativeVelocity, 60f), differenceInVelocity);
                 CarCollisionServerRpc(Vector3.ClampMagnitude(-collision.relativeVelocity, 60f), differenceInVelocity);
                 DealPermanentDamage(2);
-                Plugin.Logger.LogDebug("Col B1");
             }
-            else if (differenceInVelocity > 6f && differenceInVelocity < 10f)
+            else if (differenceInVelocity > 6f && 
+                differenceInVelocity < 10f)
             {
                 DamagePlayerInVehicle(Vector3.ClampMagnitude(-collision.relativeVelocity, 60f), differenceInVelocity);
                 CarCollisionServerRpc(Vector3.ClampMagnitude(-collision.relativeVelocity, 60f), differenceInVelocity);
-                Plugin.Logger.LogDebug("Col B2");
             }
-            Plugin.Logger.LogDebug("Col B3");
         }
 
         if (audioType != -1)
         {
             PlayCollisionAudio(zero, audioType, setVolume);
-            if (carBump > maximumBumpForce + 10000f && averageVelocity.magnitude > 20f)
+            if (carBump > maximumBumpForce + 10000f && 
+                averageVelocity.magnitude > 20f)
             {
                 if (differenceInVelocity > 16f)
                 {
@@ -3668,71 +3476,10 @@ public class CruiserXLController : VehicleController
                     BreakWindshieldServerRpc();
                     CarCollisionServerRpc(Vector3.ClampMagnitude(-collision.relativeVelocity, 60f), differenceInVelocity);
                     DealPermanentDamage(2);
-                    Plugin.Logger.LogDebug("Col C");
                     return;
                 }
             }
             CarBumpServerRpc(Vector3.ClampMagnitude(-collision.relativeVelocity, 40f));
-            Plugin.Logger.LogDebug("Col D");
-        }
-
-        return;
-
-        if (differenceInVelocity > 8f)
-        {
-            if (averageVelocity.magnitude > 31f)
-            {
-                if (carHP < 3)
-                {
-                    DealPermanentDamage(Mathf.Max(carHP - 1, 2));
-                    return;
-                }
-                DealPermanentDamage(carHP - 2);
-            }
-            else if (averageVelocity.magnitude > 27f)
-            {
-                DealPermanentDamage(2);
-            }
-        }
-        if (carBump > maximumBumpForce && averageVelocity.magnitude > 11f)
-        {
-            audioType = 2;
-            setVolume = Mathf.Clamp((carBump - maximumBumpForce) / 20000f, 0.8f, 1f);
-            setVolume = Mathf.Clamp(setVolume + UnityEngine.Random.Range(-0.15f, 0.25f), 0.7f, 1f);
-        }
-        else if (carBump > mediumBumpForce && averageVelocity.magnitude > 3f)
-        {
-            audioType = 1;
-            setVolume = Mathf.Clamp((carBump - mediumBumpForce) / (maximumBumpForce - mediumBumpForce), 0.67f, 1f);
-            setVolume = Mathf.Clamp(setVolume + UnityEngine.Random.Range(-0.15f, 0.25f), 0.5f, 1f);
-        }
-        else if (averageVelocity.magnitude > 1.5f)
-        {
-            audioType = 0;
-            setVolume = Mathf.Clamp((carBump - minimalBumpForce) / (mediumBumpForce - minimalBumpForce), 0.25f, 1f);
-            setVolume = Mathf.Clamp(setVolume + UnityEngine.Random.Range(-0.15f, 0.25f), 0.25f, 1f);
-        }
-        if (audioType != -1)
-        {
-            PlayCollisionAudio(zero, audioType, setVolume);
-            if (carBump > maximumBumpForce + 10000f && averageVelocity.magnitude > 19f)
-            {
-                if (differenceInVelocity > 12f)
-                {
-                    DamagePlayerInVehicle(Vector3.ClampMagnitude(-collision.relativeVelocity, 60f), averageVelocity.magnitude);
-                    BreakWindshield();
-                    BreakWindshieldServerRpc();
-                    CarCollisionServerRpc(Vector3.ClampMagnitude(-collision.relativeVelocity, 60f), averageVelocity.magnitude);
-                    DealPermanentDamage(2);
-                }
-            }
-            else
-            {
-                if (differenceInVelocity > 5f)
-                {
-                    CarBumpServerRpc(Vector3.ClampMagnitude(-collision.relativeVelocity, 40f));
-                }
-            }
         }
     }
 
@@ -3774,6 +3521,7 @@ public class CruiserXLController : VehicleController
         DamagePlayerInVehicle(vel, magn);
     }
 
+    // help
     private new void DamagePlayerInVehicle(Vector3 vel, float magnitude)
     {
         if (!localPlayerInPassengerSeat && 
@@ -3808,7 +3556,7 @@ public class CruiserXLController : VehicleController
         GameNetworkManager.Instance.localPlayerController.DamagePlayer(40, true, true, CauseOfDeath.Inertia, 0, false, vel);
     }
 
-
+    // explosion
 
     [ServerRpc(RequireOwnership = false)]
     public void BreakWindshieldServerRpc()
@@ -3853,25 +3601,26 @@ public class CruiserXLController : VehicleController
     {
         if (Time.realtimeSinceStartup - audio1Time > Time.realtimeSinceStartup - audio2Time)
         {
-            bool audioFinished = Time.realtimeSinceStartup - audio1Time >= collisionAudio1.clip.length * 0.8f;
-            if (audio1Type <= audioType || audioFinished)
+            bool audioTime = Time.realtimeSinceStartup - audio1Time >= collisionAudio1.clip.length * 0.8f;
+            if (audio1Type <= audioType || audioTime)
             {
                 audio1Time = Time.realtimeSinceStartup;
                 audio1Type = audioType;
                 collisionAudio1.transform.position = setPosition;
-                PlayRandomClipAndPropertiesFromAudio(collisionAudio1, setVolume, audioFinished, audioType);
+                PlayRandomClipAndPropertiesFromAudio(collisionAudio1, setVolume, audioTime, audioType);
                 CarCollisionSFXServerRpc(collisionAudio1.transform.localPosition, 0, audioType, setVolume);
+                return;
             }
         }
         else
         {
-            bool audioFinished = Time.realtimeSinceStartup - audio2Time >= collisionAudio2.clip.length * 0.8f;
-            if (audio2Type <= audioType || audioFinished)
+            bool audioTime = Time.realtimeSinceStartup - audio2Time >= collisionAudio2.clip.length * 0.8f;
+            if (audio1Type <= audioType || audioTime)
             {
                 audio2Time = Time.realtimeSinceStartup;
                 audio2Type = audioType;
                 collisionAudio2.transform.position = setPosition;
-                PlayRandomClipAndPropertiesFromAudio(collisionAudio2, setVolume, audioFinished, audioType);
+                PlayRandomClipAndPropertiesFromAudio(collisionAudio2, setVolume, audioTime, audioType);
                 CarCollisionSFXServerRpc(collisionAudio2.transform.localPosition, 1, audioType, setVolume);
             }
         }
@@ -3895,6 +3644,7 @@ public class CruiserXLController : VehicleController
         PlayRandomClipAndPropertiesFromAudio(audioSource, vol, audioFinished, audioType);
     }
 
+    // collision noises and all that fancy shit
     private new void PlayRandomClipAndPropertiesFromAudio(AudioSource audio, float setVolume, bool audioFinished, int audioType)
     {
         if (!audioFinished)
@@ -3948,6 +3698,7 @@ public class CruiserXLController : VehicleController
         }
     }
 
+    // driving in park :fire:
     private new void SetInternalStress(float carStressIncrease = 0f)
     {
         if (StartOfRound.Instance.inShipPhase)
@@ -3973,9 +3724,7 @@ public class CruiserXLController : VehicleController
         lastDamageType = "Stress";
     }
 
-
-
-
+    // deal HP damage to the truck
     private new void DealPermanentDamage(int damageAmount, Vector3 damagePosition = default(Vector3))
     {
         if ((StartOfRound.Instance.inShipPhase) || magnetedToShip || carDestroyed || !base.IsOwner)
@@ -4013,27 +3762,7 @@ public class CruiserXLController : VehicleController
         timeAtLastDamage = Time.realtimeSinceStartup;
     }
 
-
-
-
-    [ServerRpc(RequireOwnership = false)]
-    public new void DestroyCarServerRpc(int playerWhoSent)
-    {
-        DestroyCarClientRpc(playerWhoSent);
-    }
-
-    [ClientRpc]
-    public new void DestroyCarClientRpc(int playerWhoSent)
-    {
-        if ((int)GameNetworkManager.Instance.localPlayerController.playerClientId == playerWhoSent)
-            return;
-
-        if (carDestroyed)
-            return;
-
-        DestroyCar();
-    }
-
+    // real explosion
     private new void DestroyCar()
     {
         if (carDestroyed)
@@ -4051,7 +3780,6 @@ public class CruiserXLController : VehicleController
         keyObject.enabled = false;
         engineAudio1.Stop();
         engineAudio2.Stop();
-        //engineAudio3.Stop();
         turbulenceAudio.Stop();
         rollingAudio.Stop();
         radioAudio.Stop();
@@ -4165,40 +3893,45 @@ public class CruiserXLController : VehicleController
         Landmine.SpawnExplosion(transform.position + transform.forward + Vector3.up * 1.5f, spawnExplosionEffect: true, 6f, 10f, 30, 200f, truckDestroyedExplosion, goThroughCar: true);
         mainRigidbody.AddExplosionForce(800f * 50f, transform.position, 12f, 3f * 6f, ForceMode.Impulse);
         pushTruckTrigger.interactable = true;
-
-        //foreach (Transform child in transform)
-        //{
-        //    if (child.name == "PushTrigger")
-        //    {
-        //        child.GetComponent<InteractTrigger>().interactable = true;
-        //        break;
-        //    }
-        //}
     }
 
+    [ServerRpc(RequireOwnership = false)]
+    public new void DestroyCarServerRpc(int playerWhoSent)
+    {
+        DestroyCarClientRpc(playerWhoSent);
+    }
 
+    [ClientRpc]
+    public new void DestroyCarClientRpc(int playerWhoSent)
+    {
+        if (carDestroyed)
+            return;
 
+        if ((int)GameNetworkManager.Instance.localPlayerController.playerClientId == playerWhoSent)
+            return;
 
+        DestroyCar();
+    }
+
+    // erm, don't ask?
     public void RemoveCarRainCollision()
     {
-        var rainParticleTrigger = References.rainParticles.trigger;
-        var rainHitParticleTrigger = References.rainHitParticles.trigger;
-        var stormyRainParticleTrigger = References.stormyRainParticles.trigger;
-        var stormyRainHitParticleTrigger = References.stormyRainHitParticles.trigger;
-
-        var particleTriggers = new[] {rainParticleTrigger, rainHitParticleTrigger, stormyRainParticleTrigger, stormyRainHitParticleTrigger};
-
-        foreach (var particleTrigger in particleTriggers)
+        var particleTriggers = new[]
         {
-            for (int i = particleTrigger.colliderCount - 1; i >= 0; i--)
+           References.rainParticles.trigger,
+           References.rainHitParticles.trigger,
+           References.stormyRainParticles.trigger,
+           References.stormyRainHitParticles.trigger
+        };
+
+        foreach (var trigger in particleTriggers)
+        {
+            for (int i = trigger.colliderCount - 1; i >= 0; i--)
             {
-                foreach (var weatherBlocker in weatherEffectBlockers)
+                var collider = (Collider)trigger.GetCollider(i);
+                if (weatherEffectBlockers.Contains(collider))
                 {
-                    if ((Collider)particleTrigger.GetCollider(i) == weatherBlocker)
-                    {
-                        particleTrigger.RemoveCollider(i);
-                        break;
-                    }
+                    trigger.RemoveCollider(i);
                 }
             }
         }
@@ -4209,8 +3942,14 @@ public class CruiserXLController : VehicleController
         if (carDestroyed)
             return;
 
-        healthMeter.localScale = new Vector3(1f, 1f, Mathf.Lerp(healthMeter.localScale.z, Mathf.Clamp((float)carHP / (float)baseCarHP, 0.01f, 1f), 6f * Time.deltaTime));
-        turboMeter.localScale = new Vector3(1f, 1f, Mathf.Lerp(turboMeter.localScale.z, Mathf.Clamp((float)turboBoosts / 5f, 0.01f, 1f), 6f * Time.deltaTime));
+        healthMeter.localScale = new Vector3(1f, 1f, Mathf.Lerp(
+            healthMeter.localScale.z, 
+            Mathf.Clamp((float)carHP / (float)baseCarHP, 0.01f, 1f), 
+            6f * Time.deltaTime));
+        turboMeter.localScale = new Vector3(1f, 1f, Mathf.Lerp(
+            turboMeter.localScale.z, 
+            Mathf.Clamp((float)turboBoosts / 5f, 0.01f, 1f), 
+            6f * Time.deltaTime));
 
         if (carHP < 7 && Time.realtimeSinceStartup - timeAtLastDamage > 16f)
         {
@@ -4221,6 +3960,8 @@ public class CruiserXLController : VehicleController
         if (!base.IsOwner)
             return;
 
+        // sync the hood being on fire
+        // for non-owner clients
         if (carHP < 3)
         {
             if (!isHoodOnFire)
@@ -4269,6 +4010,8 @@ public class CruiserXLController : VehicleController
         hoodFireParticle.Stop(withChildren: true, ParticleSystemStopBehavior.StopEmitting);
     }
 
+    // improved checks for whether the player
+    // is allowed to push the truck
     public new void PushTruckWithArms()
     {
         if (magnetedToShip)
@@ -4383,6 +4126,7 @@ public class CruiserXLController : VehicleController
         hoodAudio.PlayOneShot(carHoodCloseSFX);
     }
 
+    // unused as of right now, may enable again later
     public void SetHazardLightsOnLocalClient()
     {
         hazardsOn = !hazardsOn;
@@ -4406,6 +4150,7 @@ public class CruiserXLController : VehicleController
         if (truckAlarmCoroutine == null) turnSignalAnimator.SetBool("hazardsOn", hazardsOn);
     }
 
+    // heamdlights with low-high beam functions
     public new void ToggleHeadlightsLocalClient()
     {
         if (!lowBeamsOn && !highBeamsOn)
@@ -4440,6 +4185,7 @@ public class CruiserXLController : VehicleController
         ToggleHeadlightsServerRpc((int)GameNetworkManager.Instance.localPlayerController.playerClientId, lowBeamsOn, highBeamsOn);
     }
 
+    // additional stuff for light materials
     private void SetHeadlightMaterial(bool lowOn, bool highOn)
     {
         Material[] sharedMaterials = interiorMesh.sharedMaterials;

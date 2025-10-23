@@ -1,6 +1,10 @@
 ﻿using Cysharp.Threading.Tasks;
 using UnityEngine;
 
+/// <summary>
+///  Available from RadioFurniture, licensed under GNU General Public License.
+///  Source: https://github.com/legoandmars/RadioFurniture/tree/master/RadioFurniture
+/// </summary>
 namespace CruiserXL.ClipLoading
 {
     public class UnityAudioStream : MonoBehaviour
@@ -8,13 +12,12 @@ namespace CruiserXL.ClipLoading
         private AudioSource _audioSource = null!;
         private MP3Stream? _stream;
         
-        private void Awake()
+        public void Awake()
         {
             var audioSourceObject = new GameObject("AudioSource");
             DontDestroyOnLoad(audioSourceObject);
             audioSourceObject.hideFlags = HideFlags.HideAndDontSave;
             _audioSource = audioSourceObject.AddComponent<AudioSource>();
-
         }
 
         public void PlayAudioFromStream(string uri)
@@ -29,12 +32,12 @@ namespace CruiserXL.ClipLoading
             _stream?.PlayStream(uri, _audioSource);
         }
 
-        private void FixedUpdate()
+        public void FixedUpdate()
         {
             _stream?.UpdateLoop();
         }
 
-        private void Update()
+        public void Update()
         {
             if (_stream != null && _stream.decomp)
             {

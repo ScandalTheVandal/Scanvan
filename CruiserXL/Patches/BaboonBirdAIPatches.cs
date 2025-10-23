@@ -8,14 +8,6 @@ namespace CruiserXL.Patches;
 [HarmonyPatch(typeof(BaboonBirdAI))]
 internal class BaboonBirdAIPatches
 {
-    [HarmonyPatch("Start")]
-    [HarmonyPostfix]
-    static public void Start_Postfix(BaboonBirdAI __instance)
-    {
-        __instance.enemyType.SizeLimit = NavSizeLimit.MediumSpaces;
-        Plugin.Logger.LogMessage($"Changed Baboon Hawk Size limit to: {__instance.enemyType.SizeLimit}");
-    }
-
     [HarmonyPatch("OnCollideWithPlayer")]
     [HarmonyPrefix]
     static bool OnCollideWithPlayer_Prefix(BaboonBirdAI __instance, Collider other)

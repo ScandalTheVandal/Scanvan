@@ -2,6 +2,10 @@
 using System.Threading;
 using UnityEngine;
 
+/// <summary>
+///  Available from RadioFurniture, licensed under GNU General Public License.
+///  Source: https://github.com/legoandmars/RadioFurniture/tree/master/RadioFurniture
+/// </summary>
 namespace CruiserXL.ClipLoading
 {
     /// <summary>

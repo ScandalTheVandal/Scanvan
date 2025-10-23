@@ -9,7 +9,7 @@ namespace CruiserXL.Patches;
 [HarmonyPatch(typeof(MouthDogAI))]
 public static class MouthDogAIPatches
 {
-    // Special function to protect players from being grabbed
+    // special function to protect players from being grabbed
     // by an old-bird, if they're in our truck, and they're
     // considered 'protected'.
     [HarmonyPatch("OnCollideWithPlayer")]
@@ -32,10 +32,8 @@ public static class MouthDogAIPatches
         if (VehicleUtils.IsPlayerProtectedByTruck(playerControllerB, References.truckController))
         {
             // player is protected, so do not allow the kill
-            //Plugin.Logger.LogMessage("Mouthdog Collide A");
             return false;
         }
-        //Plugin.Logger.LogMessage("Mouthdog Collide B");
         if (__instance.currentBehaviourStateIndex == 3 && 
             playerControllerB.inVehicleAnimation)
         {

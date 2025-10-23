@@ -109,22 +109,15 @@ public class CruiserXLCollisionTrigger : MonoBehaviour
             if (enemyAIcollision.mainScript.isEnemyDead)
                 return;
 
-            // Prevent hitting and bouncing off unkillable small entities (e.g., bees, ghost girl, earth leviathan)
+            // prevent hitting and bouncing off unkillable small entities (e.g., bees, ghost girl, earth leviathan)
             if (!enemyAIcollision.mainScript.enemyType.canDie && enemyAIcollision.mainScript.enemyType.SizeLimit == NavSizeLimit.NoLimit) 
                 return;
 
-            // Cooldown
+            // cooldown
             if (Time.realtimeSinceStartup - timeSinceHittingEnemy < 0.25f)
                 return;
 
-            // Prevent hits if the cruiser is blocking entity navigation and it's not an angry dog
-            //MouthDogAI? dog = enemyAIcollision.mainScript as MouthDogAI;
-            //bool isAngryDog = dog != null && dog && dog.suspicionLevel > 8;
-            //if (!isAngryDog && mainScript.navObstacle.gameObject.activeSelf)
-            //    return;
-            // This is unused.
-
-            // Prevent hitting entities inside the truck
+            // prevent hitting entities inside the truck, does this even work?
             Behaviour? navMeshOwner = enemyAIcollision.mainScript.agent.navMeshOwner as Behaviour;
             if (navMeshOwner != null && navMeshOwner.transform.IsChildOf(mainScript.transform))
                 return;

@@ -12,6 +12,7 @@ public static class ElevatorAnimationEventsPatches
     static void ElevatorFullyRunning_Prefix()
     {
         if (References.truckController == null) return;
+        if (!References.truckController.magnetedToShip) return;
 
         // save players who are on the magneted truck from being abandoned
         PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
@@ -26,9 +27,6 @@ public static class ElevatorAnimationEventsPatches
 
         if (localPlayer.physicsParent == null) return;
         if (localPlayer.physicsParent.TryGetComponent<CruiserXLController>(out var vehicle))
-        {
-            if (vehicle.magnetedToShip)
-                localPlayer.isInElevator = true;
-        }
+            localPlayer.isInElevator = true;
     }
 }

@@ -8,14 +8,12 @@ using System.Text;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Rendering;
-
 using static UnityEngine.Rendering.DebugUI;
 
 /// <summary>
 ///  Available from RadioFurniture, licensed under GNU General Public License.
 ///  Source: https://github.com/legoandmars/RadioFurniture/tree/master/RadioFurniture
 /// </summary>
-
 namespace CruiserXL.Behaviour
 {
     public class RadioBehaviour : NetworkBehaviour
@@ -84,69 +82,45 @@ namespace CruiserXL.Behaviour
         {
             if (_radioOn)
             {
-                TurnOffRadioServerRpc();
+                TurnOffRadioRpc();
                 return;
             }
             TurnOnRadioServerRpc();
             // set a random frequency when the radio is *first* turned on
             if (_currentFrequency == "FM")
-                ChangeAndSyncFrequencyServerRpc();
+            {
+                string initialFrequency = GetRandomFrequency();
+                ChangeAndSyncFrequencyRpc(initialFrequency);
+            }
         }
 
         public void SetVolumeOnLocalClient(float setVolume)
         {
-            _timeSinceChangingVol = Time.realtimeSinceStartup;
+            if (_controller.localPlayerInControl) _timeSinceChangingVol = Time.realtimeSinceStartup;
             setVolume = Mathf.Clamp01(setVolume);
             setVolume = Mathf.Round(setVolume / 0.1f) * 0.1f;
             _volume = setVolume;
             _audioSource.volume = setVolume;
             _staticAudioSource.volume = setVolume != 0f ? Mathf.Clamp01(setVolume + 0.1f) : 0f;
-            Plugin.Logger.LogMessage($"Local client: setting radio volume to: {setVolume}");
         }
 
         public void RaiseVolume()
         {
             float radioVol = _volume + 0.1f;
-            //SetVolumeOnLocalClient(radioVol);
             SetRadioVolumeOnClientsRpc(radioVol);
         }
 
         public void LowerVolume()
         {
             float radioVol = _volume - 0.1f;
-            //SetVolumeOnLocalClient(radioVol);
             SetRadioVolumeOnClientsRpc(radioVol);
         }
 
         [Rpc(SendTo.Everyone, RequireOwnership = false)]
         public void SetRadioVolumeOnClientsRpc(float setVolume)
         {
-            _timeSinceChangingVol = Time.realtimeSinceStartup;
-            setVolume = Mathf.Clamp01(setVolume);
-            setVolume = Mathf.Round(setVolume / 0.1f) * 0.1f;
-            _volume = setVolume;
-            _audioSource.volume = setVolume;
-            _staticAudioSource.volume = setVolume != 0f ? Mathf.Clamp01(setVolume + 0.1f) : 0f;
-            Plugin.Logger.LogMessage($"Syncing radio volume to: {setVolume}");
+            SetVolumeOnLocalClient(setVolume);
         }
-
-        //[ServerRpc(RequireOwnership = false)]
-        //public void SetRadioVolumeServerRpc(float setVolume)
-        //{
-        //    SetRadioVolumeClientRpc(setVolume);
-        //}
-
-        //[ClientRpc]
-        //public void SetRadioVolumeClientRpc(float setVolume)
-        //{
-        //    _timeSinceChangingVol = Time.realtimeSinceStartup;
-        //    setVolume = Mathf.Clamp01(setVolume);
-        //    setVolume = Mathf.Round(setVolume / 0.1f) * 0.1f;
-        //    _volume = setVolume;
-        //    _audioSource.volume = setVolume;
-        //    _staticAudioSource.volume = setVolume != 0f ? Mathf.Clamp01(setVolume + 0.1f) : 0f;
-        //    Plugin.Logger.LogMessage($"Syncing radio volume to: {setVolume}");
-        //}
 
         private Guid GetRandomRadioGuid()
         {
@@ -161,75 +135,32 @@ namespace CruiserXL.Behaviour
             if (_radioOn)
             {
                 ChangeStationServerRpc();
-                ChangeAndSyncFrequencyServerRpc();
+                string radioFrequency = GetRandomFrequency();
+                ChangeAndSyncFrequencyRpc(radioFrequency);
             }
         }
 
-        [ServerRpc(RequireOwnership = false)]
-        public void ChangeAndSyncFrequencyServerRpc()
-        {
-            string radioFrequency = GetRandomFrequency();
-            ChangeAndSyncFrequencyClientRpc(radioFrequency);
-        }
-
-        [ClientRpc]
-        public void ChangeAndSyncFrequencyClientRpc(string frequency)
+        [Rpc(SendTo.Everyone, RequireOwnership = false)]
+        public void ChangeAndSyncFrequencyRpc(string frequency)
         {
             _currentFrequency = frequency;
         }
 
-        [ServerRpc(RequireOwnership = false)]
+        //[ServerRpc(RequireOwnership = false)]
+        [Rpc(SendTo.Server, RequireOwnership = false)]
         public void TurnOnRadioServerRpc()
         {
             if (_lastStationId == null)
             {
                 _lastStationId = GetRandomRadioGuid();
-                TurnOnAndSyncRadioClientRpc(_lastStationId!.Value.ToString());
+                TurnOnAndSyncRadioRpc(_lastStationId!.Value.ToString());
             }
-            TurnOnRadioClientRpc();
+            TurnOnRadioRpc();
         }
 
-        [ServerRpc(RequireOwnership = false)]
-        public void TurnOffRadioServerRpc()
-        {
-            TurnOffRadioClientRpc();
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        public void ChangeStationServerRpc()
-        {
-            if (!_radioOn) return;
-            _lastStationId = GetRandomRadioGuid();
-            TurnOnAndSyncRadioClientRpc(_lastStationId!.Value.ToString());
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        public void SyncRadioServerRpc()
-        {
-            SyncRadioClientRpc(_lastStationId.ToString(), _radioOn, _currentlyStorming);
-        }
-
-        [ClientRpc]
-        public void SyncRadioClientRpc(string guidString, bool radioOn, bool currentlyStorming)
-        {
-            if (Guid.TryParse(guidString, out Guid guid) && 
-                guid == _lastStationId && 
-                radioOn == _radioOn && 
-                currentlyStorming == _currentlyStorming) 
-                return;
-            _currentlyStorming = currentlyStorming;
-            _lastStationId = guid;
-            TurnRadioOnOff(radioOn);
-        }
-
-        [ClientRpc]
-        public void TurnOnRadioClientRpc()
-        {
-            TurnRadioOnOff(true);
-        }
-
-        [ClientRpc]
-        public void TurnOnAndSyncRadioClientRpc(string guidString)
+        //[ClientRpc]
+        [Rpc(SendTo.Everyone, RequireOwnership = false)]
+        public void TurnOnAndSyncRadioRpc(string guidString)
         {
             // SYNC 
             if (Guid.TryParse(guidString, out Guid guid))
@@ -239,10 +170,47 @@ namespace CruiserXL.Behaviour
             TurnRadioOnOff(true);
         }
 
-        [ClientRpc]
-        public void TurnOffRadioClientRpc()
+        //[ClientRpc]
+        [Rpc(SendTo.Everyone, RequireOwnership = false)]
+        public void TurnOnRadioRpc()
+        {
+            TurnRadioOnOff(true);
+        }
+
+        [Rpc(SendTo.Everyone, RequireOwnership = false)]
+        public void TurnOffRadioRpc()
         {
             TurnRadioOnOff(false);
+        }
+
+        //[ServerRpc(RequireOwnership = false)]
+        [Rpc(SendTo.Server, RequireOwnership = false)]
+        public void ChangeStationServerRpc()
+        {
+            if (!_radioOn) return;
+            _lastStationId = GetRandomRadioGuid();
+            TurnOnAndSyncRadioRpc(_lastStationId!.Value.ToString());
+        }
+
+        //[ServerRpc(RequireOwnership = false)]
+        [Rpc(SendTo.Server, RequireOwnership = false)]
+        public void SyncRadioServerRpc()
+        {
+            SyncRadioRpc(_lastStationId.ToString(), _radioOn, _currentlyStorming);
+        }
+
+        //[ClientRpc]
+        [Rpc(SendTo.Everyone, RequireOwnership = false)]
+        public void SyncRadioRpc(string guidString, bool radioOn, bool currentlyStorming)
+        {
+            if (Guid.TryParse(guidString, out Guid guid) && 
+                guid == _lastStationId && 
+                radioOn == _radioOn && 
+                currentlyStorming == _currentlyStorming) 
+                return;
+            _currentlyStorming = currentlyStorming;
+            _lastStationId = guid;
+            TurnRadioOnOff(radioOn);
         }
 
         private void TurnRadioOnOff(bool state)
