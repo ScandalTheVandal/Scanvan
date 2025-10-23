@@ -27,7 +27,7 @@ public class TruckMirrorRenderer : MonoBehaviour
     public int nextCameraToRender = 0;
     public float cameraRenderCountRemainder = 0f;
 
-    // zaggy zagster, thank you so much for helping me out with this!
+    // zaggy zagster, thank you so, so much for helping me out with this!
     public void Awake()
     {
         mirrorCameras[0].farClipPlane = 30f;
