@@ -46,7 +46,7 @@ internal class BaboonBirdAIPatches
             return false;
         }
 
-        // if the baboon hawk is in the back with the player and they're not seated, allow the baboon hawk to kill them
+        // if the baboon hawk is in the back with the player and they're not seated, allow the baboon hawk to damage them
         if (VehicleUtils.IsPlayerInTruck(playerControllerB, References.truckController) && !playerControllerB.inVehicleAnimation && 
             inStorage)
             return true;
