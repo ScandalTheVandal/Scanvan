@@ -1,0 +1,21 @@
+﻿public enum ElectronicVoiceAlert
+{
+    AllSystemsOk = 0,
+    FastenBelts = 1,
+    ThankYou = 2,
+    ParkBrakeOn = 3,
+    KeyInIgnition = 4,
+    HeadlampsOn = 5,
+    DriverDoorAjar = 6,
+    PassengerDoorAjar = 7,
+    BackRightDoorAjar = 8,
+    RearHatchAjar = 9,
+    EngineCoolantLevel = 10,
+    TransFluidLevel = 11,
+    FuelLevel = 12,
+    ChargeSysMalfunction = 13,
+    EngineOilPressure = 14,
+    EngineTempAboveNormal = 15,
+    EngineOverheating = 16,
+    EngineOilLevel = 17,
+}
