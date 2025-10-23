@@ -43,15 +43,8 @@
         -->
 		<PathMap>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))=./</PathMap>
 	</PropertyGroup>
-	<ItemGroup>
-	  <Content Remove="C:\Users\Scandal\.nuget\packages\rune580.mods.lethalcompany.inpututils\0.7.10\contentFiles\any\netstandard2.1\AssetBundles\ui-assets" />
-	  <Content Remove="C:\Users\Scandal\.nuget\packages\rune580.mods.lethalcompany.inpututils\0.7.10\contentFiles\any\netstandard2.1\en_US.json" />
-	  <Content Remove="C:\Users\Scandal\.nuget\packages\rune580.mods.lethalcompany.inpututils\0.7.10\contentFiles\any\netstandard2.1\ru_RU.json" />
-	  <Content Remove="C:\Users\Scandal\.nuget\packages\rune580.mods.lethalcompany.inpututils\0.7.10\contentFiles\any\netstandard2.1\zh_CN.json" />
-	</ItemGroup>
 
-	<!-- 
-        Unused
+	<!-- Unused -->
 	<ItemGroup>
 		<None Include="Compatibility\LCVRCompatibility.cs" />
 		<None Include="Compatibility\SCVR\Physics\Interactions\Scanvan\ScanvanButton.cs" />
@@ -62,7 +55,6 @@
 		<None Include="Compatibility\SCVR\Physics\Interactions\Scanvan\ScanvanSteeringWheel.cs" />
 		<None Include="Compatibility\SCVR\Physics\Interactions\Scanvan\StartScanvanIgnition.cs" />
 	</ItemGroup>
-        -->
 
 	<!-- Primary Package References -->
 	<ItemGroup>
