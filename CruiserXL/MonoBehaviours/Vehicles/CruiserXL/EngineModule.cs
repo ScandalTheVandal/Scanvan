@@ -107,7 +107,6 @@ public class EngineModule : NetworkBehaviour
     {
         if (controller.IsOwner)
             return;
-
         syncedEngineRPM = engineSpeed * 100f;
     }
 }
