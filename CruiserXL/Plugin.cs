@@ -71,7 +71,6 @@ namespace CruiserXL
             Patch();
 
             RadioManager.PreloadStations();
-
             Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} v{MyPluginInfo.PLUGIN_VERSION} has loaded!");
         }
 

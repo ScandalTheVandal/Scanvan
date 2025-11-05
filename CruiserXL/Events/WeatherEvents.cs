@@ -15,12 +15,10 @@ namespace CruiserXL.Events
         public static void StormStart()
         {
             OnStormStarted?.Invoke();
-            Plugin.Logger.LogMessage("Storm started!");
         }
 
         public static void StormEnd()
         {
-            Plugin.Logger.LogMessage("Storm ended!");
             OnStormEnded?.Invoke();
         }
     }

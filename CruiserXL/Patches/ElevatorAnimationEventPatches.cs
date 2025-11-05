@@ -16,7 +16,6 @@ public static class ElevatorAnimationEventsPatches
 
         // save players who are on the magneted truck from being abandoned
         PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
-
         if (References.truckController.localPlayerInControl || 
             References.truckController.localPlayerInMiddlePassengerSeat || 
             References.truckController.localPlayerInPassengerSeat)
