@@ -7,12 +7,39 @@ using HarmonyLib;
 using System.Linq;
 using System.Reflection.Emit;
 using UnityEngine.InputSystem;
+using UnityEngine.SocialPlatforms;
 
 namespace CruiserXL.Utils;
 public static class VehicleUtils
 {
+    public static float lastCheckTime = 0f;
+    public static float cooldown = 0.25f;
+
+    public static bool MeetsSpecialConditionsToCheck()
+    {
+        if (Time.realtimeSinceStartup - lastCheckTime < cooldown)
+            return false;
+
+        lastCheckTime = Time.realtimeSinceStartup;
+        return true;
+    }
+
+    public static bool IsPlayerNearTruck(PlayerControllerB player, CruiserXLController vehicle)
+    {
+        Vector3 vehicleTransform = vehicle.transform.position;
+        Vector3 playerTransform = player.transform.position;
+
+        if (Vector3.Distance(playerTransform, vehicleTransform) > 10f)
+            return false;
+
+        return true;
+    }
+
     public static bool IsPlayerInVehicleBounds(PlayerControllerB player, CruiserXLController vehicle)
     {
+        if (!IsPlayerNearTruck(player, vehicle))
+            return false;
+
         // variables
         Vector3 playerTransform = player.transform.position;
         Transform playerOverride = player.overridePhysicsParent;
@@ -28,76 +55,33 @@ public static class VehicleUtils
 
         return false;
     }
+
     public static bool IsPlayerInTruck(PlayerControllerB player, CruiserXLController vehicle)
     {
         // variables
         Vector3 playerTransform = player.transform.position;
         Transform playerOverride = player.overridePhysicsParent;
         Collider physicsCollider = vehicle.vehicleBounds;
-        CapsuleCollider cabCollider = vehicle.cabinPoint;
-        Collider storageCollider = vehicle.storageCompartment;
+        //CapsuleCollider cabCollider = vehicle.cabinPoint;
+        //Collider storageCollider = vehicle.storageCompartment;
 
         // cache checks
         Vector3 physicsClosest = physicsCollider.ClosestPoint(playerTransform);
-        Vector3 cabClosest = cabCollider.ClosestPoint(playerTransform);
-        Vector3 storageClosest = storageCollider.ClosestPoint(playerTransform);
+        //Vector3 cabClosest = cabCollider.ClosestPoint(playerTransform);
+        //Vector3 storageClosest = storageCollider.ClosestPoint(playerTransform);
 
         bool inPhysics = physicsClosest == playerTransform;
-        bool inCab = cabClosest == playerTransform;
-        bool inStorage = storageClosest == playerTransform;
+        //bool inCab = cabClosest == playerTransform;
+        //bool inStorage = storageClosest == playerTransform;
 
-        // player is the driver
-        if (player == vehicle.currentDriver)
-            return true;
-
-        // player is the middle passenger
-        if (player == vehicle.currentMiddlePassenger)
-            return true;
-
-        // player is the passenger
-        if (player == vehicle.currentPassenger)
+        if (player == vehicle.currentDriver || // player is the driver
+            player == vehicle.currentMiddlePassenger || // player is the middle passenger
+            player == vehicle.currentPassenger) // player is the passenger
             return true;
 
         // player is within the physics regions bounds, and they're not within the cab nor the storage compartment
-        if (playerOverride == null && inPhysics && !inCab && !inStorage)
+        if (playerOverride == null && inPhysics)
             return true;
-
-        // player is within the cabin
-        if (playerOverride == null && inCab)
-            return true;
-
-        // player is within the storage compartment
-        if (playerOverride == null && inStorage)
-            return true;
-
-        //// player is the driver
-        //if (player == vehicle.currentDriver)
-        //    return true;
-
-        //// player is the middle passenger
-        //if (player == vehicle.currentMiddlePassenger)
-        //    return true;
-
-        //// player is the passenger
-        //if (player == vehicle.currentPassenger)
-        //    return true;
-
-        //// player is within the physics regions bounds, and they're not within the cab nor the storage compartment
-        //if (playerOverride == null &&
-        //    physicsCollider.ClosestPoint(playerTransform) == playerTransform &&
-        //    storageCollider.ClosestPoint(playerTransform) != playerTransform &&
-        //    cabCollider.ClosestPoint(playerTransform) != playerTransform)
-        //    return true;
-
-        //// player is within the cabin
-        //if (playerOverride == null &&
-        //    cabCollider.ClosestPoint(playerTransform) == playerTransform)
-        //    return true;
-
-        //// player is within the storage compartment
-        //if (playerOverride == null &&
-        //    storageCollider.ClosestPoint(playerTransform) == playerTransform)
-        //    return true;
 
         return false;
     }
@@ -116,74 +100,40 @@ public static class VehicleUtils
 
         Vector3 playerTransform = player.transform.position;
         Transform playerOverride = player.overridePhysicsParent;
-        Collider physicsCollider = vehicle.vehicleBounds;
-        CapsuleCollider cabCollider = vehicle.cabinPoint;
-        Collider storageCollider = vehicle.storageCompartment;
 
-        // cache checks
-        Vector3 physicsClosest = physicsCollider.ClosestPoint(playerTransform);
-        Vector3 cabClosest = cabCollider.ClosestPoint(playerTransform);
-        Vector3 storageClosest = storageCollider.ClosestPoint(playerTransform);
-
-        bool inPhysics = physicsClosest == playerTransform;
-        bool inCab = cabClosest == playerTransform;
-        bool inStorage = storageClosest == playerTransform;
-
-        // player is the driver and their door is open
-        if (player == vehicle.currentDriver && driverDoorOpen)
+        if ((player == vehicle.currentDriver && driverDoorOpen) || // player is the driver and their door is open
+            (player == vehicle.currentMiddlePassenger && (driverDoorOpen || passengerDoorOpen)) || // player is the middle passenger and either side door is open
+            (player == vehicle.currentPassenger && passengerDoorOpen)) // player is the passenger and their door is open
             return false;
 
-        // player is the middle passenger and either side door is open
-        if (player == vehicle.currentMiddlePassenger && (driverDoorOpen || passengerDoorOpen))
-            return false;
+        if (playerOverride == null) // not seated
+        {
+            // variables
+            Collider physicsCollider = vehicle.vehicleBounds;
+            CapsuleCollider cabCollider = vehicle.cabinPoint;
+            Collider storageCollider = vehicle.storageCompartment;
 
-        // player is the passenger and their door is open
-        if (player == vehicle.currentPassenger && passengerDoorOpen)
-            return false;
+            // cache checks
+            Vector3 physicsClosest = physicsCollider.ClosestPoint(playerTransform);
+            Vector3 cabClosest = cabCollider.ClosestPoint(playerTransform);
+            Vector3 storageClosest = storageCollider.ClosestPoint(playerTransform);
 
-        // player is within the physics regions bounds, and they're not within the cab nor the storage compartment
-        if (playerOverride == null && inPhysics && !inCab && !inStorage)
-            return false;
+            bool inPhysics = physicsClosest == playerTransform;
+            bool inCab = cabClosest == playerTransform;
+            bool inStorage = storageClosest == playerTransform;
 
-        // player is within the cabin, and either door is open
-        if (playerOverride == null && inCab && (driverDoorOpen || passengerDoorOpen))
-            return false;
+            // player is within the physics regions bounds, and they're not within the cab nor the storage compartment
+            if (inPhysics && !inCab && !inStorage)
+                return false;
 
-        // player is within the storage compartment, and the back door is open or the side door is open
-        if (playerOverride == null && inStorage && (backDoorOpen || sideDoorOpen))
-            return false;
+            // player is within the cabin, and either door is open
+            if (inCab && (driverDoorOpen || passengerDoorOpen))
+                return false;
 
-        //// player is the driver and their door is open
-        //if (player == vehicle.currentDriver && driverDoorOpen)
-        //    return false;
-
-        //// player is the middle passenger and either side door is open
-        //if (player == vehicle.currentMiddlePassenger && (driverDoorOpen || passengerDoorOpen))
-        //    return false;
-
-        //// player is the passenger and their door is open
-        //if (player == vehicle.currentPassenger && passengerDoorOpen)
-        //    return false;
-
-        //// player is within the physics regions bounds, and they're not within the cab nor the storage compartment
-        //if (playerOverride == null &&
-        //    physicsCollider.ClosestPoint(playerTransform) == playerTransform &&
-        //    storageCollider.ClosestPoint(playerTransform) != playerTransform &&
-        //    cabCollider.ClosestPoint(playerTransform) != playerTransform)
-        //    return false;
-
-        //// player is within the cabin, and either door is open
-        //if (playerOverride == null &&
-        //    cabCollider.ClosestPoint(playerTransform) == playerTransform &&
-        //    (driverDoorOpen || passengerDoorOpen))
-        //    return false;
-
-        //// player is within the storage compartment, and the back door is open or the side door is open
-        //if (playerOverride == null &&
-        //    storageCollider.ClosestPoint(playerTransform) == playerTransform &&
-        //    (backDoorOpen || sideDoorOpen))
-        //    return false;
-
+            // player is within the storage compartment, and the back door is open or the side door is open
+            if (inStorage && (backDoorOpen || sideDoorOpen))
+                return false;
+        }
         return true;
     }
 }

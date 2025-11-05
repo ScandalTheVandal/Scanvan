@@ -19,13 +19,13 @@ namespace CruiserXL.Managers
 {
     public static class RadioManager
     {
-        static List<StationInfo> _stations = new();
+        public static List<StationInfo> _stations = new();
         public static void PreloadStations()
         {
             GetRadioStations().Forget();
         }
 
-        private static async UniTask GetRadioStations()
+        public static async UniTask GetRadioStations()
         {
             Plugin.Logger.LogMessage("Searching Radio API for stations!");
             // Initialization

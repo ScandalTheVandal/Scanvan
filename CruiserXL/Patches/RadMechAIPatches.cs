@@ -22,6 +22,12 @@ internal static class RadMechAIPatches
         if (References.truckController == null)
             return true;
 
+        if (!VehicleUtils.IsPlayerNearTruck(playerControllerB, References.truckController))
+            return true;
+
+        if (!VehicleUtils.MeetsSpecialConditionsToCheck())
+            return false;
+
         // not in our truck, run vanilla logic
         if (!VehicleUtils.IsPlayerInTruck(playerControllerB, References.truckController))
             return true;

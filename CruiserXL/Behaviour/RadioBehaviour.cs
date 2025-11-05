@@ -39,6 +39,9 @@ namespace CruiserXL.Behaviour
 
         public MP3Stream? _stream;
         public Guid? _lastStationId;
+        public bool _hasClientRequestedChange;
+        public bool _stationChangeRequested;
+        public float _radioCheckInterval;
         public float _timeSinceChangingVol;
         public bool _playingStatic = false;
         public bool _currentlyStorming = false;
@@ -80,6 +83,15 @@ namespace CruiserXL.Behaviour
 
         public void TogglePowerLocalClient()
         {
+            if (RadioManager._stations.Count == 0)
+            {
+                HUDManager.Instance.DisplayTip("Radio failed to preload!",
+                    $"Retry attempting to preload stations.. " + $"You may need to reboot your game!",
+                    isWarning: true);
+                RadioManager.GetRadioStations().Forget();
+                return;
+            }
+            if (_controller.batteryCharge <= _controller.dischargedBattery) return;
             if (_radioOn)
             {
                 TurnOffRadioRpc();
@@ -96,7 +108,7 @@ namespace CruiserXL.Behaviour
 
         public void SetVolumeOnLocalClient(float setVolume)
         {
-            if (_controller.localPlayerInControl) _timeSinceChangingVol = Time.realtimeSinceStartup;
+            _timeSinceChangingVol = Time.realtimeSinceStartup;
             setVolume = Mathf.Clamp01(setVolume);
             setVolume = Mathf.Round(setVolume / 0.1f) * 0.1f;
             _volume = setVolume;
@@ -162,6 +174,9 @@ namespace CruiserXL.Behaviour
         [Rpc(SendTo.Everyone, RequireOwnership = false)]
         public void TurnOnAndSyncRadioRpc(string guidString)
         {
+            _stationChangeRequested = false;
+            _hasClientRequestedChange = false;
+            _radioCheckInterval = 0f;
             // SYNC 
             if (Guid.TryParse(guidString, out Guid guid))
             {
@@ -188,6 +203,9 @@ namespace CruiserXL.Behaviour
         public void ChangeStationServerRpc()
         {
             if (!_radioOn) return;
+            if (_stationChangeRequested)
+                return;
+            _stationChangeRequested = true;
             _lastStationId = GetRandomRadioGuid();
             TurnOnAndSyncRadioRpc(_lastStationId!.Value.ToString());
         }
@@ -203,17 +221,17 @@ namespace CruiserXL.Behaviour
         [Rpc(SendTo.Everyone, RequireOwnership = false)]
         public void SyncRadioRpc(string guidString, bool radioOn, bool currentlyStorming)
         {
-            if (Guid.TryParse(guidString, out Guid guid) && 
-                guid == _lastStationId && 
-                radioOn == _radioOn && 
-                currentlyStorming == _currentlyStorming) 
+            if (Guid.TryParse(guidString, out Guid guid) &&
+                guid == _lastStationId &&
+                radioOn == _radioOn &&
+                currentlyStorming == _currentlyStorming)
                 return;
             _currentlyStorming = currentlyStorming;
             _lastStationId = guid;
             TurnRadioOnOff(radioOn);
         }
 
-        private void TurnRadioOnOff(bool state)
+        public void TurnRadioOnOff(bool state)
         {
             Plugin.Logger.LogMessage("Changing radio state!");
             Plugin.Logger.LogMessage(state);
@@ -239,6 +257,9 @@ namespace CruiserXL.Behaviour
             else if (!state && _stream != null)
             {
                 Stop();
+                _hasClientRequestedChange = false;
+                _stationChangeRequested = false;
+                _radioCheckInterval = 0f;
                 PlayTransitionSound();
             }
             _radioOn = state;
@@ -247,7 +268,7 @@ namespace CruiserXL.Behaviour
         public string GetRandomFrequency()
         {
             float randomFreq = UnityEngine.Random.Range(
-                _controller.minFrequency, 
+                _controller.minFrequency,
                 _controller.maxFrequency);
             string formattedFreq = randomFreq.ToString("0.##");
             _currentFrequency = $"FM {formattedFreq}";
@@ -286,8 +307,35 @@ namespace CruiserXL.Behaviour
 
         public void Update()
         {
+            //HUDManager.Instance.SetDebugText($"" +
+            //    $"stream: {_stream}" +
+            //    $"\nstreamDecomp{_stream?.decomp}" +
+            //    $"\nradioInterval{_radioCheckInterval}" +
+            //    $"\nbufferInf{_stream?.buffer_info}");
+
+            if (RadioManager._stations.Count == 0) return;
+
+            if (_stream != null &&
+                string.IsNullOrEmpty(_stream.buffer_info) && 
+                !_stream.decomp)
+            {
+                _radioCheckInterval += Time.deltaTime;
+                if (_radioCheckInterval > 8.5f &&
+                    _radioOn && !_hasClientRequestedChange)
+                {
+                    //HUDManager.Instance.DisplayTip("Radio Timeout", 
+                    //    "Requesting server to change station!");
+                    _radioCheckInterval = 0f;
+                    _hasClientRequestedChange = true;
+                    ChangeStationServerRpc();
+                }
+            }
+
             if (_stream != null && _stream.decomp)
             {
+                _radioCheckInterval = 0f;
+                _hasClientRequestedChange = false;
+                _stationChangeRequested = false;
                 if (!_currentlyStorming)
                 {
                     StopStaticIfPlaying();
@@ -300,7 +348,7 @@ namespace CruiserXL.Behaviour
                 _audioSource.clip = AudioClip.Create("mp3_Stream", int.MaxValue,
                     _stream.bufferedWaveProvider.WaveFormat.Channels,
                     _stream.bufferedWaveProvider.WaveFormat.SampleRate,
-                    true, 
+                    true,
                     new AudioClip.PCMReaderCallback(_stream.ReadData));
 
                 _stream.decomp = false; // do not create shitload of audioclips
@@ -315,7 +363,7 @@ namespace CruiserXL.Behaviour
                 _playingStatic = false;
             }
         }
-
+        
         public void Stop()
         {
             _stream?.StopPlayback();

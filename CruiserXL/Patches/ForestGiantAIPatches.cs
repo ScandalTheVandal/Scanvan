@@ -28,6 +28,12 @@ internal static class ForestGiantAIPatches
         if (References.truckController == null)
             return true;
 
+        if (!VehicleUtils.IsPlayerNearTruck(playerControllerB, References.truckController))
+            return true;
+
+        if (!VehicleUtils.MeetsSpecialConditionsToCheck())
+            return false;
+
         // not in our truck, run vanilla logic
         if (!VehicleUtils.IsPlayerInTruck(playerControllerB, References.truckController))
             return true;
@@ -41,12 +47,10 @@ internal static class ForestGiantAIPatches
             return false;
         }
         //Plugin.Logger.LogMessage("Giant Collide B");
-        if (__instance.currentBehaviourStateIndex == 1)
-        {
-            playerControllerB.CancelSpecialTriggerAnimations();
-            __instance.GrabPlayerServerRpc((int)playerControllerB.playerClientId);
-        }
-        return false;
+        playerControllerB.CancelSpecialTriggerAnimations();
+        //if (__instance.currentBehaviourStateIndex == 1)
+        //    __instance.GrabPlayerServerRpc((int)playerControllerB.playerClientId);
+        return true;
         // force grab, otherwise if we return true, the original physicsParent condition takes prescedent and causes inconsistent behaviour.
     }
 }

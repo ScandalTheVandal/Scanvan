@@ -21,13 +21,18 @@ internal class BaboonBirdAIPatches
         if (References.truckController == null)
             return true;
 
+        if (!VehicleUtils.IsPlayerNearTruck(playerControllerB, References.truckController))
+            return true;
+
+        if (!VehicleUtils.MeetsSpecialConditionsToCheck())
+            return false;
+
         // variables
         Vector3 enemyTransform = __instance.transform.position;
         Collider storageCollider = References.truckController.storageCompartment;
 
         // cache checks
         Vector3 storageClosest = storageCollider.ClosestPoint(enemyTransform);
-
         bool inStorage = (storageClosest - enemyTransform).sqrMagnitude < 0.001f;
 
         // not in our truck, run vanilla logic

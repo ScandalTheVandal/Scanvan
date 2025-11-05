@@ -5,7 +5,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
 
-namespace CruiserXL.MonoBehaviours.Vehicles.CruiserXL;
+namespace CruiserXL.Behaviour;
 
 public class EngineModule : NetworkBehaviour
 {
@@ -39,6 +39,11 @@ public class EngineModule : NetworkBehaviour
             enginePower = 0f;
             return;
         }
+        if (!controller.FrontLeftWheel.enabled ||
+            !controller.FrontRightWheel.enabled ||
+            !controller.BackLeftWheel.enabled ||
+            !controller.BackRightWheel.enabled)
+            return;
         if (!controller.IsOwner) return;
         SyncCarEngineSpeedToOtherClients();
         float selectedGear = Mathf.Abs(transmissionModule.gearRatios[transmissionModule.currentGear]);

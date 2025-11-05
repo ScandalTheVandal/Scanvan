@@ -132,4 +132,18 @@ public static class VehicleControllerPatches
         vehicle.ExitPassengerSideSeat();
         return false;
     }
+
+    [HarmonyPatch("CarReactToObstacle")]
+    [HarmonyPrefix]
+    static bool CarReactToObstacle_Prefix(VehicleController __instance, bool __runOriginal, Vector3 vel, Vector3 position, Vector3 impulse, CarObstacleType type, float obstacleSize, EnemyAI enemyScript, bool dealDamage)
+    {
+        if (!__runOriginal)
+            return false;
+
+        if (__instance is not CruiserXLController vehicle)
+            return true;
+
+        vehicle.CarReactToObstacle(vel, position, impulse, type, obstacleSize, enemyScript, dealDamage);
+        return false;
+    }
 }

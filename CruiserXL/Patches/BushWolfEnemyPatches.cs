@@ -27,6 +27,12 @@ public static class BushWolfEnemyPatches
         if (References.truckController == null)
             return;
 
+        if (!VehicleUtils.IsPlayerNearTruck(__instance.targetPlayer, References.truckController))
+            return;
+
+        if (!VehicleUtils.MeetsSpecialConditionsToCheck())
+            return;
+
         // not in our truck, run vanilla logic
         if (!VehicleUtils.IsPlayerInTruck(__instance.targetPlayer, References.truckController))
             return;

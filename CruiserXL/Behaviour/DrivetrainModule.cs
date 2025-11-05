@@ -8,7 +8,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
 
-namespace CruiserXL.MonoBehaviours.Vehicles.CruiserXL;
+namespace CruiserXL.Behaviour;
 
 public class DrivetrainModule : NetworkBehaviour
 {
@@ -48,6 +48,12 @@ public class DrivetrainModule : NetworkBehaviour
     {
         if (controller == null || !controller.IsSpawned ||
             !controller.IsOwner || controller.carDestroyed) return;
+
+        if (!controller.FrontLeftWheel.enabled ||
+            !controller.FrontRightWheel.enabled ||
+            !controller.BackLeftWheel.enabled ||
+            !controller.BackRightWheel.enabled)
+            return;
 
         wheelRPM = Mathf.Abs((controller.BackLeftWheel.rpm + controller.BackRightWheel.rpm) / 2f);
         switch (autoGear)

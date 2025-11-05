@@ -29,6 +29,12 @@ internal class MaskedPlayerEnemyPatches
         if (References.truckController == null)
             return true;
 
+        if (!VehicleUtils.IsPlayerNearTruck(playerControllerB, References.truckController))
+            return true;
+
+        if (!VehicleUtils.MeetsSpecialConditionsToCheck())
+            return false;
+
         // variables
         Vector3 enemyTransform = __instance.transform.position;
         Collider storageCollider = References.truckController.storageCompartment;

@@ -8,7 +8,7 @@ using UnityEngine.Scripting;
 using UnityEngine.Rendering.HighDefinition;
 using UnityEngine.Scripting.APIUpdating;
 
-namespace CruiserXL.MonoBehaviours.Vehicles.CruiserXL;
+namespace CruiserXL.Behaviour;
 
 public class TruckMirrorRenderer : MonoBehaviour
 {
@@ -22,7 +22,7 @@ public class TruckMirrorRenderer : MonoBehaviour
 
     public bool playerInTruck;
     public float elapsed;
-    public float cameraFramerate = 30f;
+    public float cameraFramerate;
     public int camerasToRenderPerFrame = 1;
     public int nextCameraToRender = 0;
     public float cameraRenderCountRemainder = 0f;
@@ -42,9 +42,9 @@ public class TruckMirrorRenderer : MonoBehaviour
         mirrorCameras[1].gameObject.GetComponent<HDAdditionalCameraData>().antialiasing = HDAdditionalCameraData.AntialiasingMode.None;
         mirrorCameras[2].gameObject.GetComponent<HDAdditionalCameraData>().antialiasing = HDAdditionalCameraData.AntialiasingMode.None;
 
-        mirrorCameras[0].gameObject.GetComponent<HDAdditionalCameraData>().volumeAnchorOverride = null;
-        mirrorCameras[1].gameObject.GetComponent<HDAdditionalCameraData>().volumeAnchorOverride = null;
-        mirrorCameras[2].gameObject.GetComponent<HDAdditionalCameraData>().volumeAnchorOverride = null;
+        //mirrorCameras[0].gameObject.GetComponent<HDAdditionalCameraData>().volumeAnchorOverride = null;
+        //mirrorCameras[1].gameObject.GetComponent<HDAdditionalCameraData>().volumeAnchorOverride = null;
+        //mirrorCameras[2].gameObject.GetComponent<HDAdditionalCameraData>().volumeAnchorOverride = null;
 
         mirrorCameras[0].gameObject.GetComponent<HDAdditionalCameraData>().stopNaNs = false;
         mirrorCameras[1].gameObject.GetComponent<HDAdditionalCameraData>().stopNaNs = false;
@@ -57,6 +57,8 @@ public class TruckMirrorRenderer : MonoBehaviour
         mirrorCameras[0].gameObject.GetComponent<HDAdditionalCameraData>().allowDynamicResolution = false;
         mirrorCameras[1].gameObject.GetComponent<HDAdditionalCameraData>().allowDynamicResolution = false;
         mirrorCameras[2].gameObject.GetComponent<HDAdditionalCameraData>().allowDynamicResolution = false;
+
+        cameraFramerate = 40f;
 
     }
 

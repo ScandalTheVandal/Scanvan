@@ -9,7 +9,7 @@ using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
 using static Unity.Properties.TypeUtility;
 
-namespace CruiserXL.MonoBehaviours.Vehicles.CruiserXL;
+namespace CruiserXL.Behaviour;
 
 public class EVAModule : NetworkBehaviour
 {
@@ -24,10 +24,16 @@ public class EVAModule : NetworkBehaviour
     public AudioClip sixBeepAlert = null!;
     public AudioClip singleAlert = null!;
     public AudioClip highToneAlert = null!;
+    public AudioClip highToneAlertAlt = null!;
+    public AudioClip doorAlertAlt = null!;
 
     // extra misc stuff
     public Coroutine audioTimedCoroutine = null!;
     public TextMeshPro clusterScreen = null!;
+
+    public readonly Queue<(int clipId, bool thank, bool special, bool ignition)> clientClipQueue = new();
+    public bool hasPlayedIgnitionChime;
+    public bool clientIsPlaying;
 
     public string[] clusterTexts = null!;
     public bool[] audioClipsJustPlayed = null!;
@@ -42,6 +48,7 @@ public class EVAModule : NetworkBehaviour
     private bool hasWarnedTransmissionLevelLow;
     private bool hasWarnedCoolantLevelLow;
     private bool hasWarnedEngineOilLevelLow;
+    private bool hasWarnedEngineTemperature;
     private bool hasAlertedOnEngineStart;
     private bool hasJustPlayedSixBeepChime;
     private bool pendingDriverDoorThanked;
@@ -53,7 +60,7 @@ public class EVAModule : NetworkBehaviour
     public void LateUpdate()
     {
         if (controller == null || !controller.IsSpawned ||
-            !NetworkManager.Singleton.IsHost || controller.carDestroyed) return;
+            !NetworkManager.Singleton.IsHost || controller.batteryCharge <= controller.dischargedBattery || controller.carDestroyed) return;
 
         if (alertSystemInterval <= 0.25f)
         {
@@ -233,47 +240,54 @@ public class EVAModule : NetworkBehaviour
 
     private bool IsHealthLowAndSetClip()
     {
-        var healthAlerts = new List<(Func<bool> hasWarned, Action setQueued, int threshold, ElectronicVoiceAlert alertType)>
+        var healthAlerts = new List<(Func<bool> hasWarned, Action setQueued, Action resetWarned, int threshold, ElectronicVoiceAlert alertType)>
         {
-            (() => hasWarnedFuelLevelLow, () => hasWarnedFuelLevelLow = true, 27, ElectronicVoiceAlert.FuelLevel),
-            (() => hasWarnedTransmissionLevelLow, () => hasWarnedTransmissionLevelLow = true, 23, ElectronicVoiceAlert.TransFluidLevel),
-            (() => hasWarnedCoolantLevelLow, () => hasWarnedCoolantLevelLow = true, 19, ElectronicVoiceAlert.EngineCoolantLevel),
-            (() => hasWarnedEngineOilLevelLow, () => hasWarnedEngineOilLevelLow = true, 15, ElectronicVoiceAlert.EngineOilLevel),
-            (() => hasWarnedEngineCritical, () => hasWarnedEngineCritical = true, 12, ElectronicVoiceAlert.EngineOilPressure)
+            (() => hasWarnedFuelLevelLow, () => hasWarnedFuelLevelLow = true, () => hasWarnedFuelLevelLow = false, 27, ElectronicVoiceAlert.FuelLevel),
+            (() => hasWarnedTransmissionLevelLow, () => hasWarnedTransmissionLevelLow = true, () => hasWarnedTransmissionLevelLow = false, 23, ElectronicVoiceAlert.TransFluidLevel),
+            (() => hasWarnedCoolantLevelLow, () => hasWarnedCoolantLevelLow = true, () => hasWarnedCoolantLevelLow = false, 19, ElectronicVoiceAlert.EngineCoolantLevel),
+            (() => hasWarnedEngineOilLevelLow, () => hasWarnedEngineOilLevelLow = true, () => hasWarnedEngineOilLevelLow = false, 15, ElectronicVoiceAlert.EngineOilLevel),
+            (() => hasWarnedEngineCritical, () => hasWarnedEngineCritical = true, () => hasWarnedEngineCritical = false, 12, ElectronicVoiceAlert.EngineOilPressure)
         };
 
-        foreach (var (hasWarned, setQueued, threshold, alertType) in healthAlerts)
+        bool flag = false;
+        foreach (var (hasWarned, setQueued, resetWarned, threshold, alertType) in healthAlerts)
         {
-            if (!hasWarned() && controller.carHP <= threshold)
+            if (controller.carHP <= threshold)
             {
-                setQueued();
-                SetClipInQueue(alertType);
-                return true;
+                if (!hasWarned())
+                {
+                    setQueued();
+                    SetClipInQueue(alertType);
+                    flag = true;
+                }
+            }
+            else
+            {
+                resetWarned();
+                audioClipsJustPlayed[(int)alertType] = false;
+                audioClipsInQueue[(int)alertType] = false;
             }
         }
-        return false;
+        return flag;
     }
 
     private void SetOverheatingAudioClips()
     {
-        if (controller.carHP <= 10)
+        if (controller.isHoodOnFire && controller.carHP <= 15)
         {
-            if (controller.isHoodOnFire && randomOverheatClipToPlay == 0)
+            if (randomOverheatClipToPlay == 0 && !hasWarnedEngineTemperature)
             {
-                randomOverheatClipToPlay = UnityEngine.Random.Range(15, 17);
+                hasWarnedEngineTemperature = true;
+                int clipIndex = controller.carHP <= 10 ? 16 : 15; 
+                randomOverheatClipToPlay = clipIndex;
                 audioClipsInQueue[randomOverheatClipToPlay] = true;
-                return;
             }
-            randomOverheatClipToPlay = 0;
-            ResetAudioClip(ElectronicVoiceAlert.EngineTempAboveNormal);
-            ResetAudioClip(ElectronicVoiceAlert.EngineOverheating);
+            return;
         }
-        else if (!controller.isHoodOnFire && randomOverheatClipToPlay != 0)
-        {
-            randomOverheatClipToPlay = 0;
-            ResetAudioClip(ElectronicVoiceAlert.EngineTempAboveNormal);
-            ResetAudioClip(ElectronicVoiceAlert.EngineOverheating);
-        }
+        hasWarnedEngineTemperature = false;
+        randomOverheatClipToPlay = 0;
+        ResetAudioClip(ElectronicVoiceAlert.EngineTempAboveNormal);
+        ResetAudioClip(ElectronicVoiceAlert.EngineOverheating);
     }
 
     private void SetForgottenKeysClip()
@@ -369,22 +383,42 @@ public class EVAModule : NetworkBehaviour
         if ((int)GameNetworkManager.Instance.localPlayerController.playerClientId == playerWhoSent)
             return;
 
+        if (clientClipQueue.Count >= voiceAudioClips.Length)
+            clientClipQueue.Clear();
+
+        if (isSpecialWarning || isThankYouClip)
+        {
+            CancelVoiceAudioCoroutine();
+            clientClipQueue.Clear();
+        }
+        clientClipQueue.Enqueue((clipToPlay, isThankYouClip, isSpecialWarning, isIgnitionChime));
+        if (!clientIsPlaying)
+            StartCoroutine(PlayAudioClipsAfterQueue());
+    }
+
+    public void CancelVoiceAudioCoroutine()
+    {
         if (audioTimedCoroutine != null)
         {
             StopCoroutine(audioTimedCoroutine);
+            audioTimedCoroutine = null!;
         }
-        if (!isIgnitionChime)
-        {
-            if (isThankYouClip && !isSpecialWarning)
-            {
-                audioTimedCoroutine = StartCoroutine(PlayAudioClip(2, true, false, false));
-                return;
-            }
-            audioTimedCoroutine = StartCoroutine(PlayAudioClip(clipToPlay, false, isSpecialWarning, false));
-            return;
-        }
-        audioTimedCoroutine = StartCoroutine(PlayAudioClip(-1, false, false, true));
     }
+
+    private IEnumerator PlayAudioClipsAfterQueue()
+    {
+        clientIsPlaying = true;
+        while (clientClipQueue.Count > 0)
+        {
+            var (clipId, isThankYouClip, isSpecialWarning, isIgnitionChime) = clientClipQueue.Dequeue();
+            if (audioTimedCoroutine != null)
+                StopCoroutine(audioTimedCoroutine);
+            audioTimedCoroutine = StartCoroutine(PlayAudioClip(clipId, isThankYouClip, isSpecialWarning, isIgnitionChime));
+            yield return new WaitUntil(() => audioTimedCoroutine == null);
+        }
+        clientIsPlaying = false;
+    }
+
 
     public IEnumerator PlayAudioClip(int clipId, bool playThankAudio, bool isSpecialWarning, bool isIgnitionChime)
     {
@@ -426,6 +460,7 @@ public class EVAModule : NetworkBehaviour
 
         audioTimedCoroutine = null!;
         clusterScreen.text = null;
+        hasPlayedIgnitionChime = true;
         currentClipId = -1;
     }
 
@@ -507,6 +542,7 @@ public class EVAModule : NetworkBehaviour
         hasWarnedCoolantLevelLow = false;
         hasWarnedEngineOilLevelLow = false;
         hasAlertedOnEngineStart = false;
+        hasWarnedEngineTemperature = false;
 
         var resetAlerts = new[] { 0, 10, 14, 11, 12, 15, 16, 3, 4, 17 };
 

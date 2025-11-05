@@ -78,6 +78,12 @@ internal static class GiantKiwiAIPatches
         if (References.truckController == null)
             return;
 
+        if (!VehicleUtils.IsPlayerNearTruck(playerControllerB, References.truckController))
+            return;
+
+        if (!VehicleUtils.MeetsSpecialConditionsToCheck())
+            return;
+
         // not in our truck, run vanilla logic
         if (!VehicleUtils.IsPlayerInTruck(playerControllerB, References.truckController))
             return;

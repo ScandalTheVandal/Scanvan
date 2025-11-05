@@ -6,6 +6,8 @@ using UnityEngine;
 using System.Reflection.Emit;
 using BepInEx.Bootstrap;
 using UnityEngine.UIElements;
+using CruiserXL.Managers;
+using Cysharp.Threading.Tasks;
 
 namespace CruiserXL.Patches;
 
@@ -47,6 +49,14 @@ internal class PlayerControllerBPatches
 
         player.thisPlayerModel.gameObject.layer = 23;
         player.thisPlayerModelArms.gameObject.layer = 5;
+
+        if (RadioManager._stations.Count == 0)
+        {
+            HUDManager.Instance.DisplayTip("Radio failed to preload!", 
+                $"Retry attempting to preload stations.. " + $"You may need to reboot your game!", 
+                isWarning: true);
+            RadioManager.GetRadioStations().Forget();
+        }
     }
 
     // The Scanvans custom player animator splits vehicle animations into 3 layers, 
@@ -66,10 +76,12 @@ internal class PlayerControllerBPatches
         if (__instance.playerBodyAnimator == null)
             return false;
 
-        if (__instance.currentAnimationStateHash.Count != __instance.playerBodyAnimator.layerCount)
+        if (__instance.currentAnimationStateHash.Count != __instance.playerBodyAnimator.layerCount ||
+            __instance.previousAnimationStateHash.Count != __instance.playerBodyAnimator.layerCount)
         {
-            __instance.currentAnimationStateHash = new List<int>(new int[__instance.playerBodyAnimator.layerCount]);
             __instance.updatePlayerAnimationsInterval = 0f;
+            __instance.currentAnimationStateHash = new List<int>(new int[__instance.playerBodyAnimator.layerCount]);
+            __instance.previousAnimationStateHash = new List<int>(new int[__instance.playerBodyAnimator.layerCount]);
             return false;
         }
         return true;
