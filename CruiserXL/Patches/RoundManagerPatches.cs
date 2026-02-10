@@ -6,10 +6,13 @@ namespace CruiserXL.Patches;
 [HarmonyPatch(typeof(RoundManager))]
 public class RoundManagerPatches
 {
-    // Used for the radio static effect.
-    [HarmonyPatch("SetToCurrentLevelWeather")]
+    /// <summary>
+    ///  Available from RadioFurniture, licensed under GNU General Public License.
+    ///  Source: https://github.com/legoandmars/RadioFurniture/tree/master/RadioFurniture
+    /// </summary>
+    [HarmonyPatch(nameof(RoundManager.SetToCurrentLevelWeather))]
     [HarmonyPostfix]
-    static void SetToCurrentLevelWeather(ref SelectableLevel ___currentLevel)
+    static void SetToCurrentLevelWeather_Postfix(ref SelectableLevel ___currentLevel)
     {
         if (___currentLevel.currentWeather == LevelWeatherType.Stormy)
         {

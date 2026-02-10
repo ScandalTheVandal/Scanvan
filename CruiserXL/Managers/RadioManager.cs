@@ -27,35 +27,46 @@ namespace CruiserXL.Managers
 
         public static async UniTask GetRadioStations()
         {
-            Plugin.Logger.LogMessage("Searching Radio API for stations!");
-            // Initialization
-            var apiUrl = await GetRadioBrowserApiUrl();
-            var radioBrowser = new RadioBrowserClient(apiUrl);
-            //List<StationInfo> stationResults = await radioBrowser.Stations.GetByVotesAsync(2000);
-            List<StationInfo> stationResults = await radioBrowser.Search.AdvancedAsync(new AdvancedSearchOptions
+            try
             {
-                Language = "english"
-            });
-            _stations = stationResults.Where(x => x != null && x.Codec != null && x.Codec == "MP3" && x.UrlResolved != null && x.UrlResolved.Scheme == "https").ToList();
-            Plugin.Logger.LogMessage("Finished searching radio API for stations.");
-            Plugin.Logger.LogMessage($"Found {_stations.Count}");
+                Plugin.Logger.LogMessage("Searching Radio API for stations!");
+                // Initialization
+                var apiUrl = await GetRadioBrowserApiUrl();
+                var radioBrowser = new RadioBrowserClient(apiUrl);
+                List<StationInfo> stationResults = await radioBrowser.Stations.GetByVotesAsync(7500);
+
+                _stations = stationResults.Where(
+                    x => x != null
+                    && x.Codec != null
+                    && x.Codec.Equals("mp3", StringComparison.OrdinalIgnoreCase)
+                    && x.UrlResolved != null &&
+                    (x.UrlResolved.Scheme == Uri.UriSchemeHttp || x.UrlResolved.Scheme == Uri.UriSchemeHttps))
+                    .ToList();
+
+                Plugin.Logger.LogMessage("Finished searching radio API for stations.");
+                Plugin.Logger.LogMessage($"Found {_stations.Count}");
+            }
+            catch (Exception ex)
+            {
+                Plugin.Logger.LogError($"Error loading radio stations: {ex.Message}");
+            }
         }
 
         public static StationInfo? GetRandomRadioStation()
         {
             if (_stations.Count == 0) return null;
             var station = _stations[UnityEngine.Random.Range(0, _stations.Count)];
-            Plugin.Logger.LogMessage(station.Name);
-            Plugin.Logger.LogMessage(station.StationUuid);
+            Plugin.Logger.LogDebug(station.Name);
+            Plugin.Logger.LogDebug(station.StationUuid);
             return station;
         }
 
         public static StationInfo? GetRadioStationByGuid(Guid guid)
         {
-            return _stations.FirstOrDefault(x => x.StationUuid == guid);
+            return _stations.FirstOrDefault(x => x.StationUuid != null && x.StationUuid == guid);
         }
 
-        // huge kudos to zaggy for helping me diagnose, and fix this!
+        // huge kudos to Zaggy for being my teacher throughout this!
         private static async Task<string> GetRadioBrowserApiUrl()
         {
             // get fastest ip of dns
@@ -73,14 +84,14 @@ namespace CruiserXL.Managers
                     var hostName = (await Dns.GetHostEntryAsync(ipAddress)).HostName;
                     if (string.IsNullOrEmpty(hostName)) continue;
                     var result = await client.GetAsync($"https://{hostName}/");
-                    Plugin.Logger.LogError($"{hostName}, is Success? {result.IsSuccessStatusCode}, ip? {ipAddress}");
+                    Plugin.Logger.LogDebug($"{hostName}, is Success? {result.IsSuccessStatusCode}, ip? {ipAddress}");
                     if (!result.IsSuccessStatusCode) continue;
                     lastRoundTripTime = reply.RoundtripTime;
                     searchUrl = hostName;
                 }
                 catch (SocketException)
                 {
-                    Plugin.Logger.LogError("Cannot ping socket");
+                    Plugin.Logger.LogWarning("Cannot ping socket");
                 }
             return searchUrl;
         }

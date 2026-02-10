@@ -1,18 +1,30 @@
 ﻿using CruiserXL.Events;
+using CruiserXL.Networking;
 using CruiserXL.Utils;
 using HarmonyLib;
 using System;
 using UnityEngine;
+
 
 namespace CruiserXL.Patches;
 
 [HarmonyPatch(typeof(StartOfRound))]
 public static class StartOfRoundPatches
 {
-    // Used for the radio static effect.
-    [HarmonyPatch("EndOfGame")]
+    [HarmonyPatch(nameof(StartOfRound.Awake))]
+    [HarmonyPostfix]
+    static void Awake_Postfix(StartOfRound __instance)
+    {
+        SCVNetworker.Create();
+    }
+
+    /// <summary>
+    ///  Available from RadioFurniture, licensed under GNU General Public License.
+    ///  Source: https://github.com/legoandmars/RadioFurniture/tree/master/RadioFurniture
+    /// </summary>
+    [HarmonyPatch(nameof(StartOfRound.EndOfGame))]
     [HarmonyPrefix]
-    static void EndOfGame(ref SelectableLevel ___currentLevel)
+    static void EndOfGame_Prefix(ref SelectableLevel ___currentLevel)
     {
         if (___currentLevel.currentWeather == LevelWeatherType.Stormy)
         {
@@ -20,83 +32,79 @@ public static class StartOfRoundPatches
         }
     }
 
-    // None of the stuff below works, it broke one 
-    // day and I never got round to fixing it.
-    // Maybe another time.
-
     /// <summary>
     ///  Available from CruiserImproved, licensed under MIT License.
     ///  Source: https://github.com/digger1213/CruiserImproved/blob/main/source/Patches/StartOfRound.cs
     ///  Source: https://github.com/digger1213/CruiserImproved/blob/main/source/Network/Patches/StartOfRound.cs
     /// </summary>
-    [HarmonyPatch("SyncAlreadyHeldObjectsServerRpc")]
+    [HarmonyPatch(nameof(StartOfRound.SyncAlreadyHeldObjectsServerRpc))]
     [HarmonyPostfix]
-    static void SyncAlreadyHeldObjectsServerRpc(StartOfRound __instance, int joiningClientId)
+    static void SyncAlreadyHeldObjectsServerRpc_Postfix(StartOfRound __instance, int joiningClientId)
     {
-        //if (!__instance.attachedVehicle || __instance.attachedVehicle is not CruiserXLController) return;
-        //try
-        //{
-        //    if (__instance.attachedVehicle.TryGetComponent<CruiserXLController>(out var controller))
-        //    {
-        //        controller.SendClientSyncData();
-        //    }
-        //}
-        //catch (Exception e)
-        //{
-        //    Plugin.Logger.LogError("Exception caught sending saved Scanvan data:\n" + e);
-        //}
+        if (!__instance.attachedVehicle || __instance.attachedVehicle is not CruiserXLController) return;
+        try
+        {
+            CruiserXLController controller = __instance.attachedVehicle.GetComponent<CruiserXLController>();
+            if (controller == null)
+            {
+                Plugin.Logger.LogError("Attempted to send client data, but the truck is null! please report this to Scandal.");
+                return;
+            }
+            controller.SendClientSyncData();
+        }
+        catch (Exception e)
+        {
+            Plugin.Logger.LogError("Exception caught sending saved Scanvan data:\n" + e);
+        }
     }
 
-    [HarmonyPatch("LoadAttachedVehicle")]
+    [HarmonyPatch(nameof(StartOfRound.LoadAttachedVehicle))]
     [HarmonyPostfix]
     static void LoadAttachedVehicle_Postfix(StartOfRound __instance)
     {
-        //if (!__instance.attachedVehicle || __instance.attachedVehicle is not CruiserXLController) return;
-        //try
-        //{
-        //    if (__instance.attachedVehicle.TryGetComponent<CruiserXLController>(out var controller))
-        //    {
-        //        if (SaveManager.TryLoad<Vector3>("AttachedVehicleRotation", out var rotation))
-        //        {
-        //            controller.transform.rotation = Quaternion.Euler(rotation);
-        //        }
-        //        if (SaveManager.TryLoad<Vector3>("AttachedVehiclePosition", out var position))
-        //        {
-        //            controller.transform.position = StartOfRound.Instance.elevatorTransform.TransformPoint(position);
-        //        }
-        //        if (SaveManager.TryLoad<int>("AttachedVehicleTurbo", out var turbos))
-        //        {
-        //            controller.turboBoosts = turbos;
-        //        }
-        //        if (SaveManager.TryLoad<bool>("AttachedVehicleIgnition", out var ignition))
-        //        {
-        //            controller.hasAlertedOnEngineStart = ignition;
-        //            controller.pendingKeysInIgnitionThanked = ignition;
-        //            controller.EVAAudioClipsJustPlayed[4] = ignition;
+        if (!__instance.attachedVehicle ||  __instance.attachedVehicle is not CruiserXLController) return;
+        try
+        {
+            var controller = __instance.attachedVehicle.GetComponent<CruiserXLController>();
+            if (controller == null)
+            {
+                Plugin.Logger.LogError("Attempted to send client data, but the truck is null! please report this to Scandal.");
+                return;
+            }
 
-        //            controller.SetIgnition(ignition);
-        //            controller.keyIsInIgnition = ignition;
-        //            controller.SetFrontCabinLightOn(setOn: ignition);
-        //        }
-        //        if (SaveManager.TryLoad<float>("AttachedVehicleSteeringRotation", out var wheelPosition))
-        //        {
-        //            controller.syncedWheelRotation = wheelPosition;
-        //            controller.steeringWheelAnimFloat = wheelPosition;
-        //        }
-        //        if (SaveManager.TryLoad<int>("AttachedVehicleRadioSeed", out var radioSeed))
-        //        {
-        //            controller.randomRadioSeed = radioSeed;
-        //            controller.ScrambleRadioClipOrder(controller.randomRadioSeed);
-        //        }
-        //        if (SaveManager.TryLoad<int>("AttachedVehicleHP", out var carHealth))
-        //        {
-        //            controller.carHP = carHealth;
-        //        }
-        //    }
-        //}
-        //catch (Exception e)
-        //{
-        //    Plugin.Logger.LogError("Exception caught loading saved Scanvan data:\n" + e);
-        //}
+            SaveManager.TryLoad<bool>("AttachedVehicleVariant", out var variant);
+            SaveManager.TryLoad<Vector3>("AttachedVehicleRotation", out var rotation);
+            SaveManager.TryLoad<Vector3>("AttachedVehiclePosition", out var position);
+            SaveManager.TryLoad<int>("AttachedVehicleTurbo", out var turbos);
+            SaveManager.TryLoad<bool>("AttachedVehicleIgnition", out var ignition);
+            SaveManager.TryLoad<float>("AttachedVehicleSteeringRotation", out var wheelPosition);
+            SaveManager.TryLoad<int>("AttachedVehicleGear", out var carGear);
+            SaveManager.TryLoad<int>("AttachedVehicleHealth", out var carHealth);
+
+            controller.isSpecial = variant;
+            controller.SetVariant(controller.isSpecial);
+
+            controller.transform.rotation = Quaternion.Euler(rotation);
+            controller.transform.position = StartOfRound.Instance.elevatorTransform.TransformPoint(position);
+
+            controller.turboBoosts = turbos;
+
+            controller.voiceModule.hasJustPlayedSixBeepChime = ignition;
+            controller.keyIsInIgnition = ignition;
+            controller.SetFrontCabinLightOn(setOn: ignition);
+            controller.SetIgnition(ignition);
+            if (ignition) controller.dashboardSymbolPreStartup = controller.StartCoroutine(controller.PreIgnitionSymbolCheck());
+            controller.driversSideWindow.interactable = ignition;
+            controller.passengersSideWindow.interactable = ignition;
+
+            controller.syncedWheelRotation = wheelPosition;
+            controller.steeringWheelAnimFloat = wheelPosition;
+            controller.drivetrainModule.autoGear = (TruckGearShift)carGear;
+            controller.carHP = carHealth;
+        }
+        catch (Exception e)
+        {
+            Plugin.Logger.LogError("Exception caught loading saved Scanvan data:\n" + e);
+        }
     }
 }

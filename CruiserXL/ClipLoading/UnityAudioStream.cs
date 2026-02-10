@@ -47,7 +47,7 @@ namespace CruiserXL.ClipLoading
                     _stream.bufferedWaveProvider.WaveFormat.SampleRate,
                     true, new AudioClip.PCMReaderCallback(_stream.ReadData));
 
-                _stream.decomp = false; //Do not create shitload of audioclips
+                _stream.decomp = false; // do not create shitload of audioclips
             }
         }
 

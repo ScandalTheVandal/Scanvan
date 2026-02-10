@@ -1,6 +1,6 @@
 ﻿using CruiserXL.Patches;
+using CruiserXL.Utils;
 using GameNetcodeStuff;
-using System.ComponentModel;
 using UnityEngine;
 
 public class CruiserXLCollisionTrigger : MonoBehaviour
@@ -26,34 +26,36 @@ public class CruiserXLCollisionTrigger : MonoBehaviour
 
         if (other.CompareTag("Player"))
         {
-            PlayerControllerB playerComponent = other.GetComponent<PlayerControllerB>();
-            if (playerComponent == null)
+            PlayerControllerB playerController = other.GetComponent<PlayerControllerB>();
+            if (playerController == null)
                 return;
 
-            // prevent hitting players standing on/in the cruiser
+            // prevent hitting players standing on/in the truck
             Transform physicsTransform = mainScript.physicsRegion.physicsTransform;
-            if (playerComponent.physicsParent == physicsTransform || playerComponent.overridePhysicsParent == physicsTransform)
+            if (playerController.physicsParent == physicsTransform || playerController.overridePhysicsParent == physicsTransform ||
+                PlayerUtils.isPlayerOnTruck)
                 return;
 
-            if ((mainScript.localPlayerInPassengerSeat || mainScript.localPlayerInMiddlePassengerSeat) || Time.realtimeSinceStartup - timeSinceHittingPlayer < 0.25f)
+            if ((mainScript.localPlayerInControl || mainScript.localPlayerInMiddlePassengerSeat || mainScript.localPlayerInPassengerSeat) ||
+                Time.realtimeSinceStartup - timeSinceHittingPlayer < 0.25f)
                 return;
 
             float velocityMagnitude = mainScript.averageVelocity.magnitude;
             if (velocityMagnitude < 2f)
                 return;
 
-            Vector3 directionToPlayer = playerComponent.transform.position - mainScript.mainRigidbody.position;
+            Vector3 directionToPlayer = playerController.transform.position - mainScript.mainRigidbody.position;
             float angle = Vector3.Angle(Vector3.Normalize(mainScript.averageVelocity * 1000f), Vector3.Normalize(directionToPlayer * 1000f));
 
             if (angle > 70f)
                 return;
 
-            if (angle < 30f && velocityMagnitude > 40f)
+            if (angle < 30f && mainScript.drivetrainModule.wheelRPM > 400f)
             {
                 velocityMagnitude += 6f;
             }
 
-            if ((playerComponent.gameplayCamera.transform.position - mainScript.mainRigidbody.position).y < -0.1f)
+            if ((playerController.gameplayCamera.transform.position - mainScript.mainRigidbody.position).y < -0.1f)
             {
                 velocityMagnitude *= 2f;
             }
@@ -61,11 +63,8 @@ public class CruiserXLCollisionTrigger : MonoBehaviour
             timeSinceHittingPlayer = Time.realtimeSinceStartup;
             Vector3 impactForce = Vector3.ClampMagnitude(mainScript.averageVelocity, 55f);
 
-            if (playerComponent == GameNetworkManager.Instance.localPlayerController)
+            if (playerController == GameNetworkManager.Instance.localPlayerController)
             {
-                if (physicsTransform == GameNetworkManager.Instance.localPlayerController.physicsParent)
-                    return;
-
                 if (velocityMagnitude > 20f)
                 {
                     GameNetworkManager.Instance.localPlayerController.KillPlayer(impactForce, spawnBody: true, CauseOfDeath.Crushing);
@@ -75,7 +74,7 @@ public class CruiserXLCollisionTrigger : MonoBehaviour
                     int damage = 0;
                     if (velocityMagnitude > 15f) damage = 80;
                     else if (velocityMagnitude > 12f) damage = 60;
-                    else if (velocityMagnitude > 8f) damage = 40;
+                    else if (velocityMagnitude >= 8f) damage = 40;
 
                     if (damage > 0)
                     {
@@ -91,7 +90,7 @@ public class CruiserXLCollisionTrigger : MonoBehaviour
             }
             else if (mainScript.IsOwner && mainScript.averageVelocity.magnitude > 1.8f)
             {
-                mainScript.CarReactToObstacle(mainScript.averageVelocity, playerComponent.transform.position, mainScript.averageVelocity, CarObstacleType.Player);
+                mainScript.CarReactToObstacle(mainScript.averageVelocity, playerController.transform.position, mainScript.averageVelocity, CarObstacleType.Player);
             }
         }
         else
@@ -109,7 +108,7 @@ public class CruiserXLCollisionTrigger : MonoBehaviour
             if (enemyAIcollision.mainScript.isEnemyDead)
                 return;
 
-            // prevent hitting and bouncing off unkillable small entities (e.g., bees, ghost girl, earth leviathan)
+            // prevent hitting and bouncing off unkillable entities (e.g., bees, ghost girl, earth leviathan)
             if (!enemyAIcollision.mainScript.enemyType.canDie && enemyAIcollision.mainScript.enemyType.SizeLimit == NavSizeLimit.NoLimit) 
                 return;
 
@@ -125,7 +124,7 @@ public class CruiserXLCollisionTrigger : MonoBehaviour
             if (Vector3.Angle(mainScript.averageVelocity, enemyAIcollision.mainScript.transform.position - base.transform.position) > 130f)
                 return;
 
-            if (mainScript.backDoorOpen && mainScript.sideDoorOpen && mainScript.averageVelocity.magnitude < 2f && 
+            if (mainScript.liftGateOpen && mainScript.sideDoorOpen && mainScript.averageVelocity.magnitude < 2f && 
                 (insideTruckNavMeshBounds.ClosestPoint(enemyAIcollision.mainScript.transform.position) == enemyAIcollision.mainScript.transform.position || 
                 insideTruckNavMeshBounds.ClosestPoint(enemyAIcollision.mainScript.agent.destination) == enemyAIcollision.mainScript.agent.destination))
                 return;

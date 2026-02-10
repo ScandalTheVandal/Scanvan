@@ -1,12 +1,7 @@
 ﻿using GameNetcodeStuff;
-using JetBrains.Annotations;
-using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Text;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.Scripting.APIUpdating;
 
 namespace CruiserXL.Behaviour;
 
@@ -39,21 +34,15 @@ public class DrivetrainModule : NetworkBehaviour
 
     public void Start()
     {
-        upShiftThreshold = 4500f;
-        downShiftThreshold = 1100f;
-        diffRatio = 5.2f; // diff?
+        upShiftThreshold = 4700f;
+        downShiftThreshold = 2100f;
+        diffRatio = 5.2f;
     }
 
     public void FixedUpdate()
     {
         if (controller == null || !controller.IsSpawned ||
             !controller.IsOwner || controller.carDestroyed) return;
-
-        if (!controller.FrontLeftWheel.enabled ||
-            !controller.FrontRightWheel.enabled ||
-            !controller.BackLeftWheel.enabled ||
-            !controller.BackRightWheel.enabled)
-            return;
 
         wheelRPM = Mathf.Abs((controller.BackLeftWheel.rpm + controller.BackRightWheel.rpm) / 2f);
         switch (autoGear)
@@ -67,8 +56,8 @@ public class DrivetrainModule : NetworkBehaviour
             case TruckGearShift.Park:
             case TruckGearShift.Neutral:
                 currentGear = 1;
-                forwardWheelSpeed = 3000f;
-                reverseWheelSpeed = -3000f;
+                forwardWheelSpeed = 8500f;
+                reverseWheelSpeed = -8500f;
                 break;
             case TruckGearShift.Drive:
                 if (currentGear < 1) // do not let the current gear drop below its minimum
@@ -94,6 +83,11 @@ public class DrivetrainModule : NetworkBehaviour
                 }
                 break;
         }
+    }
+
+    public void Update()
+    {
+        if (!controller.IsOwner) return;
         SyncCarDrivetrainToOtherClients();
     }
 
@@ -113,7 +107,7 @@ public class DrivetrainModule : NetworkBehaviour
                 syncedWheelRPM = wheelRPM;
                 syncedMotorTorque = controller.wheelTorque;
                 syncedBrakeTorque = controller.wheelBrakeTorque;
-                SyncCarDrivetrainServerRpc(wheelRPM, controller.wheelTorque, controller.wheelBrakeTorque);
+                SyncCarDrivetrainRpc(wheelRPM, controller.wheelTorque, controller.wheelBrakeTorque);
             }
             syncCarDrivetrainInterval = 0f;
         }
@@ -123,19 +117,9 @@ public class DrivetrainModule : NetworkBehaviour
         }
     }
 
-
-    [ServerRpc(RequireOwnership = false)]
-    public void SyncCarDrivetrainServerRpc(float wheelRPM, float motorTorque, float brakeTorque)
+    [Rpc(SendTo.NotOwner, RequireOwnership = false)]
+    public void SyncCarDrivetrainRpc(float wheelRPM, float motorTorque, float brakeTorque)
     {
-        SyncCarDrivetrainClientRpc(wheelRPM, motorTorque, brakeTorque);
-    }
-
-    [ClientRpc]
-    public void SyncCarDrivetrainClientRpc(float wheelRPM, float motorTorque, float brakeTorque)
-    {
-        if (controller.IsOwner)
-            return;
-
         syncedWheelRPM = wheelRPM;
         syncedMotorTorque = motorTorque;
         syncedBrakeTorque = brakeTorque;

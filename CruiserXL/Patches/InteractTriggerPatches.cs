@@ -3,9 +3,6 @@ using HarmonyLib;
 using UnityEngine;
 using System;
 using System.Collections;
-using Unity.Netcode;
-using UnityEngine.InputSystem.XR;
-using System.ComponentModel;
 using CruiserXL.Utils;
 
 namespace CruiserXL.Patches;
@@ -17,21 +14,19 @@ public class InteractTriggerPatches
     public static float interactTime = 0.6f;
     public static float timeSinceSpecialInteraction;
 
-    [HarmonyPatch("Interact")]
+    [HarmonyPatch(nameof(InteractTrigger.Interact))]
     [HarmonyPrefix]
     static bool Interact_Prefix(InteractTrigger __instance, Transform playerTransform, bool __runOriginal)
     {
         if (!__runOriginal)
-            //somebody else has redirected the function ignore the call
+            // somebody else has redirected the function ignore the call
             return false;
 
         PlayerControllerB playerController = playerTransform.GetComponent<PlayerControllerB>();
-        playerController.playerBodyAnimator.ResetTrigger("SA_stopAnimation"); // Fix the standing up bug
+        playerController.playerBodyAnimator.ResetTrigger("SA_stopAnimation"); // fix the standing up bug
 
-        if (!__instance.setVehicleAnimation)
-            return true;
-
-        if (__instance.overridePlayerParent == null)
+        if (!__instance.setVehicleAnimation || 
+            __instance.overridePlayerParent == null)
             return true;
 
         if (!__instance.overridePlayerParent.TryGetComponent<CruiserXLController>(out var controller))
@@ -42,7 +37,9 @@ public class InteractTriggerPatches
 
         timeSinceSpecialInteraction = Time.realtimeSinceStartup;
 
-        if (playerController.inSpecialInteractAnimation && !playerController.isClimbingLadder && !__instance.allowUseWhileInAnimation)
+        if (playerController.inSpecialInteractAnimation && 
+            !playerController.isClimbingLadder && 
+            !__instance.allowUseWhileInAnimation)
             return false;
 
         if (__instance.interactCooldown)
@@ -57,15 +54,11 @@ public class InteractTriggerPatches
         playerController.Crouch(false);
         __instance.onInteract.Invoke(playerController);
         __instance.onInteractEarly.Invoke(null);
-
-        //specialInteractCoroutine = __instance.StartCoroutine(SpecialTruckInteractAnimation(__instance, playerController, controller, __instance != controller.driverSeatTrigger));
         return false;
     }
 
     public static IEnumerator SpecialTruckInteractAnimation(InteractTrigger trigger, PlayerControllerB playerController, CruiserXLController controller, bool isPassenger)
     {
-        Plugin.Logger.LogMessage("truck: RUNNING REPLACEMENT COROUTINE!!!");
-
         if (!isPassenger)
         {
             // save a reference of the players current animator
@@ -81,13 +74,13 @@ public class InteractTriggerPatches
             if (References.truckPlayerAnimator != null)
                 playerController.playerBodyAnimator.runtimeAnimatorController = References.truckPlayerAnimator;
 
-            PlayerUtils.playerAnimator.Update(0.0f);
+            playerController.playerBodyAnimator.Update(0.0f);
         }
         trigger.UpdateUsedByPlayerServerRpc((int)playerController.playerClientId);
-        //trigger.onInteractEarly.Invoke(null);
         trigger.isPlayingSpecialAnimation = true;
         trigger.lockedPlayer = playerController.thisPlayerBody;
         trigger.playerScriptInSpecialAnimation = playerController;
+
         if (trigger.clampLooking)
         {
             trigger.playerScriptInSpecialAnimation.minVerticalClamp = trigger.minVerticalClamp;
@@ -95,23 +88,21 @@ public class InteractTriggerPatches
             trigger.playerScriptInSpecialAnimation.horizontalClamp = trigger.horizontalClamp;
             trigger.playerScriptInSpecialAnimation.clampLooking = true;
         }
-        if (trigger.overridePlayerParent)
-        {
-            trigger.playerScriptInSpecialAnimation.overridePhysicsParent = trigger.overridePlayerParent;
-        }
-        if (trigger.setVehicleAnimation)
-        {
-            trigger.playerScriptInSpecialAnimation.inVehicleAnimation = true;
-        }
+
+        trigger.playerScriptInSpecialAnimation.overridePhysicsParent = trigger.overridePlayerParent;
+        trigger.playerScriptInSpecialAnimation.inVehicleAnimation = true;
+
         if (trigger.hidePlayerItem && trigger.playerScriptInSpecialAnimation.currentlyHeldObjectServer != null)
         {
             trigger.playerScriptInSpecialAnimation.currentlyHeldObjectServer.EnableItemMeshes(false);
         }
+
         playerController.UpdateSpecialAnimationValue(true, (short)trigger.playerPositionNode.eulerAngles.y, 0f, false);
         playerController.inSpecialInteractAnimation = true;
         playerController.currentTriggerInAnimationWith = trigger;
         playerController.playerBodyAnimator.ResetTrigger(trigger.animationString);
         playerController.playerBodyAnimator.SetTrigger(trigger.animationString);
+
         HUDManager.Instance.ClearControlTips();
         if (!trigger.stopAnimationManually)
         {
@@ -123,9 +114,9 @@ public class InteractTriggerPatches
         yield break;
     }
 
-    [HarmonyPatch("StopSpecialAnimation")]
+    [HarmonyPatch(nameof(InteractTrigger.StopSpecialAnimation))]
     [HarmonyPrefix]
-    static bool StopSpecialAnimation_bool_prefix(InteractTrigger __instance)
+    static bool StopSpecialAnimation_Prefix(InteractTrigger __instance)
     {
         if (__instance.lockedPlayer == null)
             return true;
@@ -135,12 +126,8 @@ public class InteractTriggerPatches
         if (playerController != GameNetworkManager.Instance.localPlayerController)
             return true;
 
-        playerController.playerBodyAnimator.ResetTrigger("SA_stopAnimation");
-
-        if (!__instance.setVehicleAnimation)
-            return true;
-
-        if (__instance.overridePlayerParent == null)
+        if (!__instance.setVehicleAnimation || 
+            __instance.overridePlayerParent == null)
             return true;
 
         if (!__instance.overridePlayerParent.TryGetComponent<CruiserXLController>(out var controller))
@@ -167,7 +154,8 @@ public class InteractTriggerPatches
         {
             playerController.playerBodyAnimator.runtimeAnimatorController = StartOfRound.Instance.localClientAnimatorController;
         }
-        PlayerUtils.playerAnimator.Update(0.0f);
+        playerController.playerBodyAnimator.ResetTrigger("SA_stopAnimation");
+        playerController.playerBodyAnimator.Update(0.0f);
 
         // clear old references
         PlayerUtils.localDriverCachedAnimatorController = null!;

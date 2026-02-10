@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace CruiserXL.Utils;
 
+// huge kudos to Zaggy for being my teacher throughout this!
 public static class CameraUtils
 {
     private static readonly Plane[] frustumPlanes = new Plane[6];

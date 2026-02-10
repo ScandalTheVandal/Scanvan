@@ -1,7 +1,7 @@
 ﻿namespace CruiserXL.Utils;
 public static class SaveManager
 {
-    static string SavePrefix = "ScanvanSaveData.";
+    static string SavePrefix = "ScanvanData.";
     public static void Save<T>(string key, T data)
     {
         ES3.Save(SavePrefix + key, data, GameNetworkManager.Instance.currentSaveFileName);

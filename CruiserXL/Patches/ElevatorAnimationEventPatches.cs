@@ -7,7 +7,7 @@ namespace CruiserXL.Patches;
 [HarmonyPatch(typeof(ElevatorAnimationEvents))]
 public static class ElevatorAnimationEventsPatches
 {
-    [HarmonyPatch("ElevatorFullyRunning")]
+    [HarmonyPatch(nameof(ElevatorAnimationEvents.ElevatorFullyRunning))]
     [HarmonyPrefix]
     static void ElevatorFullyRunning_Prefix()
     {
@@ -16,16 +16,7 @@ public static class ElevatorAnimationEventsPatches
 
         // save players who are on the magneted truck from being abandoned
         PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
-        if (References.truckController.localPlayerInControl || 
-            References.truckController.localPlayerInMiddlePassengerSeat || 
-            References.truckController.localPlayerInPassengerSeat)
-        {
-            localPlayer.isInElevator = true;
-            return;
-        }
-
-        if (localPlayer.physicsParent == null) return;
-        if (localPlayer.physicsParent.TryGetComponent<CruiserXLController>(out var vehicle))
+        if (PlayerUtils.seatedInTruck || PlayerUtils.isPlayerOnTruck)
             localPlayer.isInElevator = true;
     }
 }

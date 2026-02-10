@@ -1,16 +1,15 @@
 ﻿using GameNetcodeStuff;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using UnityEngine;
-using HarmonyLib;
-using System.Linq;
-using System.Reflection.Emit;
-using UnityEngine.InputSystem;
 
 namespace CruiserXL.Utils;
 public static class PlayerUtils
 {
+    public static bool seatedInTruck = false;
+
+    public static bool isPlayerOnTruck;
+    public static bool isPlayerInCab;
+    public static bool isPlayerInStorage;
+
     public static Animator playerAnimator = null!;
     public static RuntimeAnimatorController localDriverCachedAnimatorController = null!;
     public static RuntimeAnimatorController driverCachedAnimatorController = null!;
@@ -28,7 +27,11 @@ public static class PlayerUtils
 
     public static void ResetHUDToolTips(PlayerControllerB player)
     {
-        if (!SanityCheck(player)) return;
+        if (player == null ||
+            player.isPlayerDead ||
+            !player.isPlayerControlled) 
+            return;
+
         if (player.currentlyHeldObjectServer != null)
         {
             player.currentlyHeldObjectServer.SetControlTipsForItem();
@@ -37,21 +40,16 @@ public static class PlayerUtils
         HUDManager.Instance.ClearControlTips();
     }
 
-    public static bool SanityCheck(PlayerControllerB player)
-    {
-        if (player == null) return false;
-        if (player.isPlayerDead) return false;
-        if (!player.isPlayerControlled) return false;
-        return true;
-    }
-
     public static void ReplaceClientPlayerAnimator(int playerId)
     {
         // find the player
         PlayerControllerB playerController = StartOfRound.Instance.allPlayerScripts[playerId];
 
         // safeguarding
-        if (!SanityCheck(playerController)) return;
+        if (playerController == null ||
+            playerController.isPlayerDead ||
+            !playerController.isPlayerControlled) 
+            return;
 
         // save a reference of the players current animator
         driverCachedAnimatorController = null!;
@@ -63,6 +61,10 @@ public static class PlayerUtils
             playerController.playerBodyAnimator.runtimeAnimatorController = References.truckOtherPlayerAnimator;
     }
 
+    /// <summary>
+    ///  Available from LethalMin, licensed under MIT License.
+    ///  Source: https://github.com/NoteBoxz/LethalMin/blob/main/Scripts/CustomPlayerAnimationManager.cs
+    /// </summary>
     public static void StoreParameters()
     {
         var parameters = playerAnimator.parameters;
@@ -88,7 +90,7 @@ public static class PlayerUtils
             }
         }
 
-        // Store current animations for each layer
+        // store current animations for each layer
         for (int layer = 0; layer < playerAnimator.layerCount; layer++)
         {
             var stateInfo = playerAnimator.GetCurrentAnimatorStateInfo(layer);
@@ -107,7 +109,9 @@ public static class PlayerUtils
         PlayerControllerB playerController = StartOfRound.Instance.allPlayerScripts[playerId];
 
         // safeguarding
-        if (!SanityCheck(playerController))
+        if (playerController == null ||
+            playerController.isPlayerDead ||
+            !playerController.isPlayerControlled)
         {
             // clear old references
             driverCachedAnimatorController = null!;
@@ -115,7 +119,7 @@ public static class PlayerUtils
             return;
         }
 
-        // reapply the original players animator, if it exists
+        // reapply the original players animator, if it exists (which it should, and would be weird if it didn't)
         playerController.playerBodyAnimator.runtimeAnimatorController =
             driverCachedAnimatorController ?? StartOfRound.Instance.otherClientsAnimatorController;
 
@@ -124,6 +128,10 @@ public static class PlayerUtils
         playerAnimator = null!;
     }
 
+    /// <summary>
+    ///  Available from LethalMin, licensed under MIT License.
+    ///  Source: https://github.com/NoteBoxz/LethalMin/blob/main/Scripts/CustomPlayerAnimationManager.cs
+    /// </summary>
     public static void RestoreParameters()
     {
         var parameters = playerAnimator.parameters;
@@ -144,7 +152,7 @@ public static class PlayerUtils
             }
         }
 
-        // Restore animations for each layer
+        // restore animations for each layer
         for (int layer = 0; layer < playerAnimator.layerCount; layer++)
         {
             var animInfo = storedAnimations[layer];

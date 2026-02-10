@@ -4,23 +4,17 @@ using CruiserXL.Events;
 using CruiserXL.Managers;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.Rendering;
-using static UnityEngine.Rendering.DebugUI;
-
 
 /// <summary>
 ///  Available from RadioFurniture, licensed under GNU General Public License.
-///  Source: https://github.com/legoandmars/RadioFurniture/tree/master/RadioFurniture
+///  Source: https://github.com/legoandmars/RadioFurniture/blob/master/RadioFurniture/Behaviour/RadioBehaviour.cs
 /// </summary>
 namespace CruiserXL.Behaviour
 {
     public class RadioBehaviour : NetworkBehaviour
     {
-        public bool _radioOn = false;
-
         public CruiserXLController _controller = null!;
 
         [SerializeField]
@@ -82,24 +76,23 @@ namespace CruiserXL.Behaviour
             }
         }
 
-        public void TogglePowerLocalClient()
+        public void TogglePowerLocalClient(bool checkOn)
         {
             if (RadioManager._stations.Count == 0)
             {
                 HUDManager.Instance.DisplayTip("Radio failed to preload!",
-                    $"Retry attempting to preload stations.. " + $"You may need to reboot your game!",
-                    isWarning: true);
+                    $"This could be an issue with the RadioBrowser API!",
+                    isWarning: false);
                 RadioManager.GetRadioStations().Forget();
                 return;
             }
-            if (_controller.batteryCharge <= _controller.dischargedBattery) return;
-            if (_radioOn)
+            if (_controller.radioOn && checkOn)
             {
                 TurnOffRadioRpc();
                 return;
             }
             TurnOnRadioServerRpc();
-            // set a random frequency when the radio is *first* turned on
+            // hack: set a random frequency when the radio is *first* turned on
             if (_currentFrequency == "FM")
             {
                 string initialFrequency = GetRandomFrequency();
@@ -145,7 +138,7 @@ namespace CruiserXL.Behaviour
 
         public void ToggleStationLocalClient()
         {
-            if (_radioOn)
+            if (_controller.radioOn)
             {
                 ChangeStationServerRpc();
                 string radioFrequency = GetRandomFrequency();
@@ -159,10 +152,10 @@ namespace CruiserXL.Behaviour
             _currentFrequency = frequency;
         }
 
-        //[ServerRpc(RequireOwnership = false)]
         [Rpc(SendTo.Server, RequireOwnership = false)]
         public void TurnOnRadioServerRpc()
         {
+            if (!_controller.radioAudio.loop) _controller.radioAudio.loop = true;
             if (_lastStationId == null)
             {
                 _lastStationId = GetRandomRadioGuid();
@@ -171,7 +164,6 @@ namespace CruiserXL.Behaviour
             TurnOnRadioRpc();
         }
 
-        //[ClientRpc]
         [Rpc(SendTo.Everyone, RequireOwnership = false)]
         public void TurnOnAndSyncRadioRpc(string guidString)
         {
@@ -186,7 +178,6 @@ namespace CruiserXL.Behaviour
             TurnRadioOnOff(true);
         }
 
-        //[ClientRpc]
         [Rpc(SendTo.Everyone, RequireOwnership = false)]
         public void TurnOnRadioRpc()
         {
@@ -199,11 +190,10 @@ namespace CruiserXL.Behaviour
             TurnRadioOnOff(false);
         }
 
-        //[ServerRpc(RequireOwnership = false)]
         [Rpc(SendTo.Server, RequireOwnership = false)]
         public void ChangeStationServerRpc()
         {
-            if (!_radioOn) return;
+            if (!_controller.radioOn) return;
             if (_stationChangeRequested)
                 return;
             _stationChangeRequested = true;
@@ -211,20 +201,18 @@ namespace CruiserXL.Behaviour
             TurnOnAndSyncRadioRpc(_lastStationId!.Value.ToString());
         }
 
-        //[ServerRpc(RequireOwnership = false)]
         [Rpc(SendTo.Server, RequireOwnership = false)]
         public void SyncRadioServerRpc()
         {
-            SyncRadioRpc(_lastStationId.ToString(), _radioOn, _currentlyStorming);
+            SyncRadioRpc(_lastStationId.ToString(), _controller.radioOn, _currentlyStorming);
         }
 
-        //[ClientRpc]
         [Rpc(SendTo.Everyone, RequireOwnership = false)]
         public void SyncRadioRpc(string guidString, bool radioOn, bool currentlyStorming)
         {
             if (Guid.TryParse(guidString, out Guid guid) &&
                 guid == _lastStationId &&
-                radioOn == _radioOn &&
+                radioOn == _controller.radioOn &&
                 currentlyStorming == _currentlyStorming)
                 return;
             _currentlyStorming = currentlyStorming;
@@ -234,6 +222,9 @@ namespace CruiserXL.Behaviour
 
         public void TurnRadioOnOff(bool state)
         {
+            if (!_controller.radioAudio.loop) 
+                _controller.radioAudio.loop = true;
+
             Plugin.Logger.LogMessage("Changing radio state!");
             Plugin.Logger.LogMessage(state);
 
@@ -263,7 +254,7 @@ namespace CruiserXL.Behaviour
                 _radioCheckInterval = 0f;
                 PlayTransitionSound();
             }
-            _radioOn = state;
+            _controller.radioOn = state;
         }
 
         public string GetRandomFrequency()
@@ -308,12 +299,6 @@ namespace CruiserXL.Behaviour
 
         public void Update()
         {
-            //HUDManager.Instance.SetDebugText($"" +
-            //    $"stream: {_stream}" +
-            //    $"\nstreamDecomp{_stream?.decomp}" +
-            //    $"\nradioInterval{_radioCheckInterval}" +
-            //    $"\nbufferInf{_stream?.buffer_info}");
-
             if (RadioManager._stations.Count == 0) return;
 
             if (_stream != null &&
@@ -321,11 +306,9 @@ namespace CruiserXL.Behaviour
                 !_stream.decomp)
             {
                 _radioCheckInterval += Time.deltaTime;
-                if (_radioCheckInterval > 8.5f &&
-                    _radioOn && !_hasClientRequestedChange)
+                if (_radioCheckInterval > 6f &&
+                    _controller.radioOn && !_hasClientRequestedChange)
                 {
-                    //HUDManager.Instance.DisplayTip("Radio Timeout", 
-                    //    "Requesting server to change station!");
                     _radioCheckInterval = 0f;
                     _hasClientRequestedChange = true;
                     ChangeStationServerRpc();

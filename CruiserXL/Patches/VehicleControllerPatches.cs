@@ -6,32 +6,25 @@ namespace CruiserXL.Patches;
 [HarmonyPatch(typeof(VehicleController))]
 public static class VehicleControllerPatches
 {
-    // Thank you MattyMatty, and DiFFoZ over at the Lethal
-    // Company Modding Discord for helping me with this,
-    // these are basically "re-direct" functions, since
-    // we cannot override these functions as they're not
-    // marked as virtual, this sort of mimics that by 
-    // cancelling out the original function, and if it's
-    // our vehicle, we call the function we want to call
-    // on that instead, pretty simple stuff!
-    [HarmonyPatch("AddEngineOil")]
+    // thank you MattyMatty, and DiFFoZ for helping me with this!!
+    [HarmonyPatch(nameof(VehicleController.AddEngineOil))]
     [HarmonyPrefix]
     static bool AddEngineOil_Prefix(VehicleController __instance, bool __runOriginal)
     {
         if (!__runOriginal)
-            //somebody else has redirected the function ignore the call
+            // somebody else has redirected the function ignore the call
             return false;
 
         if (__instance is not CruiserXLController vehicle)
-            //not us run the original code
+            // not us run the original code
             return true;
 
-        //our class run our code, and skip original.
+        // our class run our code, and skip original.
         vehicle.AddEngineOil();
         return false;
     }
 
-    [HarmonyPatch("AddTurboBoost")]
+    [HarmonyPatch(nameof(VehicleController.AddTurboBoost))]
     [HarmonyPrefix]
     static bool AddTurboBoost_Prefix(VehicleController __instance, bool __runOriginal)
     {
@@ -45,7 +38,7 @@ public static class VehicleControllerPatches
         return false;
     }
 
-    [HarmonyPatch("StartMagneting")]
+    [HarmonyPatch(nameof(VehicleController.StartMagneting))]
     [HarmonyPrefix]
     static bool StartMagneting_Prefix(VehicleController __instance, bool __runOriginal)
     {
@@ -55,11 +48,12 @@ public static class VehicleControllerPatches
         if (__instance is not CruiserXLController vehicle)
             return true;
 
-        vehicle.StartMagneting();
+        // need to investigate some stuff regarding this
+        //vehicle.StartMagneting();
         return false;
     }
 
-    [HarmonyPatch("CollectItemsInTruck")]
+    [HarmonyPatch(nameof(VehicleController.CollectItemsInTruck))]
     [HarmonyPrefix]
     static bool CollectItemsInTruck_Prefix(VehicleController __instance, bool __runOriginal)
     {
@@ -74,7 +68,7 @@ public static class VehicleControllerPatches
     }
 
 
-    [HarmonyPatch("DestroyCar")]
+    [HarmonyPatch(nameof(VehicleController.DestroyCar))]
     [HarmonyPrefix]
     static bool DestroyCar_Prefix(VehicleController __instance, bool __runOriginal)
     {
@@ -88,24 +82,7 @@ public static class VehicleControllerPatches
         return false;
     }
 
-    /// <summary>
-    ///  Available from EnemySoundFixes, licensed under GNU General Public License.
-    ///  Source: https://github.com/ButteryStancakes/EnemySoundFixes/blob/master/Patches/CruiserPatches.cs
-    /// </summary>
-    [HarmonyPatch("SetVehicleAudioProperties")]
-    [HarmonyPrefix]
-    static void SetVehicleAudioProperties_Prefix(VehicleController __instance, AudioSource audio, ref bool audioActive)
-    {
-        if (audioActive && ((audio == __instance.extremeStressAudio && __instance.magnetedToShip) || ((audio == __instance.rollingAudio || audio == __instance.skiddingAudio) && (__instance.magnetedToShip || (!__instance.FrontLeftWheel.isGrounded && !__instance.FrontRightWheel.isGrounded && !__instance.BackLeftWheel.isGrounded && !__instance.BackRightWheel.isGrounded)))))
-            audioActive = false;
-    }
-
-    // Mods such as BioDiversity that add the Ogopogo 
-    // lake monster, have specific code to grab players
-    // out of vehicles seats, however, we need to call
-    // our function to leave the vehicle seat, or else
-    // shit breaks, like, really badly.
-    [HarmonyPatch("ExitDriverSideSeat")]
+    [HarmonyPatch(nameof(VehicleController.ExitDriverSideSeat))]
     [HarmonyPrefix]
     static bool ExitDriverSideSeat_Prefix(VehicleController __instance, bool __runOriginal)
     {
@@ -119,7 +96,7 @@ public static class VehicleControllerPatches
         return false;
     }
 
-    [HarmonyPatch("ExitPassengerSideSeat")]
+    [HarmonyPatch(nameof(VehicleController.ExitPassengerSideSeat))]
     [HarmonyPrefix]
     static bool ExitPassengerSideSeat_Prefix(VehicleController __instance, bool __runOriginal)
     {
@@ -133,7 +110,7 @@ public static class VehicleControllerPatches
         return false;
     }
 
-    [HarmonyPatch("CarReactToObstacle")]
+    [HarmonyPatch(nameof(VehicleController.CarReactToObstacle))]
     [HarmonyPrefix]
     static bool CarReactToObstacle_Prefix(VehicleController __instance, bool __runOriginal, Vector3 vel, Vector3 position, Vector3 impulse, CarObstacleType type, float obstacleSize, EnemyAI enemyScript, bool dealDamage)
     {
@@ -144,6 +121,89 @@ public static class VehicleControllerPatches
             return true;
 
         vehicle.CarReactToObstacle(vel, position, impulse, type, obstacleSize, enemyScript, dealDamage);
+        return false;
+    }
+
+    [HarmonyPatch(nameof(VehicleController.DealPermanentDamage))]
+    [HarmonyPrefix]
+    static bool DealPermanentDamage_Prefix(VehicleController __instance, bool __runOriginal, int damageAmount, Vector3 damagePosition = default(Vector3))
+    {
+        if (!__runOriginal)
+            return false;
+
+        if (__instance is not CruiserXLController vehicle)
+            return true;
+
+        vehicle.DealPermanentDamage(damageAmount, damagePosition);
+        return false;
+    }
+
+    [HarmonyPatch(nameof(VehicleController.DamagePlayerInVehicle))]
+    [HarmonyPrefix]
+    static bool DamagePlayerInVehicle_Prefix(VehicleController __instance, bool __runOriginal, Vector3 vel, float magnitude)
+    {
+        if (!__runOriginal)
+            return false;
+
+        if (__instance is not CruiserXLController vehicle)
+            return true;
+
+        vehicle.DamagePlayerInVehicle(vel, magnitude);
+        return false;
+    }
+
+    [HarmonyPatch(nameof(VehicleController.SetInternalStress))]
+    [HarmonyPrefix]
+    static bool SetInternalStress_Prefix(VehicleController __instance, bool __runOriginal, float carStressIncrease)
+    {
+        if (!__runOriginal)
+            return false;
+
+        if (__instance is not CruiserXLController vehicle)
+            return true;
+
+        vehicle.SetInternalStress(carStressIncrease);
+        return false;
+    }
+
+    [HarmonyPatch(nameof(VehicleController.ToggleHeadlightsLocalClient))]
+    [HarmonyPrefix]
+    static bool ToggleHeadlightsLocalClient_Prefix(VehicleController __instance, bool __runOriginal)
+    {
+        if (!__runOriginal)
+            return false;
+
+        if (__instance is not CruiserXLController vehicle)
+            return true;
+
+        vehicle.ToggleHeadlightsLocalClient();
+        return false;
+    }
+
+    [HarmonyPatch(nameof(VehicleController.SetHeadlightMaterial))]
+    [HarmonyPrefix]
+    static bool SetHeadlightMaterial_Prefix(VehicleController __instance, bool __runOriginal, bool on)
+    {
+        if (!__runOriginal)
+            return false;
+
+        if (__instance is not CruiserXLController vehicle)
+            return true;
+
+        vehicle.SetHeadlightMaterial(on);
+        return false;
+    }
+
+    [HarmonyPatch(nameof(VehicleController.SpringDriverSeatLocalClient))]
+    [HarmonyPrefix]
+    static bool SpringDriverSeatLocalClient_Prefix(VehicleController __instance, bool __runOriginal)
+    {
+        if (!__runOriginal)
+            return false;
+
+        if (__instance is not CruiserXLController vehicle)
+            return true;
+
         return false;
     }
 }

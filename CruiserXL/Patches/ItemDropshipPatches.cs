@@ -7,13 +7,14 @@ namespace CruiserXL.Patches;
 [HarmonyPatch(typeof(ItemDropship))]
 public class ItemDropshipPatches
 {
-    [HarmonyPatch("Start")]
+    // optimisation stuff
+    [HarmonyPatch(nameof(ItemDropship.Start))]
     [HarmonyPrefix]
     private static void Start_Prefix(ItemDropship __instance)
     {
-        if (__instance == null) return;
+        if (__instance == null) 
+            return;
 
-        if (References.itemShip == null)
-            References.itemShip = __instance;
+        References.itemShip = __instance;
     }
 }

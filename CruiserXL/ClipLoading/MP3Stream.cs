@@ -64,7 +64,7 @@ namespace CruiserXL.ClipLoading
             webRequest.Headers.Clear();
             webRequest.Headers.Add("GET", "/ HTTP/1.0");
             webRequest.Headers.Add("Icy-MetaData", "1");
-            webRequest.UserAgent = "LethalCompany/ScanvanTruck";
+            webRequest.UserAgent = "LethalCompany/ScandalRadio";
             HttpWebResponse resp;
             try
             {
@@ -131,7 +131,7 @@ namespace CruiserXL.ClipLoading
                                 };
                                 //this.bufferedWaveProvider.BufferedDuration = 250;
 
-                                decomp = true; //tell main Unity Thread to create AudioClip
+                                decomp = true; // tell main Unity Thread to create AudioClip
                             }
                             int decompressed = decompressor.DecompressFrame(frame, buffer, 0);
                             bufferedWaveProvider.AddSamples(buffer, 0, decompressed);
@@ -184,23 +184,6 @@ namespace CruiserXL.ClipLoading
                        bufferedWaveProvider.BufferLength - bufferedWaveProvider.BufferedBytes
                        < bufferedWaveProvider.WaveFormat.AverageBytesPerSecond / 4;
             }
-        }
-
-        private void buttonPlay_Click(object sender, EventArgs e)
-        {
-            // starting logic
-            /*
-            if (playbackState == StreamingPlaybackState.Stopped)
-            {
-                playbackState = StreamingPlaybackState.Buffering;
-                bufferedWaveProvider = null;
-                ThreadPool.QueueUserWorkItem(StreamMp3, textBoxStreamingUrl.Text);
-                timer1.Enabled = true;
-            }
-            else if (playbackState == StreamingPlaybackState.Paused)
-            {
-                playbackState = StreamingPlaybackState.Buffering;
-            }*/
         }
 
         public void StopPlayback()
@@ -258,7 +241,6 @@ namespace CruiserXL.ClipLoading
         public void Play()
         {
             _audioSource.Play();
-            // Debug.WriteLine(String.Format("Started playing, waveOut.PlaybackState={0}", waveOut.PlaybackState));
             playbackState = StreamingPlaybackState.Playing;
         }
 
@@ -266,7 +248,6 @@ namespace CruiserXL.ClipLoading
         {
             playbackState = StreamingPlaybackState.Buffering;
             _audioSource.Pause();
-            // Debug.WriteLine(String.Format("Paused to buffer, waveOut.PlaybackState={0}", waveOut.PlaybackState));
         }
     }
 }

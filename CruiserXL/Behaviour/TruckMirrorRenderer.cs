@@ -1,12 +1,7 @@
 ﻿using CruiserXL.Utils;
 using GameNetcodeStuff;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using UnityEngine;
-using UnityEngine.Scripting;
 using UnityEngine.Rendering.HighDefinition;
-using UnityEngine.Scripting.APIUpdating;
 
 namespace CruiserXL.Behaviour;
 
@@ -27,39 +22,26 @@ public class TruckMirrorRenderer : MonoBehaviour
     public int nextCameraToRender = 0;
     public float cameraRenderCountRemainder = 0f;
 
-    // zaggy zagster, thank you so, so much for helping me out with this!
+    // huge kudos to Zaggy for being my teacher throughout this!
     public void Awake()
     {
         mirrorCameras[0].farClipPlane = 30f;
         mirrorCameras[2].farClipPlane = 30f;
 
-        // ??
-        mirrorCameras[0].gameObject.GetComponent<HDAdditionalCameraData>().hasPersistentHistory = false;
-        mirrorCameras[1].gameObject.GetComponent<HDAdditionalCameraData>().hasPersistentHistory = false;
-        mirrorCameras[2].gameObject.GetComponent<HDAdditionalCameraData>().hasPersistentHistory = false;
+        // i'm going to be very honest, i don't exactly know what half these settings do
+        HDAdditionalCameraData m1 = mirrorCameras[0].gameObject.GetComponent<HDAdditionalCameraData>();
+        HDAdditionalCameraData m2 = mirrorCameras[1].gameObject.GetComponent<HDAdditionalCameraData>();
+        HDAdditionalCameraData m3 = mirrorCameras[2].gameObject.GetComponent<HDAdditionalCameraData>();
 
-        mirrorCameras[0].gameObject.GetComponent<HDAdditionalCameraData>().antialiasing = HDAdditionalCameraData.AntialiasingMode.None;
-        mirrorCameras[1].gameObject.GetComponent<HDAdditionalCameraData>().antialiasing = HDAdditionalCameraData.AntialiasingMode.None;
-        mirrorCameras[2].gameObject.GetComponent<HDAdditionalCameraData>().antialiasing = HDAdditionalCameraData.AntialiasingMode.None;
+        m1.hasPersistentHistory = false;
+        m2.hasPersistentHistory = false;
+        m3.hasPersistentHistory = false;
 
-        //mirrorCameras[0].gameObject.GetComponent<HDAdditionalCameraData>().volumeAnchorOverride = null;
-        //mirrorCameras[1].gameObject.GetComponent<HDAdditionalCameraData>().volumeAnchorOverride = null;
-        //mirrorCameras[2].gameObject.GetComponent<HDAdditionalCameraData>().volumeAnchorOverride = null;
-
-        mirrorCameras[0].gameObject.GetComponent<HDAdditionalCameraData>().stopNaNs = false;
-        mirrorCameras[1].gameObject.GetComponent<HDAdditionalCameraData>().stopNaNs = false;
-        mirrorCameras[2].gameObject.GetComponent<HDAdditionalCameraData>().stopNaNs = false;
-
-        mirrorCameras[0].gameObject.GetComponent<HDAdditionalCameraData>().dithering = false;
-        mirrorCameras[1].gameObject.GetComponent<HDAdditionalCameraData>().dithering = false;
-        mirrorCameras[2].gameObject.GetComponent<HDAdditionalCameraData>().dithering = false;
-
-        mirrorCameras[0].gameObject.GetComponent<HDAdditionalCameraData>().allowDynamicResolution = false;
-        mirrorCameras[1].gameObject.GetComponent<HDAdditionalCameraData>().allowDynamicResolution = false;
-        mirrorCameras[2].gameObject.GetComponent<HDAdditionalCameraData>().allowDynamicResolution = false;
+        m1.antialiasing = HDAdditionalCameraData.AntialiasingMode.None;
+        m2.antialiasing = HDAdditionalCameraData.AntialiasingMode.None;
+        m3.antialiasing = HDAdditionalCameraData.AntialiasingMode.None;
 
         cameraFramerate = 40f;
-
     }
 
     /// <summary>
@@ -80,11 +62,8 @@ public class TruckMirrorRenderer : MonoBehaviour
             return;
 
         PlayerControllerB player = GameNetworkManager.Instance.localPlayerController;
-        if (player == null) return;
-
-        playerInTruck = player == mainTruckScript.currentDriver ||
-            player == mainTruckScript.currentMiddlePassenger ||
-            player == mainTruckScript.currentPassenger;
+        if (player == null) 
+            return;
 
         foreach (var camera in mirrorCameras)
         {
@@ -93,7 +72,7 @@ public class TruckMirrorRenderer : MonoBehaviour
             camera.enabled = false;
         }
 
-        if (!playerInTruck)
+        if (!PlayerUtils.seatedInTruck)
         {
             leftMirrorMesh.enabled = false;
             centerMirrorMesh.enabled = false;

@@ -7,12 +7,16 @@ namespace CruiserXL.Patches;
 [HarmonyPatch(typeof(TimeOfDay))]
 public static class TimeOfDayPatches
 {
-    // This is pretty messy, but all this is for is to allow
-    // us to make our "rain colliders" on our truck kill rain,
+    // this is pretty messy, but all this is for is to allow
+    // us to make the "rain colliders" on the truck, well, kill rain.
     // effectively stopping rain from visually leaking into the
     // trucks cab or rear compartment, which was worse while the
-    // truck was in motion.
-    [HarmonyPatch("Awake")]
+    // truck was in motion, and it simply just annoyed me
+
+    // need to investigate if this has any performance concerns
+    // if yes, will make this a config
+    // if no, will leave this be
+    [HarmonyPatch(nameof(TimeOfDay.Awake))]
     [HarmonyPrefix]
     private static void Awake_Prefix(TimeOfDay __instance)
     {
@@ -21,7 +25,8 @@ public static class TimeOfDayPatches
         References.stormyRainParticles = __instance.transform.Find("StormyRainParticleContainer/Particle System").GetComponent<ParticleSystem>();
         References.stormyRainHitParticles = __instance.transform.Find("StormyRainParticleContainer/Particle System/RainHitParticle").GetComponent<ParticleSystem>();
 
-        if (References.rainParticles == null || References.rainHitParticles == null || References.stormyRainParticles == null || References.stormyRainHitParticles == null)
+        if (References.rainParticles == null || References.rainHitParticles == null || 
+            References.stormyRainParticles == null || References.stormyRainHitParticles == null)
             return;
 
         var rainParticleTrigger = References.rainParticles.trigger;

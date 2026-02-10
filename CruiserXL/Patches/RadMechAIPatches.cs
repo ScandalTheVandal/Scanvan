@@ -8,38 +8,40 @@ namespace CruiserXL.Patches;
 [HarmonyPatch(typeof(RadMechAI))]
 internal static class RadMechAIPatches
 {
-    // Special function to protect players from being grabbed
+    // patch to protect players from being grabbed
     // by an old-bird, if they're in our truck, and they're
     // considered 'protected'.
-    [HarmonyPatch("OnCollideWithPlayer")]
+    [HarmonyPatch(nameof(RadMechAI.OnCollideWithPlayer))]
     [HarmonyPrefix]
     static bool OnCollideWithPlayer_Prefix(RadMechAI __instance, Collider other)
     {
-        PlayerControllerB playerControllerB = GameNetworkManager.Instance.localPlayerController;
-        if (playerControllerB == null || !playerControllerB.isPlayerControlled || playerControllerB.isPlayerDead)
+        PlayerControllerB playerControllerB = __instance.MeetsStandardPlayerCollisionConditions(other, false, false);
+        if (playerControllerB == null)
             return true;
 
         if (References.truckController == null)
             return true;
+        CruiserXLController controller = References.truckController;
 
-        if (!VehicleUtils.IsPlayerNearTruck(playerControllerB, References.truckController))
-            return true;
-
-        if (!VehicleUtils.MeetsSpecialConditionsToCheck())
-            return false;
-
-        // not in our truck, run vanilla logic
-        if (!VehicleUtils.IsPlayerInTruck(playerControllerB, References.truckController))
-            return true;
-        // this check is also important to prevent returning false if the player isn't in our truck
-
-        // check if the player is protected in our truck
-        if (VehicleUtils.IsPlayerProtectedByTruck(playerControllerB, References.truckController))
+        // check if the player is seated in our truck
+        if (VehicleUtils.IsPlayerSeatedInVehicle(controller))
         {
             // player is protected, so do not allow the grab
-            return false;
+            if (VehicleUtils.IsSeatedPlayerProtected(playerControllerB, controller))
+                return false;
+            return true; // allow vanilla logic to run
         }
-        // run vanilla logic
+
+        // not seated in our truck, but within the vehicle bounds
+        if (VehicleUtils.IsPlayerInVehicleBounds())
+        {
+            if (VehicleUtils.IsPlayerProtectedByVehicle(playerControllerB, controller))
+                return false; // player is protected, so do not allow the grab
+
+            return true; // player is not protected, allow vanilla logic to run
+        }
+
+        // not in our truck, run vanilla logic
         return true;
     }
 }

@@ -8,33 +8,41 @@ namespace CruiserXL.Patches;
 [HarmonyPatch(typeof(GiantKiwiAI))]
 internal static class GiantKiwiAIPatches
 {
-    [HarmonyPatch("NavigateTowardsTargetPlayer")]
+    [HarmonyPatch(nameof(GiantKiwiAI.NavigateTowardsTargetPlayer))]
     [HarmonyPrefix]
     static bool NavigateTowardsTargetPlayer_Prefix(GiantKiwiAI __instance)
     {
         if (References.truckController == null)
             return true;
+        CruiserXLController controller = References.truckController;
 
-        // Sort of recycled vanilla logic, but to work with out
-        // Lift-gate open bool
+        // this is super hacky
         if (__instance.setDestinationToPlayerInterval <= 0f)
         {
             if (Vector3.Distance(__instance.targetPlayer.transform.position,
-                References.truckController.transform.position) < 10f)
+                controller.transform.position) < 10f)
             {
                 __instance.setDestinationToPlayerInterval = 0.25f;
-                bool isOccupant = References.truckController.currentDriver == __instance.targetPlayer ||
-                    References.truckController.currentPassenger == __instance.targetPlayer;
 
-                bool isInTruck = References.truckController.storageCompartment.ClosestPoint(
-                    __instance.targetPlayer.transform.position) ==
+                bool isOccupant = controller.currentDriver == __instance.targetPlayer || 
+                    controller.currentMiddlePassenger == __instance.targetPlayer || 
+                    controller.currentPassenger == __instance.targetPlayer;
+
+                bool inTruckBounds = controller.vehicleBounds.ClosestPoint(
+                    __instance.targetPlayer.transform.position) == 
                     __instance.targetPlayer.transform.position;
+                bool onTopOfTruck = controller.ontopOfTruckCollider.ClosestPoint(
+                    __instance.targetPlayer.transform.position) == 
+                    __instance.targetPlayer.transform.position;
+                bool inTruckStorage = PlayerUtils.isPlayerInStorage;
+                bool inTruckCab = PlayerUtils.isPlayerInCab && !PlayerUtils.seatedInTruck;
 
                 int areaMask = -1;
-                if (isOccupant || (isInTruck && !References.truckController.liftGateOpen) ||
-                    References.truckController.ontopOfTruckCollider.ClosestPoint(
-                    __instance.targetPlayer.transform.position) ==
-                    __instance.targetPlayer.transform.position)
+                if (isOccupant ||
+                    inTruckBounds ||
+                    inTruckStorage ||
+                    inTruckCab ||
+                    onTopOfTruck)
                 {
                     __instance.targetPlayerIsInTruck = true;
                     areaMask = -33;
@@ -49,23 +57,24 @@ internal static class GiantKiwiAIPatches
         return true;
     }
 
-    [HarmonyPatch("IsEggInsideClosedTruck")]
+    [HarmonyPatch(nameof(GiantKiwiAI.IsEggInsideClosedTruck))]
     [HarmonyPrefix]
     static bool IsEggInsideClosedTruck_Prefix(GiantKiwiAI __instance, KiwiBabyItem egg, bool closedTruck, ref bool __result)
     {
         if (References.truckController == null)
             return true;
+        CruiserXLController controller = References.truckController;
 
-        if (egg.parentObject == References.truckController.physicsRegion.parentNetworkObject.transform)
+        if (egg.parentObject == controller.physicsRegion.parentNetworkObject.transform)
         {
             __result = (!closedTruck ||
-                !References.truckController.liftGateOpen);
+                !controller.liftGateOpen);
             return false;
         }
         return true;
     }
 
-    [HarmonyPatch("AnimationEventB")]
+    [HarmonyPatch(nameof(GiantKiwiAI.AnimationEventB))]
     [HarmonyPrefix]
     static void AnimationEventB_Prefix(GiantKiwiAI __instance)
     {
@@ -74,26 +83,49 @@ internal static class GiantKiwiAIPatches
         if (playerControllerB == null || !playerControllerB.isPlayerControlled || playerControllerB.isPlayerDead)
             return;
 
-        // check there is one of our trucks on the map
         if (References.truckController == null)
             return;
+        CruiserXLController controller = References.truckController;
+        var avgSpeed = controller.averageVelocity.magnitude;
 
-        if (!VehicleUtils.IsPlayerNearTruck(playerControllerB, References.truckController))
-            return;
-
-        if (!VehicleUtils.MeetsSpecialConditionsToCheck())
-            return;
-
-        // not in our truck, run vanilla logic
-        if (!VehicleUtils.IsPlayerInTruck(playerControllerB, References.truckController))
-            return;
-
-        // check if the player is protected in our truck
-        if (VehicleUtils.IsPlayerProtectedByTruck(playerControllerB, References.truckController))
+        // check if the player is seated in our truck
+        if (VehicleUtils.IsPlayerSeatedInVehicle(controller))
         {
-            // idk if this works but it's worth a try
-            __instance.timeSinceHittingPlayer = 0.4f;
-            return;
+            // reset the timer, to prevent the kiwi from damaging the player, i guess
+            if (avgSpeed < 2f && VehicleUtils.IsSeatedPlayerProtected(playerControllerB, controller))
+            {
+                __instance.timeSinceHittingPlayer = 0.4f;
+                return;
+            }
+            else if (avgSpeed >= 2f)
+            {
+                __instance.timeSinceHittingPlayer = 0.4f;
+            }
+        }
+
+        bool enemyInTruck = VehicleUtils.IsEnemyInVehicle(__instance, controller);
+        if (VehicleUtils.IsPlayerInVehicleBounds())
+        {
+            // enemy is not in the back with the player
+            if (PlayerUtils.isPlayerInStorage && !enemyInTruck)
+                __instance.timeSinceHittingPlayer = 0.4f;
+
+            // player is standing in the cab
+            if (PlayerUtils.isPlayerInCab)
+            {
+                if (avgSpeed >= 2f ||
+                    (!controller.driverSideDoor.boolValue && !controller.passengerSideDoor.boolValue && 
+                    !controller.driversSideWindowTrigger.boolValue && !controller.passengersSideWindowTrigger.boolValue))
+                {
+                    __instance.timeSinceHittingPlayer = 0.4f;
+                }
+            }
+        }
+        else
+        {
+            // reset the timer, to prevent the kiwi from damaging the player
+            if (enemyInTruck)
+                __instance.timeSinceHittingPlayer = 0.4f;
         }
     }
 }
