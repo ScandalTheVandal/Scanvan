@@ -20,14 +20,9 @@ internal class PlayerControllerBPatches
         if (References.truckController == null) 
             return;
 
-        if (Vector3.Distance(
-            References.truckController.physicsRegion.transform.gameObject.GetComponent<Collider>().ClosestPoint(__instance.transform.position), __instance.transform.position)
-            > 0.001f)
-        {
-            PlayerUtils.isPlayerInCab = false;
-            PlayerUtils.isPlayerOnTruck = false;
-            PlayerUtils.isPlayerInStorage = false;
-        }
+        PlayerUtils.isPlayerInCab = false;
+        PlayerUtils.isPlayerOnTruck = false;
+        PlayerUtils.isPlayerInStorage = false;
     }
 
     // i'm not sure if this actually works, i'll need to look into this

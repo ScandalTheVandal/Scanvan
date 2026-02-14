@@ -54,10 +54,14 @@ public class DrivetrainModule : NetworkBehaviour
                 reverseWheelSpeed = controller.MaxEngineRPM / (gearRatios[0] * diffRatio) * (360f / 60f);
                 break;
             case TruckGearShift.Park:
+                currentGear = 1;
+                forwardWheelSpeed = 8000f;
+                reverseWheelSpeed = -8000f;
+                break;
             case TruckGearShift.Neutral:
                 currentGear = 1;
-                forwardWheelSpeed = 8500f;
-                reverseWheelSpeed = -8500f;
+                forwardWheelSpeed = 8000f;
+                reverseWheelSpeed = -8000f;
                 break;
             case TruckGearShift.Drive:
                 if (currentGear < 1) // do not let the current gear drop below its minimum
@@ -95,14 +99,9 @@ public class DrivetrainModule : NetworkBehaviour
     {
         if (syncCarDrivetrainInterval > 0.1475f)
         {
-            bool shouldSync = false;
             if (syncedWheelRPM != wheelRPM ||
                 syncedMotorTorque != controller.wheelTorque ||
                 syncedBrakeTorque != controller.wheelBrakeTorque)
-            {
-                shouldSync = true;
-            }
-            if (shouldSync)
             {
                 syncedWheelRPM = wheelRPM;
                 syncedMotorTorque = controller.wheelTorque;

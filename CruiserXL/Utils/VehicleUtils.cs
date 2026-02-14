@@ -55,7 +55,7 @@ public static class VehicleUtils
         bool driverDoorOpen = controller.driverSideDoor.boolValue;
         bool passengerDoorOpen = controller.passengerSideDoor.boolValue;
         bool backDoorOpen = controller.liftGateOpen;
-        bool sideDoorOpen = controller.rightSideDoor.boolValue;
+        bool sideDoorOpen = controller.sideDoorOpen;
 
         if (PlayerUtils.isPlayerInCab && (driverDoorOpen || passengerDoorOpen))
             return false;

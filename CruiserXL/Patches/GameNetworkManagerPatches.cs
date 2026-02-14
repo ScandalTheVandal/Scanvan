@@ -32,6 +32,8 @@ internal class GameNetworkManagerPatches
                 SaveManager.Save("AttachedVehicleSteeringRotation", controller.steeringWheelAnimFloat);
                 SaveManager.Save("AttachedVehicleGear", (int)controller.drivetrainModule.autoGear);
                 SaveManager.Save("AttachedVehicleHealth", controller.carHP);
+                SaveManager.Save("AttachedVehicleWindshield", controller.windshieldShattered);
+                SaveManager.Save("AttachedVehicleWindshieldBroken", controller.windshieldBroken);
 
                 Plugin.Logger.LogMessage("Successfully saved Scanvan data.");
             }
@@ -45,7 +47,10 @@ internal class GameNetworkManagerPatches
                 SaveManager.Delete("AttachedVehicleSteeringRotation");
                 SaveManager.Delete("AttachedVehicleGear");
                 SaveManager.Delete("AttachedVehicleHealth");
+                SaveManager.Delete("AttachedVehicleWindshield");
+                SaveManager.Delete("AttachedVehicleWindshieldBroken");
 
+                Plugin.Logger.LogMessage("Successfully deleted Scanvan data.");
             }
         }
         catch (Exception e)

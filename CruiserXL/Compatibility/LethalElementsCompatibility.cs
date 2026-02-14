@@ -86,7 +86,8 @@ public class LethalElementsCompatibility
 
         CruiserXLController controller = References.truckController;
         bool isCabEnclosed = !controller.driverSideDoor.boolValue && !controller.passengerSideDoor.boolValue &&
-             !controller.driversSideWindowTrigger.boolValue && !controller.passengersSideWindowTrigger.boolValue;
+             !controller.driversSideWindowTrigger.boolValue && !controller.passengersSideWindowTrigger.boolValue &&
+             !controller.windshieldBroken;
         bool isStorageEnclosed = !controller.liftGateOpen && !controller.sideDoorOpen;
         bool isHeaterOnAndCool = controller.ignitionStarted && controller.heaterOn && !controller.isHeaterWarm && controller.isHeaterCold;
         bool isHeaterOnAndWarm = controller.ignitionStarted && controller.heaterOn && controller.isHeaterWarm && !controller.isHeaterCold;
@@ -169,7 +170,8 @@ public class LethalElementsCompatibility
 
         CruiserXLController controller = References.truckController;
         bool isCabEnclosed = !controller.driverSideDoor.boolValue && !controller.passengerSideDoor.boolValue &&
-            !controller.driversSideWindowTrigger.boolValue && !controller.passengersSideWindowTrigger.boolValue;
+            !controller.driversSideWindowTrigger.boolValue && !controller.passengersSideWindowTrigger.boolValue &&
+            !controller.windshieldBroken;
         bool isStorageEnclosed = !controller.liftGateOpen && !controller.sideDoorOpen;
         bool outsideOfTruck = PlayerUtils.isPlayerOnTruck && !PlayerUtils.isPlayerInCab && !PlayerUtils.isPlayerInStorage;
         PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
@@ -223,7 +225,8 @@ public class LethalElementsCompatibility
 
         CruiserXLController controller = References.truckController;
         bool isCabEnclosed = !controller.driverSideDoor.boolValue && !controller.passengerSideDoor.boolValue &&
-            !controller.driversSideWindowTrigger.boolValue && !controller.passengersSideWindowTrigger.boolValue;
+            !controller.driversSideWindowTrigger.boolValue && !controller.passengersSideWindowTrigger.boolValue &&
+            !controller.windshieldBroken;
         bool isStorageEnclosed = !controller.liftGateOpen && !controller.sideDoorOpen;
         bool inCabOrStorage = PlayerUtils.isPlayerInCab || PlayerUtils.isPlayerInStorage;
         bool outsideOfTruck = PlayerUtils.isPlayerOnTruck && !PlayerUtils.isPlayerInCab && !PlayerUtils.isPlayerInStorage;
@@ -242,7 +245,6 @@ public class LethalElementsCompatibility
                 PlayerEffectsManager.heatTransferRate = (0.25f * controller.heaterSpeed);
             else PlayerEffectsManager.heatTransferRate = 0.75f;
         }
-
         if (outsideOfTruck)
         {
             PlayerEffectsManager.heatTransferRate = 1f;
@@ -257,7 +259,8 @@ public class LethalElementsCompatibility
                 localPlayer.currentAudioTrigger.insideLighting) return false;
 
         bool isCabEnclosed = !controller.driverSideDoor.boolValue && !controller.passengerSideDoor.boolValue &&
-            !controller.driversSideWindowTrigger.boolValue && !controller.passengersSideWindowTrigger.boolValue;
+            !controller.driversSideWindowTrigger.boolValue && !controller.passengersSideWindowTrigger.boolValue &&
+            !controller.windshieldBroken;
         bool isStorageEnclosed = !controller.liftGateOpen && !controller.sideDoorOpen;
         bool outsideOfTruck = PlayerUtils.isPlayerOnTruck && !PlayerUtils.isPlayerInCab && !PlayerUtils.isPlayerInStorage;
 
@@ -284,7 +287,8 @@ public class LethalElementsCompatibility
 
         CruiserXLController controller = References.truckController;
         bool isCabEnclosed = !controller.driverSideDoor.boolValue && !controller.passengerSideDoor.boolValue &&
-             !controller.driversSideWindowTrigger.boolValue && !controller.passengersSideWindowTrigger.boolValue;
+             !controller.driversSideWindowTrigger.boolValue && !controller.passengersSideWindowTrigger.boolValue &&
+             !controller.windshieldBroken;
         bool isStorageEnclosed = !controller.liftGateOpen && !controller.sideDoorOpen;
         bool isHeaterOnAndCool = controller.ignitionStarted && controller.heaterOn && !controller.isHeaterWarm && controller.isHeaterCold;
         bool isHeaterOnAndWarm = controller.ignitionStarted && controller.heaterOn && controller.isHeaterWarm && !controller.isHeaterCold;

@@ -39,7 +39,7 @@ internal static class ForestGiantAIPatches
             return true;
 
         PlayerControllerB playerControllerB = __instance.MeetsStandardPlayerCollisionConditions(other, __instance.inEatingPlayerAnimation, false);
-        if (playerControllerB == null )
+        if (playerControllerB == null)
             return true;
 
         if (References.truckController == null)
@@ -49,7 +49,10 @@ internal static class ForestGiantAIPatches
         // check if the player is seated in our truck
         if (VehicleUtils.IsPlayerSeatedInVehicle(controller))
         {
-            // player is protected, so do not allow the kill
+            // windshield is missing, so allow the grab
+            if (controller.windshieldBroken && controller.averageVelocity.magnitude <= 10f)
+                return false;
+            // player is protected, so do not allow the grab
             if (VehicleUtils.IsSeatedPlayerProtected(playerControllerB, controller))
                 return false;
             return true; // allow vanilla logic to run (no inVehicleAnimation check)
@@ -58,8 +61,11 @@ internal static class ForestGiantAIPatches
         // not seated in our truck, but within the vehicle bounds
         if (VehicleUtils.IsPlayerInVehicleBounds())
         {
+            // windshield is missing, so allow the grab
+            if (PlayerUtils.isPlayerInCab && (controller.windshieldBroken && controller.averageVelocity.magnitude <= 10f))
+                return false;
             if (VehicleUtils.IsPlayerProtectedByVehicle(playerControllerB, controller))
-                return false; // player is protected, so do not allow the kill
+                return false; // player is protected, so do not allow the grab
 
             return true; // player is not protected, allow vanilla logic to run
         }

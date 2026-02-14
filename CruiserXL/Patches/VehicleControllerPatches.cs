@@ -190,7 +190,6 @@ public static class VehicleControllerPatches
         if (__instance is not CruiserXLController vehicle)
             return true;
 
-        vehicle.SetHeadlightMaterial(on);
         return false;
     }
 

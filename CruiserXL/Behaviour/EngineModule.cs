@@ -29,8 +29,6 @@ public class EngineModule : NetworkBehaviour
 
         if (!controller.ignitionStarted)
         {
-            controller.EngineRPM = Mathf.Lerp(controller.EngineRPM, 0f,
-                3f * Time.deltaTime);
             enginePower = 0f;
             return;
         }

@@ -60,9 +60,7 @@ public class EVAModule : NetworkBehaviour
     public void LateUpdate()
     {
         if (controller == null || !controller.IsSpawned ||
-            !NetworkManager.Singleton.IsHost || 
-            controller.batteryCharge <= controller.dischargedBattery || 
-            controller.carDestroyed) return;
+            !NetworkManager.Singleton.IsHost || controller.carDestroyed) return;
 
         if (alertSystemInterval <= 0.25f)
         {
@@ -248,21 +246,6 @@ public class EVAModule : NetworkBehaviour
 
     private void SetHealthAlertClips()
     {
-        if (controller.batteryCharge <= 0.61f &&
-            !WasClipPlayed(ElectronicVoiceAlert.ChargeSysMalfunction) &&
-            !hasWarnedChargeSystemLow &&
-            controller.keyIsInIgnition && !controller.ignitionStarted)
-        {
-            hasWarnedChargeSystemLow = true;
-            SetClipInQueue(ElectronicVoiceAlert.ChargeSysMalfunction);
-        }
-        else if ((controller.batteryCharge > 0.61f ||
-            controller.ignitionStarted) && hasWarnedChargeSystemLow)
-        {
-            hasWarnedChargeSystemLow = false;
-            ResetAudioClip(ElectronicVoiceAlert.ChargeSysMalfunction);
-        }
-
         if (!controller.ignitionStarted)
         {
             randomOverheatClipToPlay = 0;

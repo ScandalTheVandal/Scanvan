@@ -159,5 +159,4 @@ public static class PlayerUtils
             playerAnimator.Play(int.Parse(animInfo.stateName), layer, animInfo.normalizedTime);
         }
     }
-
 }

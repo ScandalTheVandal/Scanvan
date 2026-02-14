@@ -41,20 +41,19 @@ public static class StartOfRoundPatches
     [HarmonyPostfix]
     static void SyncAlreadyHeldObjectsServerRpc_Postfix(StartOfRound __instance, int joiningClientId)
     {
-        if (!__instance.attachedVehicle || __instance.attachedVehicle is not CruiserXLController) return;
+        if (!__instance.attachedVehicle || __instance.attachedVehicle is not CruiserXLController controller) return;
         try
         {
-            CruiserXLController controller = __instance.attachedVehicle.GetComponent<CruiserXLController>();
             if (controller == null)
             {
-                Plugin.Logger.LogError("Attempted to send client data, but the truck is null! please report this to Scandal.");
+                Plugin.Logger.LogError("attempted to send client data, but the truck is null? please report this to Scandal.");
                 return;
             }
             controller.SendClientSyncData();
         }
         catch (Exception e)
         {
-            Plugin.Logger.LogError("Exception caught sending saved Scanvan data:\n" + e);
+            Plugin.Logger.LogError("exception caught sending saved Scanvan data:\n" + e);
         }
     }
 
@@ -62,13 +61,12 @@ public static class StartOfRoundPatches
     [HarmonyPostfix]
     static void LoadAttachedVehicle_Postfix(StartOfRound __instance)
     {
-        if (!__instance.attachedVehicle ||  __instance.attachedVehicle is not CruiserXLController) return;
+        if (!__instance.attachedVehicle ||  __instance.attachedVehicle is not CruiserXLController controller) return;
         try
         {
-            var controller = __instance.attachedVehicle.GetComponent<CruiserXLController>();
             if (controller == null)
             {
-                Plugin.Logger.LogError("Attempted to send client data, but the truck is null! please report this to Scandal.");
+                Plugin.Logger.LogError("attempted to load saved data, but the truck is null? please report this to Scandal.");
                 return;
             }
 
@@ -80,6 +78,8 @@ public static class StartOfRoundPatches
             SaveManager.TryLoad<float>("AttachedVehicleSteeringRotation", out var wheelPosition);
             SaveManager.TryLoad<int>("AttachedVehicleGear", out var carGear);
             SaveManager.TryLoad<int>("AttachedVehicleHealth", out var carHealth);
+            SaveManager.TryLoad<bool>("AttachedVehicleWindshield", out var carWindow);
+            SaveManager.TryLoad<bool>("AttachedVehicleWindshieldBroken", out var carWindowBroken);
 
             controller.isSpecial = variant;
             controller.SetVariant(controller.isSpecial);
@@ -101,10 +101,13 @@ public static class StartOfRoundPatches
             controller.steeringWheelAnimFloat = wheelPosition;
             controller.drivetrainModule.autoGear = (TruckGearShift)carGear;
             controller.carHP = carHealth;
+
+            if (carWindow) controller.ShatterWindshield();
+            if (carWindowBroken) controller.BreakWindshield();
         }
         catch (Exception e)
         {
-            Plugin.Logger.LogError("Exception caught loading saved Scanvan data:\n" + e);
+            Plugin.Logger.LogError("exception caught loading saved Scanvan data:\n" + e);
         }
     }
 }

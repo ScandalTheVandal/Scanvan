@@ -124,17 +124,17 @@ namespace CruiserXL
 
     internal class VehicleControls : LcInputActions
     {
-        [InputAction(KeyboardControl.A, Name = "Steer Left", GamepadControl = GamepadControl.LeftStick)]
-        public InputAction SteerLeftKey { get; set; } = null!;
-
-        [InputAction(KeyboardControl.D, Name = "Steer Right", GamepadControl = GamepadControl.RightStick)]
-        public InputAction SteerRightKey { get; set; } = null!;
-
         [InputAction(KeyboardControl.W, Name = "Gas Pedal", GamepadControl = GamepadControl.RightTrigger)]
         public InputAction GasPedalKey { get; set; } = null!;
 
+        [InputAction(KeyboardControl.A, Name = "Steer Left", GamepadControl = GamepadControl.LeftStick)]
+        public InputAction SteerLeftKey { get; set; } = null!;
+
         [InputAction(KeyboardControl.S, Name = "Brake", GamepadControl = GamepadControl.LeftTrigger)]
         public InputAction BrakePedalKey { get; set; } = null!;
+
+        [InputAction(KeyboardControl.D, Name = "Steer Right", GamepadControl = GamepadControl.RightStick)]
+        public InputAction SteerRightKey { get; set; } = null!;
 
         [InputAction(KeyboardControl.Space, Name = "Jump")]
         public InputAction JumpKey { get; set; } = null!;
