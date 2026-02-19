@@ -16,10 +16,6 @@ erm I don't have one yet lmao
 * An incomplete manual that I'm too lazy to redo
 
 ## Pictures
-![Front angle of the Hauler](https://i.imgur.com/4vCCw10.png)
-![Bed view of the Hauler](https://i.imgur.com/VedpSzy.png)
-![Cab view](https://i.imgur.com/9AISuBJ.png)
-![On the magnet](https://i.imgur.com/9lFG8xS.png)
 
 ## Compatibility
 * Should mostly be compatible with any other vehicle mods, also compatible with CruiserTunes (disable DMCA-Free music)
