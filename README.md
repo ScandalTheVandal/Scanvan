@@ -12,7 +12,7 @@ erm I don't have one yet lmao
 * A functional live radio system (RadioFurniture in your truck!) (Disabled by default, disable the DMCA-Music config to enable this)
 * Fun interactables such as electric windows, sunvisors, hazard warning lights, etc!
 * **10** default radio tracks (DMCA-free)
-* Custom SFX's, custom animations
+* Custom SFX's and some custom animations!
 * An incomplete manual that I'm too lazy to redo
 * Functional climate control (LethalElements compatability)
 * ...other things?
