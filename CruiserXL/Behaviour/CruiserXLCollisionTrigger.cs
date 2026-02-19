@@ -50,7 +50,7 @@ public class CruiserXLCollisionTrigger : MonoBehaviour
             if (angle > 70f)
                 return;
 
-            if (angle < 30f && mainScript.drivetrainModule.wheelRPM > 400f)
+            if (angle < 30f && mainScript.wheelRPM > 400f)
             {
                 velocityMagnitude += 6f;
             }

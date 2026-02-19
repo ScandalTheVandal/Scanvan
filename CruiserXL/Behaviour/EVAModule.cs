@@ -170,7 +170,7 @@ public class EVAModule : NetworkBehaviour
             StopAudioClipIfPlaying();
             return;
         }
-        if (controller.keyIsInIgnition)
+        if (controller.electricsOn)
         {
             if (hasJustPlayedSixBeepChime)
             {
@@ -347,12 +347,12 @@ public class EVAModule : NetworkBehaviour
 
     private void SetParkingBrakeAlert()
     {
-        if (controller.drivetrainModule.autoGear == TruckGearShift.Park && controller.drivePedalPressed && !WasClipPlayed(ElectronicVoiceAlert.ParkBrakeOn))
+        if (controller.autoGear == TruckGearShift.Park && controller.drivePedalPressed && !WasClipPlayed(ElectronicVoiceAlert.ParkBrakeOn))
         {
             SetClipInQueue(ElectronicVoiceAlert.ParkBrakeOn);
         }
         else if (WasClipPlayed(ElectronicVoiceAlert.ParkBrakeOn) &&
-                (controller.drivetrainModule.autoGear != TruckGearShift.Park || !controller.drivePedalPressed))
+                (controller.autoGear != TruckGearShift.Park || !controller.drivePedalPressed))
         {
             ResetAudioClip(ElectronicVoiceAlert.ParkBrakeOn);
         }

@@ -99,7 +99,7 @@ public static class StartOfRoundPatches
 
             controller.syncedWheelRotation = wheelPosition;
             controller.steeringWheelAnimFloat = wheelPosition;
-            controller.drivetrainModule.autoGear = (TruckGearShift)carGear;
+            controller.autoGear = (TruckGearShift)carGear;
             controller.carHP = carHealth;
 
             if (carWindow) controller.ShatterWindshield();

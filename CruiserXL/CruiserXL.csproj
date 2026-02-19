@@ -59,7 +59,7 @@
 	<!-- Manual References -->
 	<ItemGroup>
 		<Reference Include="RadioBrowser">
-			<HintPath>>$(MANUAL_REFS_DIR)\Bobbie-RadioBrowser\RadioBrowser.dll</HintPath>
+			<HintPath>$(MANUAL_REFS_DIR)\Bobbie-RadioBrowser\RadioBrowser.dll</HintPath>
 		</Reference>	
 		<Reference Include="LethalElementsTheta" Publicize="true">
 			<HintPath>$(MANUAL_REFS_DIR)\pacoito-LethalElementsTheta\voxx.LethalElementsPlugin.dll</HintPath>

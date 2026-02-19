@@ -30,7 +30,7 @@ internal class GameNetworkManagerPatches
                 SaveManager.Save("AttachedVehicleVariant", controller.isSpecial);
                 SaveManager.Save("AttachedVehicleIgnition", controller.ignitionStarted);
                 SaveManager.Save("AttachedVehicleSteeringRotation", controller.steeringWheelAnimFloat);
-                SaveManager.Save("AttachedVehicleGear", (int)controller.drivetrainModule.autoGear);
+                SaveManager.Save("AttachedVehicleGear", (int)controller.autoGear);
                 SaveManager.Save("AttachedVehicleHealth", controller.carHP);
                 SaveManager.Save("AttachedVehicleWindshield", controller.windshieldShattered);
                 SaveManager.Save("AttachedVehicleWindshieldBroken", controller.windshieldBroken);
