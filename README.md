@@ -20,7 +20,7 @@ erm I don't have one yet lmao
 ## Pictures
 
 ## Compatibility
-* Should mostly be compatible with any other vehicle mods, also compatible with CruiserTunes (disable DMCA-Free music)
+* Should mostly be compatible with any other vehicle mods (i.e. Company Hauler) also compatible with CruiserTunes (disable DMCA-Free music through the config)
 * Not compatible, but will not break or cause issues with:
 
 - LategameCompanyCruiserUpgrades
