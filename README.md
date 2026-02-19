@@ -57,11 +57,11 @@ https://archive.org/details/78rpmCollection1920s1930sPopularMusic
 ## Attributions/Credits
 
 - FreeSound Attributions
-- 
+  
 `MITSUBISHI IMIEV electric car HEATER int.wav by jakobthiesen -- https://freesound.org/s/174842/ -- License: Attribution 3.0`\
 `Gear Shift - Park Reverse Drive - Interior Honda.wav by UnplugTheFridge -- https://freesound.org/s/529222/ -- License: Creative Commons 0`\
 `Indicator Stereo.mp3 by TurboTheSergal -- https://freesound.org/s/523354/ -- License: Attribution 4.0`\
-`Blinker in car by dersuperanton -- https://freesound.org/s/434819/ -- License: Attribution 4.0`\
+`Blinker in car by dersuperanton -- https://freesound.org/s/434819/ -- License: Attribution 4.0`
 
 - Misc
 `Various Sound Effects -- (https://pixabay.com)`\
