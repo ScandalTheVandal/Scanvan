@@ -71,7 +71,7 @@ public static class VehicleUtils
 
     public static bool IsPlayerNearTruck(PlayerControllerB player, CruiserXLController vehicle)
     {
-        Vector3 vehicleTransform = vehicle.transform.position;
+        Vector3 vehicleTransform = vehicle.mainRigidbody.position;
         Vector3 playerTransform = player.transform.position;
 
         if (Vector3.Distance(playerTransform, vehicleTransform) > 10f)

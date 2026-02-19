@@ -85,9 +85,11 @@ public class EngineModule : NetworkBehaviour
         if (!controller.ignitionStarted)
             return;
 
-        if (syncCarEngineSpeedInterval > 0.165f)
+        float syncThreshold = 0.16f * (controller.averageVelocity.magnitude / 2f);
+        syncThreshold = Mathf.Clamp(syncThreshold, 0.16f, 0.38f);
+        if (syncCarEngineSpeedInterval > syncThreshold)
         {
-            int engineSpeedToSync = Mathf.RoundToInt(controller.EngineRPM / 100f);
+            float engineSpeedToSync = Mathf.Round(controller.EngineRPM / 100f) * 100f;
             if (syncedEngineRPM != engineSpeedToSync)
             {
                 syncCarEngineSpeedInterval = 0f;
@@ -105,6 +107,6 @@ public class EngineModule : NetworkBehaviour
     [Rpc(SendTo.NotOwner, RequireOwnership = false)]
     public void SyncCarEngineSpeedRpc(float engineSpeed)
     {
-        syncedEngineRPM = engineSpeed * 100f;
+        syncedEngineRPM = engineSpeed;
     }
 }

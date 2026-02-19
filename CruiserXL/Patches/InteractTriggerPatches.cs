@@ -4,6 +4,7 @@ using UnityEngine;
 using System;
 using System.Collections;
 using CruiserXL.Utils;
+using System.Numerics;
 
 namespace CruiserXL.Patches;
 
@@ -59,6 +60,8 @@ public class InteractTriggerPatches
 
     public static IEnumerator SpecialTruckInteractAnimation(InteractTrigger trigger, PlayerControllerB playerController, CruiserXLController controller, bool isPassenger)
     {
+        var data = PlayerControllerBPatches.GetData(playerController);
+        data.currentCarAnimation = -1;
         if (!isPassenger)
         {
             // save a reference of the players current animator
@@ -73,8 +76,6 @@ public class InteractTriggerPatches
             // apply the animator from our references
             if (References.truckPlayerAnimator != null)
                 playerController.playerBodyAnimator.runtimeAnimatorController = References.truckPlayerAnimator;
-
-            playerController.playerBodyAnimator.Update(0.0f);
         }
         trigger.UpdateUsedByPlayerServerRpc((int)playerController.playerClientId);
         trigger.isPlayingSpecialAnimation = true;
@@ -102,7 +103,6 @@ public class InteractTriggerPatches
         playerController.currentTriggerInAnimationWith = trigger;
         playerController.playerBodyAnimator.ResetTrigger(trigger.animationString);
         playerController.playerBodyAnimator.SetTrigger(trigger.animationString);
-
         HUDManager.Instance.ClearControlTips();
         if (!trigger.stopAnimationManually)
         {
@@ -116,8 +116,11 @@ public class InteractTriggerPatches
 
     [HarmonyPatch(nameof(InteractTrigger.StopSpecialAnimation))]
     [HarmonyPrefix]
-    static bool StopSpecialAnimation_Prefix(InteractTrigger __instance)
+    static bool StopSpecialAnimation_Prefix(InteractTrigger __instance, bool __runOriginal)
     {
+        if (!__runOriginal)
+            return false;
+
         if (__instance.lockedPlayer == null)
             return true;
 
@@ -155,7 +158,6 @@ public class InteractTriggerPatches
             playerController.playerBodyAnimator.runtimeAnimatorController = StartOfRound.Instance.localClientAnimatorController;
         }
         playerController.playerBodyAnimator.ResetTrigger("SA_stopAnimation");
-        playerController.playerBodyAnimator.Update(0.0f);
 
         // clear old references
         PlayerUtils.localDriverCachedAnimatorController = null!;

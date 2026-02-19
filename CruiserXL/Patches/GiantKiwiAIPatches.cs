@@ -25,8 +25,8 @@ internal static class GiantKiwiAIPatches
                 __instance.setDestinationToPlayerInterval = 0.25f;
 
                 bool isOccupant = controller.currentDriver == __instance.targetPlayer || 
-                    controller.currentMiddlePassenger == __instance.targetPlayer || 
-                    controller.currentPassenger == __instance.targetPlayer;
+                                  controller.currentMiddlePassenger == __instance.targetPlayer || 
+                                  controller.currentPassenger == __instance.targetPlayer;
 
                 bool inTruckBounds = controller.vehicleBounds.ClosestPoint(
                     __instance.targetPlayer.transform.position) == 
@@ -80,7 +80,9 @@ internal static class GiantKiwiAIPatches
     {
         PlayerControllerB playerControllerB = GameNetworkManager.Instance.localPlayerController;
 
-        if (playerControllerB == null || !playerControllerB.isPlayerControlled || playerControllerB.isPlayerDead)
+        if (playerControllerB == null || 
+            !playerControllerB.isPlayerControlled || 
+            playerControllerB.isPlayerDead)
             return;
 
         if (References.truckController == null)
@@ -92,12 +94,12 @@ internal static class GiantKiwiAIPatches
         if (VehicleUtils.IsPlayerSeatedInVehicle(controller))
         {
             // reset the timer, to prevent the kiwi from damaging the player, i guess
-            if (avgSpeed < 2f && VehicleUtils.IsSeatedPlayerProtected(playerControllerB, controller))
+            if (avgSpeed < 10f && VehicleUtils.IsSeatedPlayerProtected(playerControllerB, controller))
             {
                 __instance.timeSinceHittingPlayer = 0.4f;
                 return;
             }
-            else if (avgSpeed >= 2f)
+            else if (avgSpeed >= 10f)
             {
                 __instance.timeSinceHittingPlayer = 0.4f;
             }
@@ -113,7 +115,7 @@ internal static class GiantKiwiAIPatches
             // player is standing in the cab
             if (PlayerUtils.isPlayerInCab)
             {
-                if (avgSpeed >= 2f ||
+                if (avgSpeed >= 10f ||
                     (!controller.driverSideDoor.boolValue && !controller.passengerSideDoor.boolValue && 
                     !controller.driversSideWindowTrigger.boolValue && !controller.passengersSideWindowTrigger.boolValue))
                 {

@@ -4,20 +4,93 @@ using HarmonyLib;
 using UnityEngine;
 using CruiserXL.Managers;
 using Cysharp.Threading.Tasks;
+using CruiserXL.Behaviour;
+using System.Collections.Generic;
+using UnityEngine.AI;
+using UnityEngine.InputSystem.XR;
 
 namespace CruiserXL.Patches;
 
 [HarmonyPatch(typeof(PlayerControllerB))]
 internal class PlayerControllerBPatches
 {
+    public static float checkInterval;
+
+    public class PlayerControllerBData
+    {
+        public float syncLookInputInterval;
+        public float vehicleCameraHorizontal;
+        public float lastVehicleCameraHorizontal;
+        public int currentCarAnimation = -1;
+
+        public bool isPlayerOnTruck;
+        public bool isPlayerInCab;
+        public bool isPlayerInStorage;
+    }
+
+    public static Dictionary<PlayerControllerB, PlayerControllerBData> playerData = new();
+
+
+    private static void RemoveStalePlayerData()
+    {
+        List<PlayerControllerB> playersToRemove = new();
+        foreach (PlayerControllerB player in playerData.Keys)
+        {
+            if (!player)
+            {
+                playersToRemove.Add(player);
+            }
+        }
+
+        foreach (PlayerControllerB player in playersToRemove)
+        {
+            playerData.Remove(player);
+        }
+    }
+
+    public static PlayerControllerBData GetData(PlayerControllerB player)
+    {
+        if (!playerData.TryGetValue(player, out var data))
+        {
+            data = new PlayerControllerBData();
+            playerData[player] = data;
+        }
+        return data;
+    }
+
+    [HarmonyPatch(nameof(PlayerControllerB.Awake))]
+    [HarmonyPostfix]
+    static void Awake_Postfix(PlayerControllerB __instance)
+    {
+        RemoveStalePlayerData();
+        if (!playerData.ContainsKey(__instance))
+        {
+            playerData.Add(__instance, new PlayerControllerBData());
+        }
+    }
+
+    [HarmonyPatch(nameof(PlayerControllerB.UpdatePlayerAnimationsToOtherClients))]
+    [HarmonyPrefix]
+    static bool UpdatePlayerAnimationsToOtherClients_Prefix(PlayerControllerB __instance, Vector2 moveInputVector, bool __runOriginal)
+    {
+        if (!__runOriginal)
+            return false;
+
+        if (__instance != GameNetworkManager.Instance.localPlayerController)
+            return true;
+
+        if (PlayerUtils.disableAnimationSync) return false;
+        return true;
+    }
+
     [HarmonyPatch(nameof(PlayerControllerB.TeleportPlayer))]
     [HarmonyPostfix]
     static void TeleportPlayer_Postfix(PlayerControllerB __instance, Vector3 pos, bool withRotation = false, float rot = 0f, bool allowInteractTrigger = false, bool enableController = true)
     {
-        if (__instance != GameNetworkManager.Instance.localPlayerController) 
+        if (__instance != GameNetworkManager.Instance.localPlayerController)
             return;
 
-        if (References.truckController == null) 
+        if (References.truckController == null)
             return;
 
         PlayerUtils.isPlayerInCab = false;
@@ -54,12 +127,52 @@ internal class PlayerControllerBPatches
         }
     }
 
+    [HarmonyPatch(nameof(PlayerControllerB.LateUpdate))]
+    [HarmonyPostfix]
+    public static void SyncZoneStateLateUpdate_Postfix(PlayerControllerB __instance)
+    {
+        if (__instance == null ||
+            __instance.isPlayerDead ||
+            !__instance.isPlayerControlled)
+            return;
+
+        if (__instance != GameNetworkManager.Instance.localPlayerController)
+            return;
+
+        if (References.truckController == null)
+            return;
+        CruiserXLController controller = References.truckController;
+
+        if (checkInterval < 0.3f)
+        {
+            checkInterval += Time.deltaTime;
+            return;
+        }
+        checkInterval = 0f;
+        var data = GetData(__instance);
+
+        if (data.isPlayerOnTruck != PlayerUtils.isPlayerOnTruck || 
+            data.isPlayerInCab != PlayerUtils.isPlayerInCab || 
+            data.isPlayerInStorage != PlayerUtils.isPlayerInStorage)
+        {
+            data.isPlayerOnTruck = PlayerUtils.isPlayerOnTruck;
+            data.isPlayerInCab = PlayerUtils.isPlayerInCab;
+            data.isPlayerInStorage = PlayerUtils.isPlayerInStorage;
+
+            controller.SyncPlayerZoneRpc(
+                (int)__instance.playerClientId,
+                PlayerUtils.isPlayerOnTruck,
+                PlayerUtils.isPlayerInCab,
+                PlayerUtils.isPlayerInStorage);
+        }
+    }
+
     [HarmonyPatch(nameof(PlayerControllerB.Update))]
     [HarmonyPrefix]
     public static void Update_Prefix(PlayerControllerB __instance)
     {
-        if (__instance == null || 
-            __instance.isPlayerDead || 
+        if (__instance == null ||
+            __instance.isPlayerDead ||
             !__instance.isPlayerControlled)
             return;
 
@@ -84,12 +197,12 @@ internal class PlayerControllerBPatches
     [HarmonyPostfix]
     public static void Update_Postfix(PlayerControllerB __instance)
     {
-        if (__instance == null || 
-            __instance.isPlayerDead || 
+        if (__instance == null ||
+            __instance.isPlayerDead ||
             !__instance.isPlayerControlled)
             return;
 
-        if (__instance != GameNetworkManager.Instance.localPlayerController) 
+        if (__instance != GameNetworkManager.Instance.localPlayerController)
             return;
 
         if (References.truckController == null)
@@ -97,13 +210,13 @@ internal class PlayerControllerBPatches
         CruiserXLController controller = References.truckController;
 
         Vector3 cameraOffset = Vector3.zero;
-        bool validTruck = __instance.inVehicleAnimation && __instance.currentTriggerInAnimationWith && __instance.currentTriggerInAnimationWith.overridePlayerParent;
-        if (validTruck && __instance.currentTriggerInAnimationWith.overridePlayerParent == controller.transform)
+        bool inVehicle = __instance.inVehicleAnimation && __instance.currentTriggerInAnimationWith && __instance.currentTriggerInAnimationWith.overridePlayerParent;
+        if (inVehicle && __instance.currentTriggerInAnimationWith.overridePlayerParent == controller.transform)
         {
+            PlayerUtils.seatedInTruck = true;
             PlayerUtils.isPlayerInCab = true;
             PlayerUtils.isPlayerOnTruck = true;
             PlayerUtils.isPlayerInStorage = false;
-            PlayerUtils.seatedInTruck = true;
 
             // this default offset is pretty much the "sweet-spot" where the camera lines
             // up with the employees visor model
@@ -120,7 +233,7 @@ internal class PlayerControllerBPatches
                 cameraOffset.x = Mathf.Sign(lookFlat.x) * ((70f - angleToBack) / 70f);
             }
             __instance.gameplayCamera.transform.localPosition = cameraOffset;
-            
+
             // extremely hacky method to prevent leaning through a closed window, while
             // still allowing leaning through the cabin window, since you cannot directly
             // clamp both left and right directions seperately from each-other
@@ -170,11 +283,11 @@ internal class PlayerControllerBPatches
             return;
         CruiserXLController controller = References.truckController;
 
-        bool validTruck = __instance.inVehicleAnimation &&
+        bool inVehicle = __instance.inVehicleAnimation &&
             __instance.currentTriggerInAnimationWith &&
             __instance.currentTriggerInAnimationWith.overridePlayerParent;
 
-        if (validTruck &&
+        if (inVehicle &&
             __instance.currentTriggerInAnimationWith.overridePlayerParent == controller.transform)
         {
             __instance.playerModelArmsMetarig.parent.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);

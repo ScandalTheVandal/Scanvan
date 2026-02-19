@@ -13,15 +13,17 @@ public class TruckPlayerZone : MonoBehaviour
     public float checkInterval;
     public float stayTimer;
 
-    public void FixedUpdate()
+    public void LateUpdate()
     {
+        if (controller == null) return;
         if (checkInterval < 0.3f)
         {
-            checkInterval += Time.fixedDeltaTime;
+            checkInterval += Time.deltaTime;
             return;
         }
-        PlayerControllerB playerController = GameNetworkManager.Instance.localPlayerController;
         checkInterval = 0f;
+
+        PlayerControllerB playerController = GameNetworkManager.Instance.localPlayerController;
         if (!VehicleUtils.IsPlayerNearTruck(playerController, controller) &&
             (PlayerUtils.isPlayerInCab ||
             PlayerUtils.isPlayerOnTruck ||
@@ -37,13 +39,17 @@ public class TruckPlayerZone : MonoBehaviour
     {
         if (controller == null) return;
         if (PlayerUtils.seatedInTruck) return;
-        if (GameNetworkManager.Instance.localPlayerController.gameObject != other.gameObject) return;
+        if (other.gameObject != GameNetworkManager.Instance.localPlayerController.gameObject) return;
 
         switch (priority)
         {
             case 1:
                 PlayerUtils.isPlayerOnTruck = false;
-                GameNetworkManager.Instance.localPlayerController.externalForceAutoFade += controller.averageVelocity * 0.9f;
+                if (controller.averageVelocity.magnitude >= 2f &&
+                    controller.mainRigidbody.velocity.magnitude >= 2f)
+                {
+                    GameNetworkManager.Instance.localPlayerController.externalForceAutoFade += controller.averageVelocity * 0.9f;
+                }
                 break;
             case 2:
                 if (!PlayerUtils.isPlayerInStorage)
@@ -51,7 +57,7 @@ public class TruckPlayerZone : MonoBehaviour
                 break;
             case 3:
                 if (!PlayerUtils.isPlayerInCab)
-                    PlayerUtils.isPlayerInStorage = false; 
+                    PlayerUtils.isPlayerInStorage = false;
                 break;
         }
     }
@@ -60,7 +66,7 @@ public class TruckPlayerZone : MonoBehaviour
     {
         if (controller == null) return;
         if (PlayerUtils.seatedInTruck) return;
-        if (GameNetworkManager.Instance.localPlayerController.gameObject != other.gameObject) return;
+        if (other.gameObject != GameNetworkManager.Instance.localPlayerController.gameObject) return;
 
         stayTimer += Time.fixedDeltaTime;
         if (stayTimer < 0.4f) return;
@@ -98,13 +104,6 @@ public class TruckPlayerZone : MonoBehaviour
         }
     }
 
-    public void OnDisable()
-    {
-        ClearZoneState();
-    }
-
-    public void OnDestroy()
-    {
-        ClearZoneState();
-    }
+    public void OnDisable() => ClearZoneState();
+    public void OnDestroy() => ClearZoneState();
 }

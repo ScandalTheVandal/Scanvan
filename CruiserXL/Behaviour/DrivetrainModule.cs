@@ -27,7 +27,8 @@ public class DrivetrainModule : NetworkBehaviour
 
     [Header("Multiplayer")]
 
-    public float syncCarDrivetrainInterval;
+    public float syncCarMotorTorqueInterval;
+    public float syncCarWheelSpeedInterval;
     public float syncedMotorTorque;
     public float syncedBrakeTorque;
     public float syncedWheelRPM;
@@ -92,36 +93,68 @@ public class DrivetrainModule : NetworkBehaviour
     public void Update()
     {
         if (!controller.IsOwner) return;
-        SyncCarDrivetrainToOtherClients();
+        SyncCarWheelSpeedToOtherClients();
+        SyncCarMotorTorqueToOtherClients();
     }
 
-    public void SyncCarDrivetrainToOtherClients()
+    public void SyncCarMotorTorqueToOtherClients()
     {
-        if (syncCarDrivetrainInterval > 0.1475f)
+        float syncThreshold = 0.14f * (controller.averageVelocity.magnitude / 2f);
+        syncThreshold = Mathf.Clamp(syncThreshold, 0.14f, 0.5f);
+
+        if (syncCarMotorTorqueInterval >= syncThreshold)
         {
-            if (syncedWheelRPM != wheelRPM ||
-                syncedMotorTorque != controller.wheelTorque ||
-                syncedBrakeTorque != controller.wheelBrakeTorque)
+            float motorTorqueSync = Mathf.Floor(controller.wheelTorque / 10f) * 10f;
+            float brakeTorqueSync = Mathf.Floor(controller.wheelBrakeTorque / 10f) * 10f;
+
+            if (syncedMotorTorque != motorTorqueSync ||
+                syncedBrakeTorque != brakeTorqueSync)
             {
-                syncedWheelRPM = wheelRPM;
-                syncedMotorTorque = controller.wheelTorque;
-                syncedBrakeTorque = controller.wheelBrakeTorque;
-                SyncCarDrivetrainRpc(wheelRPM, controller.wheelTorque, controller.wheelBrakeTorque);
+                syncCarMotorTorqueInterval = 0f;
+                syncedMotorTorque = motorTorqueSync;
+                syncedBrakeTorque = brakeTorqueSync;
+                SyncCarMotorTorqueRpc(controller.wheelTorque, controller.wheelBrakeTorque);
+                return;
             }
-            syncCarDrivetrainInterval = 0f;
         }
         else
         {
-            syncCarDrivetrainInterval += Time.deltaTime;
+            syncCarMotorTorqueInterval += Time.deltaTime;
         }
     }
 
     [Rpc(SendTo.NotOwner, RequireOwnership = false)]
-    public void SyncCarDrivetrainRpc(float wheelRPM, float motorTorque, float brakeTorque)
+    public void SyncCarMotorTorqueRpc(float motorTorque, float brakeTorque)
     {
-        syncedWheelRPM = wheelRPM;
         syncedMotorTorque = motorTorque;
         syncedBrakeTorque = brakeTorque;
+    }
+
+    public void SyncCarWheelSpeedToOtherClients()
+    {
+        float syncThreshold = 0.15f * (controller.averageVelocity.magnitude / 2f);
+        syncThreshold = Mathf.Clamp(syncThreshold, 0.15f, 0.3f);
+        if (syncCarWheelSpeedInterval >= syncThreshold)
+        {
+            float wheelSyncRPM = Mathf.Floor(wheelRPM / 5f) * 5f;
+            if (syncedWheelRPM != wheelSyncRPM)
+            {
+                syncCarWheelSpeedInterval = 0f;
+                syncedWheelRPM = wheelSyncRPM;
+                SyncCarWheelSpeedRpc(wheelRPM);
+                return;
+            }
+        }
+        else
+        {
+            syncCarWheelSpeedInterval += Time.deltaTime;
+        }
+    }
+
+    [Rpc(SendTo.NotOwner, RequireOwnership = false)]
+    public void SyncCarWheelSpeedRpc(float wheelRPM)
+    {
+        syncedWheelRPM = wheelRPM;
     }
 
     private void TryShiftGear(bool upOrDown)

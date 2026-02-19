@@ -9,6 +9,7 @@ public static class References
     // optimisation
     internal static ItemDropship itemShip = null!;
     internal static CruiserXLController truckController = null!;
+    internal static BushWolfEnemy kidnapperFox = null!;
 
     // fixes
     internal static PlayerControllerB lastDriver = null!;

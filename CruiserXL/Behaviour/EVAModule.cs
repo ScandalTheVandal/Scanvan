@@ -133,8 +133,8 @@ public class EVAModule : NetworkBehaviour
                 return;
             }
         }
-        if (isSpecialAlert && (!controller.headlightsContainer.activeSelf || controller.ignitionStarted) &&
-            WasClipPlayed(ElectronicVoiceAlert.HeadlampsOn) && currentClipId != (int)ElectronicVoiceAlert.ThankYou)
+        if (isSpecialAlert && (!controller.headlightsContainer.activeSelf || controller.ignitionStarted) && 
+            currentClipId != (int)ElectronicVoiceAlert.ThankYou)
         {
             isSpecialAlert = false;
             isKeysForgotten = false;
@@ -143,8 +143,7 @@ public class EVAModule : NetworkBehaviour
             SetThankYouClip();
             return;
         }
-        if (isKeysForgotten && !controller.keyIsInIgnition &&
-            WasClipPlayed(ElectronicVoiceAlert.KeyInIgnition) && currentClipId != (int)ElectronicVoiceAlert.ThankYou)
+        if (isKeysForgotten && !controller.keyIsInIgnition && currentClipId != (int)ElectronicVoiceAlert.ThankYou)
         {
             isKeysForgotten = false;
             isSpecialAlert = false;
@@ -274,27 +273,18 @@ public class EVAModule : NetworkBehaviour
     {
         if (controller.ignitionStarted)
         {
-            if (controller.averageVelocity.magnitude > 4f)
+            if (doorOpen && controller.averageVelocity.magnitude > 4f)
             {
-                if (doorOpen)
+                if (!audioClipsInQueue[doorClipId] &&
+                    !pendingDoorThanked)
                 {
-                    if (!audioClipsInQueue[doorClipId] &&
-                        !pendingDoorThanked)
-                    {
-                        audioClipsInQueue[doorClipId] = true;
-                        pendingDoorThanked = true;
-                    }
-                }
-                else if (!doorOpen && pendingDoorThanked)
-                {
-                    SetThankYouClip();
-                    audioClipsInQueue[doorClipId] = false;
-                    audioClipsJustPlayed[doorClipId] = false;
-                    pendingDoorThanked = false;
+                    audioClipsInQueue[doorClipId] = true;
+                    pendingDoorThanked = true;
                 }
             }
-            else
+            else if (!doorOpen && pendingDoorThanked)
             {
+                SetThankYouClip();
                 audioClipsInQueue[doorClipId] = false;
                 audioClipsJustPlayed[doorClipId] = false;
                 pendingDoorThanked = false;

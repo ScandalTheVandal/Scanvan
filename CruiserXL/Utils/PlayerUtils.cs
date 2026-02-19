@@ -5,6 +5,7 @@ namespace CruiserXL.Utils;
 public static class PlayerUtils
 {
     public static bool seatedInTruck = false;
+    public static bool disableAnimationSync;
 
     public static bool isPlayerOnTruck;
     public static bool isPlayerInCab;
@@ -40,7 +41,7 @@ public static class PlayerUtils
         HUDManager.Instance.ClearControlTips();
     }
 
-    public static void ReplaceClientPlayerAnimator(int playerId)
+    public static void ReplaceClientPlayerAnimator(int playerId, InteractTrigger seatTrigger)
     {
         // find the player
         PlayerControllerB playerController = StartOfRound.Instance.allPlayerScripts[playerId];
@@ -57,8 +58,12 @@ public static class PlayerUtils
         driverCachedAnimatorController.name = "metarigOtherPlayers";
         playerAnimator = playerController.playerBodyAnimator;
 
-        if (References.truckOtherPlayerAnimator != null)
-            playerController.playerBodyAnimator.runtimeAnimatorController = References.truckOtherPlayerAnimator;
+        if (References.truckPlayerAnimator != null)
+            playerController.playerBodyAnimator.runtimeAnimatorController = References.truckPlayerAnimator;
+
+        playerController.playerBodyAnimator.ResetTrigger("SA_stopAnimation");
+        playerController.playerBodyAnimator.ResetTrigger(seatTrigger.animationString);
+        playerController.playerBodyAnimator.SetTrigger(seatTrigger.animationString);
     }
 
     /// <summary>
@@ -103,7 +108,7 @@ public static class PlayerUtils
         }
     }
 
-    public static void ReturnClientPlayerAnimator(int playerId)
+    public static void ReturnClientPlayerAnimator(int playerId, InteractTrigger seatTrigger)
     {
         // find the player
         PlayerControllerB playerController = StartOfRound.Instance.allPlayerScripts[playerId];
