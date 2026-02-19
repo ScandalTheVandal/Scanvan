@@ -31,12 +31,12 @@ erm I don't have one yet lmao
 - BetterCruiserSync
 - 2 Story RV Cruiser
 
+Some mods listed may have partial or full self-implementation, such as BetterVehicleControls keybinds, or configs such as automatically centering steering wheel.
+
 # Mods that will cause issues/do not work with the Scanvan:
 - CruiserSkin
 - CruiserMap
 - LCVR (this will be implemented in the future)
-
-Some mods listed may have partial or full self-implementation, such as BetterVehicleControls keybinds, or configs such as automatically centering steering wheel.
 
 ## Credits
 - Base Cruiser model - Zeekerss
