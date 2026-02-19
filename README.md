@@ -31,7 +31,7 @@ erm I don't have one yet lmao
 - BetterCruiserSync
 - 2 Story RV Cruiser
 
-* Mods that will cause issues/do not work with the Scanvan:
+# Mods that will cause issues/do not work with the Scanvan:
 - CruiserSkin
 - CruiserMap
 - LCVR (this will be implemented in the future)
