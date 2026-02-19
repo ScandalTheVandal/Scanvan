@@ -66,7 +66,7 @@ https://archive.org/details/78rpmCollection1920s1930sPopularMusic
 - Misc
 `Various Sound Effects -- (https://pixabay.com)`
 
-## Special thanks
+## Special thanks to:
 * LLL and its maintainers, for including Extended Buyable Vehicles
 * LC Modding Discord, for helping me when I got stuck, and overall being very supportive!
 * My friends! for being my (involuntary) testers, which helped me iron out the van to where it is today!
