@@ -14,6 +14,8 @@ erm I don't have one yet lmao
 * **10** default radio tracks (DMCA-free)
 * Custom SFX's, custom animations
 * An incomplete manual that I'm too lazy to redo
+* Functional climate control (LethalElements compatability)
+* ...other things?
 
 ## Pictures
 
