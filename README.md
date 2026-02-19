@@ -64,7 +64,7 @@ https://archive.org/details/78rpmCollection1920s1930sPopularMusic
 `Blinker in car by dersuperanton -- https://freesound.org/s/434819/ -- License: Attribution 4.0`
 
 - Misc
-`Various Sound Effects -- (https://pixabay.com)`\
+`Various Sound Effects -- (https://pixabay.com)`
 
 ## Special thanks
 * LLL and its maintainers, for including Extended Buyable Vehicles
