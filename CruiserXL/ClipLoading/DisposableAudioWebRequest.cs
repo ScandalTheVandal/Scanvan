@@ -1,80 +1,80 @@
 ﻿using System;
 using UnityEngine.Networking;
 
+
 /// <summary>
 ///  Available from RadioFurniture, licensed under GNU General Public License.
 ///  Source: https://github.com/legoandmars/RadioFurniture/tree/master/RadioFurniture
 /// </summary>
-namespace CruiserXL.ClipLoading
+namespace CruiserXL.ClipLoading;
+
+/// <summary>
+/// Helper Wrapper around webrequest and result Audio clip
+/// Automatically gets disposed.
+/// </summary>
+public class DisposableAudioWebRequest : IDisposable
 {
+    // should not be disposed at the time request is disposed.
+    private DisposableAudioClip _disposableAudioClip;
+
+    private UnityWebRequest _request;
+    private bool _disposed = false;
+    private string _error;
+    private int _code;
+    private bool _isDone = false;
+
     /// <summary>
-    /// Helper Wrapper around webrequest and result Audio clip
-    /// Automatically gets disposed.
+    /// Automatically disposed only if cancelled or failed.
+    /// Be sure to dispose it when finished using it.
     /// </summary>
-    public class DisposableAudioWebRequest : IDisposable
+    public DisposableAudioClip AudioClip => _disposableAudioClip;
+
+    public string Error => _error;
+    public int Code => _code;
+    public bool IsDone => _isDone;
+    public bool IsDisposed => _disposed;
+
+    public DisposableAudioWebRequest(UnityWebRequest request)
     {
-        // should not be disposed at the time request is disposed.
-        private DisposableAudioClip _disposableAudioClip;
+        _request = request;
+    }
 
-        private UnityWebRequest _request;
-        private bool _disposed = false;
-        private string _error;
-        private int _code;
-        private bool _isDone = false;
+    public string GetReadableError()
+    {
+        return $"Code : {_code} {_error}";
+    }
 
-        /// <summary>
-        /// Automatically disposed only if cancelled or failed.
-        /// Be sure to dispose it when finished using it.
-        /// </summary>
-        public DisposableAudioClip AudioClip => _disposableAudioClip;
+    public bool HasErrors()
+    {
+        return !string.IsNullOrEmpty(_error);
+    }
 
-        public string Error => _error;
-        public int Code => _code;
-        public bool IsDone => _isDone;
-        public bool IsDisposed => _disposed;
+    internal void SetDisposableClip(DisposableAudioClip clip)
+    {
+        _disposableAudioClip = clip;
+    }
 
-        public DisposableAudioWebRequest(UnityWebRequest request)
+    internal void SetStatus()
+    {
+        _code = (int)_request.responseCode;
+        _error = _request.error;
+        _isDone = _request.isDone;
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
         {
-            _request = request;
+            return;
         }
 
-        public string GetReadableError()
+        _disposed = true;
+        if (_request != null)
         {
-            return $"Code : {_code} {_error}";
+            SetStatus();
+            _request.Dispose();
         }
 
-        public bool HasErrors()
-        {
-            return !string.IsNullOrEmpty(_error);
-        }
-
-        internal void SetDisposableClip(DisposableAudioClip clip)
-        {
-            _disposableAudioClip = clip;
-        }
-
-        internal void SetStatus()
-        {
-            _code = (int)_request.responseCode;
-            _error = _request.error;
-            _isDone = _request.isDone;
-        }
-
-        public void Dispose()
-        {
-            if (_disposed)
-            {
-                return;
-            }
-
-            _disposed = true;
-            if (_request != null)
-            {
-                SetStatus();
-                _request.Dispose();
-            }
-
-            _request = null!;
-        }
+        _request = null!;
     }
 }

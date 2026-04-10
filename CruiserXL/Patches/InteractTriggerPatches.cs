@@ -3,35 +3,34 @@ using HarmonyLib;
 using UnityEngine;
 using System;
 using System.Collections;
-using Unity.Netcode;
-using UnityEngine.InputSystem.XR;
-using System.ComponentModel;
 using CruiserXL.Utils;
+using System.Numerics;
+using CruiserXL.Behaviour;
 
 namespace CruiserXL.Patches;
 
 [HarmonyPatch(typeof(InteractTrigger))]
 public class InteractTriggerPatches
 {
+    private static VehiclePlayerSeat currentPlayerSeat = null!;
     public static Coroutine specialInteractCoroutine = null!;
+
     public static float interactTime = 0.6f;
     public static float timeSinceSpecialInteraction;
 
-    [HarmonyPatch("Interact")]
+    [HarmonyPatch(nameof(InteractTrigger.Interact))]
     [HarmonyPrefix]
     static bool Interact_Prefix(InteractTrigger __instance, Transform playerTransform, bool __runOriginal)
     {
         if (!__runOriginal)
-            //somebody else has redirected the function ignore the call
+            // somebody else has redirected the function ignore the call
             return false;
 
         PlayerControllerB playerController = playerTransform.GetComponent<PlayerControllerB>();
-        playerController.playerBodyAnimator.ResetTrigger("SA_stopAnimation"); // Fix the standing up bug
+        playerController.playerBodyAnimator.ResetTrigger(PlayerUtils.stopAnimationID); // fix the standing up bug
 
-        if (!__instance.setVehicleAnimation)
-            return true;
-
-        if (__instance.overridePlayerParent == null)
+        if (!__instance.setVehicleAnimation || 
+            __instance.overridePlayerParent == null)
             return true;
 
         if (!__instance.overridePlayerParent.TryGetComponent<CruiserXLController>(out var controller))
@@ -42,7 +41,9 @@ public class InteractTriggerPatches
 
         timeSinceSpecialInteraction = Time.realtimeSinceStartup;
 
-        if (playerController.inSpecialInteractAnimation && !playerController.isClimbingLadder && !__instance.allowUseWhileInAnimation)
+        if (playerController.inSpecialInteractAnimation && 
+            !playerController.isClimbingLadder && 
+            !__instance.allowUseWhileInAnimation)
             return false;
 
         if (__instance.interactCooldown)
@@ -54,40 +55,22 @@ public class InteractTriggerPatches
         }
 
         playerController.ResetFallGravity();
-        playerController.Crouch(false);
         __instance.onInteract.Invoke(playerController);
         __instance.onInteractEarly.Invoke(null);
-
-        //specialInteractCoroutine = __instance.StartCoroutine(SpecialTruckInteractAnimation(__instance, playerController, controller, __instance != controller.driverSeatTrigger));
         return false;
     }
 
-    public static IEnumerator SpecialTruckInteractAnimation(InteractTrigger trigger, PlayerControllerB playerController, CruiserXLController controller, bool isPassenger)
+    public static IEnumerator SpecialTruckInteractAnimation(InteractTrigger trigger, PlayerControllerB playerController, CruiserXLController controller, VehiclePlayerSeat playerSeat)
     {
-        Plugin.Logger.LogMessage("truck: RUNNING REPLACEMENT COROUTINE!!!");
+        PlayerUtils.playerAnimator = playerController.playerBodyAnimator;
+        playerSeat.ReplacePlayerAnimator(playerController, true, trigger);
+        currentPlayerSeat = playerSeat;
 
-        if (!isPassenger)
-        {
-            // save a reference of the players current animator
-            PlayerUtils.localDriverCachedAnimatorController = null!;
-            PlayerUtils.localDriverCachedAnimatorController = GameObject.Instantiate(playerController.playerBodyAnimator.runtimeAnimatorController);
-            PlayerUtils.localDriverCachedAnimatorController.name = "metarig";
-            PlayerUtils.playerAnimator = playerController.playerBodyAnimator;
-
-            // save the parameters of the current animator
-            PlayerUtils.StoreParameters();
-
-            // apply the animator from our references
-            if (References.truckPlayerAnimator != null)
-                playerController.playerBodyAnimator.runtimeAnimatorController = References.truckPlayerAnimator;
-
-            PlayerUtils.playerAnimator.Update(0.0f);
-        }
         trigger.UpdateUsedByPlayerServerRpc((int)playerController.playerClientId);
-        //trigger.onInteractEarly.Invoke(null);
         trigger.isPlayingSpecialAnimation = true;
         trigger.lockedPlayer = playerController.thisPlayerBody;
         trigger.playerScriptInSpecialAnimation = playerController;
+
         if (trigger.clampLooking)
         {
             trigger.playerScriptInSpecialAnimation.minVerticalClamp = trigger.minVerticalClamp;
@@ -95,18 +78,15 @@ public class InteractTriggerPatches
             trigger.playerScriptInSpecialAnimation.horizontalClamp = trigger.horizontalClamp;
             trigger.playerScriptInSpecialAnimation.clampLooking = true;
         }
-        if (trigger.overridePlayerParent)
-        {
-            trigger.playerScriptInSpecialAnimation.overridePhysicsParent = trigger.overridePlayerParent;
-        }
-        if (trigger.setVehicleAnimation)
-        {
-            trigger.playerScriptInSpecialAnimation.inVehicleAnimation = true;
-        }
+
+        trigger.playerScriptInSpecialAnimation.overridePhysicsParent = trigger.overridePlayerParent;
+        trigger.playerScriptInSpecialAnimation.inVehicleAnimation = trigger.setVehicleAnimation;
+
         if (trigger.hidePlayerItem && trigger.playerScriptInSpecialAnimation.currentlyHeldObjectServer != null)
         {
             trigger.playerScriptInSpecialAnimation.currentlyHeldObjectServer.EnableItemMeshes(false);
         }
+
         playerController.UpdateSpecialAnimationValue(true, (short)trigger.playerPositionNode.eulerAngles.y, 0f, false);
         playerController.inSpecialInteractAnimation = true;
         playerController.currentTriggerInAnimationWith = trigger;
@@ -123,10 +103,13 @@ public class InteractTriggerPatches
         yield break;
     }
 
-    [HarmonyPatch("StopSpecialAnimation")]
+    [HarmonyPatch(nameof(InteractTrigger.StopSpecialAnimation))]
     [HarmonyPrefix]
-    static bool StopSpecialAnimation_bool_prefix(InteractTrigger __instance)
+    static bool StopSpecialAnimation_Prefix(InteractTrigger __instance, bool __runOriginal)
     {
+        if (!__runOriginal)
+            return false;
+
         if (__instance.lockedPlayer == null)
             return true;
 
@@ -135,18 +118,11 @@ public class InteractTriggerPatches
         if (playerController != GameNetworkManager.Instance.localPlayerController)
             return true;
 
-        playerController.playerBodyAnimator.ResetTrigger("SA_stopAnimation");
-
-        if (!__instance.setVehicleAnimation)
-            return true;
-
-        if (__instance.overridePlayerParent == null)
+        if (!__instance.setVehicleAnimation || 
+            __instance.overridePlayerParent == null)
             return true;
 
         if (!__instance.overridePlayerParent.TryGetComponent<CruiserXLController>(out var controller))
-            return true;
-
-        if (__instance != controller.driverSeatTrigger)
             return true;
 
         if (specialInteractCoroutine != null)
@@ -155,24 +131,10 @@ public class InteractTriggerPatches
             specialInteractCoroutine = null!;
         }
 
-        // reapply the original players animator, if it exists
-        if (PlayerUtils.localDriverCachedAnimatorController != null)
-        {
-            playerController.playerBodyAnimator.runtimeAnimatorController = PlayerUtils.localDriverCachedAnimatorController;
+        if (currentPlayerSeat == null)
+            return true;
 
-            // restore the original parameters for the original animator
-            PlayerUtils.RestoreParameters();
-        }
-        else
-        {
-            playerController.playerBodyAnimator.runtimeAnimatorController = StartOfRound.Instance.localClientAnimatorController;
-        }
-        PlayerUtils.playerAnimator.Update(0.0f);
-
-        // clear old references
-        PlayerUtils.localDriverCachedAnimatorController = null!;
-        PlayerUtils.playerAnimator = null!;
-
+        currentPlayerSeat.ReturnPlayerAnimator(playerController, true, __instance);
         return true;
     }
 }

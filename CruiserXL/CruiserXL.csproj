@@ -43,32 +43,12 @@
         -->
 		<PathMap>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))=./</PathMap>
 	</PropertyGroup>
-	<ItemGroup>
-	  <Content Remove="C:\Users\Scandal\.nuget\packages\rune580.mods.lethalcompany.inpututils\0.7.10\contentFiles\any\netstandard2.1\AssetBundles\ui-assets" />
-	  <Content Remove="C:\Users\Scandal\.nuget\packages\rune580.mods.lethalcompany.inpututils\0.7.10\contentFiles\any\netstandard2.1\en_US.json" />
-	  <Content Remove="C:\Users\Scandal\.nuget\packages\rune580.mods.lethalcompany.inpututils\0.7.10\contentFiles\any\netstandard2.1\ru_RU.json" />
-	  <Content Remove="C:\Users\Scandal\.nuget\packages\rune580.mods.lethalcompany.inpututils\0.7.10\contentFiles\any\netstandard2.1\zh_CN.json" />
-	</ItemGroup>
-
-	<!-- 
-        Unused
-	<ItemGroup>
-		<None Include="Compatibility\LCVRCompatibility.cs" />
-		<None Include="Compatibility\SCVR\Physics\Interactions\Scanvan\ScanvanButton.cs" />
-		<None Include="Compatibility\SCVR\Physics\Interactions\Scanvan\ScanvanEjector.cs" />
-		<None Include="Compatibility\SCVR\Physics\Interactions\Scanvan\ScanvanHorn.cs" />
-		<None Include="Compatibility\SCVR\Physics\Interactions\Scanvan\ScanvanManager.cs" />
-		<None Include="Compatibility\SCVR\Physics\Interactions\Scanvan\ScanvanShifter.cs" />
-		<None Include="Compatibility\SCVR\Physics\Interactions\Scanvan\ScanvanSteeringWheel.cs" />
-		<None Include="Compatibility\SCVR\Physics\Interactions\Scanvan\StartScanvanIgnition.cs" />
-	</ItemGroup>
-        -->
 
 	<!-- Primary Package References -->
 	<ItemGroup>
 		<PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
     <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.2" PrivateAssets="all" />
-		<PackageReference Include="BepInEx.Core" Version="5.*" PrivateAssets="all" />
+    <PackageReference Include="BepInEx.Core" Version="5.*" PrivateAssets="all" />
 		<PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" PrivateAssets="all" />
 		<PackageReference Include="UnityEngine.Modules" Version="2022.3.62" IncludeAssets="compile" PrivateAssets="all" />
 		<PackageReference Include="Rune580.Mods.LethalCompany.InputUtils" Version="0.7.10" />
@@ -79,41 +59,47 @@
 	<!-- Manual References -->
 	<ItemGroup>
 		<Reference Include="RadioBrowser">
-			<HintPath>D:\Steam\steamapps\common\BepInEx\core\Bobbie-RadioBrowser\RadioBrowser.dll</HintPath>
+			<HintPath>$(MANUAL_REFS_DIR)\Bobbie-RadioBrowser\RadioBrowser.dll</HintPath>
+		</Reference>	
+		<Reference Include="LethalElementsTheta" Publicize="true">
+			<HintPath>$(MANUAL_REFS_DIR)\pacoito-LethalElementsTheta\voxx.LethalElementsPlugin.dll</HintPath>
 		</Reference>
+		<Reference Include="ScandalsTweaks" Publicize="true">
+			<HintPath>$(MANUAL_REFS_DIR)\ScandalsTweaks\ScandalsTweaks.dll</HintPath>
+		</Reference>		
 		<Reference Include="UnityEngine.UnityWebRequestAudioModule">
 			<HintPath>$(LETHAL_COMPANY_DIR)\Lethal Company_Data\Managed\UnityEngine.UnityWebRequestAudioModule.dll</HintPath>
-		</Reference>
+		</Reference>	
 		<Reference Include="UnityEngine.UnityWebRequestModule">
 			<HintPath>$(LETHAL_COMPANY_DIR)\Lethal Company_Data\Managed\UnityEngine.UnityWebRequestModule.dll</HintPath>
 		</Reference>
 		<Reference Include="UnityEngine.UnityWebRequestWWWModule">
 			<HintPath>$(LETHAL_COMPANY_DIR)\Lethal Company_Data\Managed\UnityEngine.UnityWebRequestWWWModule.dll</HintPath>
-		</Reference>
+		</Reference>		
 		<Reference Include="Assembly-CSharp" Publicize="true">
 			<HintPath>$(LETHAL_COMPANY_DIR)\Lethal Company_Data\Managed\Assembly-CSharp.dll</HintPath>
-		</Reference>
-		<Reference Include="Assembly-CSharp-firstpass">
+		</Reference>		
+		<Reference Include="Assembly-CSharp-firstpass" Publicize="true">
 			<HintPath>$(LETHAL_COMPANY_DIR)\Lethal Company_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
 		</Reference>
-		<Reference Include="Unity.Netcode.Runtime">
+		<Reference Include="Unity.Netcode.Runtime" Publicize="true">
 			<HintPath>$(LETHAL_COMPANY_DIR)\Lethal Company_Data\Managed\Unity.Netcode.Runtime.dll</HintPath>
-		</Reference>
+		</Reference>	
 		<Reference Include="UnityEngine.UI">
 			<HintPath>$(LETHAL_COMPANY_DIR)\Lethal Company_Data\Managed\UnityEngine.UI.dll</HintPath>
-		</Reference>
+		</Reference>		
 		<Reference Include="Unity.TextMeshPro">
 			<HintPath>$(LETHAL_COMPANY_DIR)\Lethal Company_Data\Managed\Unity.TextMeshPro.dll</HintPath>
-		</Reference>
+		</Reference>			
 		<Reference Include="Unity.RenderPipelines.Core.Runtime">
 			<HintPath>$(LETHAL_COMPANY_DIR)\Lethal Company_Data\Managed\Unity.RenderPipelines.Core.Runtime.dll</HintPath>
-		</Reference>
+		</Reference>		
 		<Reference Include="Unity.RenderPipelines.HighDefinition.Runtime">
 			<HintPath>$(LETHAL_COMPANY_DIR)\Lethal Company_Data\Managed\Unity.RenderPipelines.HighDefinition.Runtime.dll</HintPath>
-		</Reference>
+		</Reference>		
 		<Reference Include="Unity.InputSystem">
 			<HintPath>$(LETHAL_COMPANY_DIR)\Lethal Company_Data\Managed\Unity.InputSystem.dll</HintPath>
-		</Reference>
+		</Reference>		
 		<Reference Include="Unity.Animation.Rigging">
 			<HintPath>$(LETHAL_COMPANY_DIR)\Lethal Company_Data\Managed\Unity.Animation.Rigging.dll</HintPath>
 		</Reference>

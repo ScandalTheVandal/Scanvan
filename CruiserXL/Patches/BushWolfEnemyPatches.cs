@@ -8,38 +8,57 @@ namespace CruiserXL.Patches;
 [HarmonyPatch(typeof(BushWolfEnemy))]
 public static class BushWolfEnemyPatches
 {
-    [HarmonyPatch("Update")]
-    [HarmonyPrefix]
-    static void Update_Prefix(BushWolfEnemy __instance)
+    [HarmonyPatch(nameof(BushWolfEnemy.Update))]
+    [HarmonyPostfix]
+    static void Update_Postfix(BushWolfEnemy __instance)
     {
-        if (__instance.currentBehaviourStateIndex != 2)
+        if (!__instance.foundSpawningPoint || StartOfRound.Instance.livingPlayers == 0) 
             return;
-
-        if (__instance.targetPlayer == null)
+        if (!__instance.isEnemyDead) 
             return;
-
-        if (__instance.timeSinceKillingPlayer < 2f || __instance.timeSinceTakingDamage < 0.35f)
+        if (__instance.stunNormalizedTimer > 0f || __instance.matingCallTimer >= 0f) 
             return;
-
-        if (__instance.failedTongueShoot)
+        if (__instance.currentBehaviourStateIndex != 2) 
             return;
+        if (__instance.timeSinceKillingPlayer < 2f || __instance.timeSinceTakingDamage < 0.35f) 
+            return;
+        if (__instance.failedTongueShoot) 
+            return;
+        if (__instance.targetPlayer == null) 
+            return;
+        if (__instance.targetPlayer.isPlayerDead || !__instance.targetPlayer.isPlayerControlled ||
+            __instance.targetPlayer.inAnimationWithEnemy || __instance.stunNormalizedTimer > 0f) return;
 
         if (References.truckController == null)
             return;
+        CruiserXLController controller = References.truckController;
 
-        // not in our truck, run vanilla logic
-        if (!VehicleUtils.IsPlayerInTruck(__instance.targetPlayer, References.truckController))
-            return;
+        bool isOccupant = controller.currentDriver == __instance.targetPlayer ||
+                          controller.currentMiddlePassenger == __instance.targetPlayer ||
+                          controller.currentPassenger == __instance.targetPlayer;
 
-        // check if the player is protected in our truck
-        if (VehicleUtils.IsPlayerProtectedByTruck(__instance.targetPlayer, References.truckController))
+        if (isOccupant && VehicleUtils.IsSeatedPlayerProtected(__instance.targetPlayer, controller))
         {
-            // recycled vanilla logic
             __instance.agent.speed = 0f;
             __instance.CancelReelingPlayerIn();
             if (__instance.IsOwner && __instance.tongueLengthNormalized < -0.25f)
+            {
                 __instance.SwitchToBehaviourState(0);
-            return;
+                return;
+            }
+        }
+
+        var data = PlayerControllerBPatches.GetData(__instance.targetPlayer);
+        if ((data.isPlayerInCab && !controller.driverSideDoor.boolValue && !controller.passengerSideDoor.boolValue) || 
+            (data.isPlayerInStorage && !controller.liftGateOpen && !controller.sideDoorOpen))
+        {
+            __instance.agent.speed = 0f;
+            __instance.CancelReelingPlayerIn();
+            if (__instance.IsOwner && __instance.tongueLengthNormalized < -0.25f)
+            {
+                __instance.SwitchToBehaviourState(0);
+                return;
+            }
         }
     }
 }

@@ -1,19 +1,22 @@
 ﻿using HarmonyLib;
-using CruiserXL.Events;
+using CruiserXL.Utils;
 
 namespace CruiserXL.Patches;
 
 [HarmonyPatch(typeof(RoundManager))]
 public class RoundManagerPatches
 {
-    // Used for the radio static effect.
-    [HarmonyPatch("SetToCurrentLevelWeather")]
-    [HarmonyPostfix]
-    static void SetToCurrentLevelWeather(ref SelectableLevel ___currentLevel)
+    [HarmonyPatch(nameof(RoundManager.DespawnPropsAtEndOfRound))]
+    [HarmonyPrefix]
+    static void DespawnPropsAtEndOfRound_Prefix(bool despawnAllItems = false)
     {
-        if (___currentLevel.currentWeather == LevelWeatherType.Stormy)
-        {
-            WeatherEvents.StormStart();
-        }
+        References.isDespawningProps = true;
+    }
+
+    [HarmonyPatch(nameof(RoundManager.DespawnPropsAtEndOfRound))]
+    [HarmonyPostfix]
+    static void DespawnPropsAtEndOfRound_Postfix(bool despawnAllItems = false)
+    {
+        References.isDespawningProps = false;
     }
 }

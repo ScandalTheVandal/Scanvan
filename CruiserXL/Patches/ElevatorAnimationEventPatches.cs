@@ -7,26 +7,30 @@ namespace CruiserXL.Patches;
 [HarmonyPatch(typeof(ElevatorAnimationEvents))]
 public static class ElevatorAnimationEventsPatches
 {
-    [HarmonyPatch("ElevatorFullyRunning")]
+    [HarmonyPatch(nameof(ElevatorAnimationEvents.ElevatorFullyRunning))]
     [HarmonyPrefix]
-    static void ElevatorFullyRunning_Prefix()
+    static void ElevatorFullyRunning_PlayerSafety_Prefix()
     {
         if (References.truckController == null) return;
         if (!References.truckController.magnetedToShip) return;
 
         // save players who are on the magneted truck from being abandoned
         PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
+        if (PlayerUtils.seatedInTruck || PlayerUtils.isPlayerOnTruck)
+            localPlayer.isInElevator = true;
+    }
 
-        if (References.truckController.localPlayerInControl || 
-            References.truckController.localPlayerInMiddlePassengerSeat || 
-            References.truckController.localPlayerInPassengerSeat)
+    [HarmonyPatch(nameof(ElevatorAnimationEvents.ElevatorFullyRunning))]
+    [HarmonyPrefix]
+    static void ElevatorFullyRunning_ItemSafety_Prefix()
+    {
+        References.justDepartedIntoOrbit = true;
+
+        CruiserXLController controller = References.truckController;
+        if (controller != null && controller.magnetedToShip)
         {
-            localPlayer.isInElevator = true;
-            return;
+            controller.CollectItemsInTruck();
         }
-
-        if (localPlayer.physicsParent == null) return;
-        if (localPlayer.physicsParent.TryGetComponent<CruiserXLController>(out var vehicle))
-            localPlayer.isInElevator = true;
+        References.justDepartedIntoOrbit = false;
     }
 }

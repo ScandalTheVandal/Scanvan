@@ -8,45 +8,69 @@ namespace CruiserXL.Patches;
 [HarmonyPatch(typeof(ForestGiantAI))]
 internal static class ForestGiantAIPatches
 {
-    [HarmonyPatch("OnCollideWithPlayer")]
+    [HarmonyPatch(nameof(ForestGiantAI.AnimationEventA))]
     [HarmonyPrefix]
-    static bool OnCollideWithPlayer_Prefix(ForestGiantAI __instance, Collider other)
+    static bool AnimationEventA_Prefix(ForestGiantAI __instance)
     {
-        if (__instance.inSpecialAnimationWithPlayer != null || __instance.inEatingPlayerAnimation)
-            return true;
-
-        if (__instance.stunNormalizedTimer >= 0f)
-            return true;
-
-        if (__instance.currentBehaviourStateIndex == 2)
-            return true;
-
-        PlayerControllerB playerControllerB = __instance.MeetsStandardPlayerCollisionConditions(other, __instance.inEatingPlayerAnimation, false);
-        if (playerControllerB == null || playerControllerB != GameNetworkManager.Instance.localPlayerController)
+        PlayerControllerB playerControllerB = GameNetworkManager.Instance.localPlayerController;
+        if (playerControllerB == null)
             return false;
 
         if (References.truckController == null)
             return true;
 
-        // not in our truck, run vanilla logic
-        if (!VehicleUtils.IsPlayerInTruck(playerControllerB, References.truckController))
-            return true;
-        // this check is also important to prevent returning false if the player isn't in our truck
-
-        // check if the player is protected in our truck
-        if (VehicleUtils.IsPlayerProtectedByTruck(playerControllerB, References.truckController))
-        {
-            // player is protected, so do not allow the grab
-            //Plugin.Logger.LogMessage("Giant Collide A");
+        // do not allow fall death in the truck
+        if (PlayerUtils.isPlayerInCab ||
+            PlayerUtils.isPlayerInStorage ||
+            PlayerUtils.seatedInTruck)
             return false;
-        }
-        //Plugin.Logger.LogMessage("Giant Collide B");
-        if (__instance.currentBehaviourStateIndex == 1)
+
+        // not in our truck, run vanilla logic
+        return true;
+    }
+
+    [HarmonyPatch(nameof(ForestGiantAI.OnCollideWithPlayer))]
+    [HarmonyPrefix]
+    static bool OnCollideWithPlayer_Prefix(ForestGiantAI __instance, Collider other)
+    {
+        if ((__instance.inSpecialAnimationWithPlayer != null || __instance.inEatingPlayerAnimation) ||
+            __instance.stunNormalizedTimer >= 0f ||
+            __instance.currentBehaviourStateIndex == 2)
+            return true;
+
+        PlayerControllerB playerControllerB = __instance.MeetsStandardPlayerCollisionConditions(other, __instance.inEatingPlayerAnimation, false);
+        if (playerControllerB == null)
+            return true;
+
+        if (References.truckController == null)
+            return true;
+        CruiserXLController controller = References.truckController;
+
+        // check if the player is seated in our truck
+        if (VehicleUtils.IsPlayerSeatedInVehicle(controller))
         {
-            playerControllerB.CancelSpecialTriggerAnimations();
-            __instance.GrabPlayerServerRpc((int)playerControllerB.playerClientId);
+            // windshield is missing, so allow the grab
+            if (controller.windshieldBroken && controller.averageVelocity.magnitude <= 10f)
+                return true;
+            // player is protected, so do not allow the grab
+            if (VehicleUtils.IsSeatedPlayerProtected(playerControllerB, controller))
+                return false;
+            return true; // allow vanilla logic to run (no inVehicleAnimation check)
         }
-        return false;
-        // force grab, otherwise if we return true, the original physicsParent condition takes prescedent and causes inconsistent behaviour.
+
+        // not seated in our truck, but within the vehicle bounds
+        if (VehicleUtils.IsPlayerInVehicleBounds())
+        {
+            // windshield is missing, so allow the grab
+            if (PlayerUtils.isPlayerInCab && (controller.windshieldBroken && controller.averageVelocity.magnitude <= 10f))
+                return true;
+            if (VehicleUtils.IsPlayerProtectedByVehicle(playerControllerB, controller))
+                return false; // player is protected, so do not allow the grab
+
+            return true; // player is not protected, allow vanilla logic to run
+        }
+
+        // not in our truck, run vanilla logic
+        return true;
     }
 }
