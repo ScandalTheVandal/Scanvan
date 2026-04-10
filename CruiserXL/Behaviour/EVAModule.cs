@@ -29,11 +29,11 @@ public class EVAModule : NetworkBehaviour
     public Coroutine audioTimedCoroutine = null!;
     public TextMeshPro clusterScreen = null!;
 
+    public Dictionary<ElectronicVoiceAlert, bool> audioClipsJustPlayed = new();
     public Queue<(int clipId, bool thank, bool important, bool ignition, int importantType)> alertClipQueue = new();
     public bool audioIsPlaying;
 
     public string[] clusterTexts = null!;
-    public bool[] audioClipsJustPlayed = null!;
     public bool isPlayingBeeps;
     public bool isPlayingOnEngineStart;
     public int currentClipId;
@@ -58,6 +58,14 @@ public class EVAModule : NetworkBehaviour
     public bool pendingPassengerDoorThanked;
     public bool pendingSideDoorThanked;
     public bool pendingBackDoorThanked;
+
+    public void OnEnable()
+    {
+        foreach (ElectronicVoiceAlert alert in Enum.GetValues(typeof(ElectronicVoiceAlert)))
+        {
+            audioClipsJustPlayed[alert] = false;
+        }
+    }
 
     public void LateUpdate()
     {
@@ -292,7 +300,7 @@ public class EVAModule : NetworkBehaviour
             {
                 SetThankYouClip();
                 RemoveClipFromQueue(doorClipId);
-                audioClipsJustPlayed[doorClipId] = false;
+                audioClipsJustPlayed[(ElectronicVoiceAlert)doorClipId] = false;
                 pendingDoorThanked = false;
             }
         }
@@ -359,7 +367,7 @@ public class EVAModule : NetworkBehaviour
         int clipId = (int)alert;
 
         RemoveClipFromQueue(clipId);
-        audioClipsJustPlayed[clipId] = false;
+        audioClipsJustPlayed[alert] = false;
     }
 
     private void RemoveClipFromQueue(int clipId)
@@ -396,7 +404,7 @@ public class EVAModule : NetworkBehaviour
 
     private bool WasClipPlayed(ElectronicVoiceAlert alert)
     {
-        return audioClipsJustPlayed[(int)alert];
+        return audioClipsJustPlayed[alert];
     }
 
     public void SetThankYouClip()
@@ -404,7 +412,7 @@ public class EVAModule : NetworkBehaviour
         if (voiceAudio.clip != null && voiceAudio.isPlaying && voiceAudio.clip != voiceAudioClips[(int)ElectronicVoiceAlert.ThankYou] &&
             voiceAudio.time < voiceAudio.clip.length / 2f && currentClipId != -1)
         {
-            audioClipsJustPlayed[currentClipId] = false;
+            audioClipsJustPlayed[(ElectronicVoiceAlert)currentClipId] = false;
             SetClipInQueue((ElectronicVoiceAlert)currentClipId, isImportantWarning: false, isThankYouClip: false);
         }
         if (audioTimedCoroutine != null)
@@ -530,15 +538,15 @@ public class EVAModule : NetworkBehaviour
             if (clipId != -1)
             {
                 RemoveClipFromQueue(clipId);
-                audioClipsJustPlayed[clipId] = true;
+                audioClipsJustPlayed[(ElectronicVoiceAlert)clipId] = true;
             }
             else if (clipId == -1 && clipType == -1)
             {
                 RemoveClipFromQueue((int)ElectronicVoiceAlert.HeadlampsOn);
                 RemoveClipFromQueue((int)ElectronicVoiceAlert.KeyInIgnition);
 
-                audioClipsJustPlayed[(int)ElectronicVoiceAlert.HeadlampsOn] = true;
-                audioClipsJustPlayed[(int)ElectronicVoiceAlert.KeyInIgnition] = true;
+                audioClipsJustPlayed[ElectronicVoiceAlert.HeadlampsOn] = true;
+                audioClipsJustPlayed[ElectronicVoiceAlert.KeyInIgnition] = true;
             }
         }
         yield return new WaitForSeconds(0.3f);
@@ -622,7 +630,7 @@ public class EVAModule : NetworkBehaviour
         if (NetworkManager.Singleton.IsHost)
         {
             RemoveClipFromQueue(clipId);
-            audioClipsJustPlayed[clipId] = true;
+            audioClipsJustPlayed[(ElectronicVoiceAlert)clipId] = true;
         }
         if (clipId == (int)ElectronicVoiceAlert.AllSystemsOk)
         {
@@ -666,7 +674,7 @@ public class EVAModule : NetworkBehaviour
         int[] alerts = {0, 10, 14, 11, 12, 15, 16, 3, 4, 17};
         foreach (int i in alerts)
         {
-            audioClipsJustPlayed[i] = false;
+            audioClipsJustPlayed[(ElectronicVoiceAlert)i] = false;
             RemoveClipFromQueue(i);
         }
     }
