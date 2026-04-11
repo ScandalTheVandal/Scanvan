@@ -52,6 +52,7 @@ Some mods listed may have partial or full self-implementation, such as BetterVeh
 - Glojam, for letting me re-use the service manual and some assets that I created for the Company Hauler rework
 - SoftDiamond, for letting me use their method for compatibility
 - ButteryStancakes, for letting me use their networking like in ButterRyBalance
+- Sizenko Alexander, for creating the font Digital-7, usage under freeware use
 - Programming assisted by:
 
 * Zaggy
