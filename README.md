@@ -45,6 +45,8 @@ Some mods listed may have partial or full self-implementation, such as BetterVeh
 - Bobbie, for creating the RadioFurniture mod! (Licenced under GNU)
 - Additional modelling, programming and texturing by ScandalTheVandal
 - Glojam, for letting me re-use the service manual and some assets that I created for the Company Hauler rework
+- SoftDiamond, for letting me use their method for compatibility
+- ButteryStancakes, for letting me use their networking like in ButterRyBalance
 - Programming assisted by:
 
 * Zaggy
