@@ -3063,7 +3063,7 @@ public class CruiserXLController : VehicleController
             return;
         }
         // (steeringWheelTurnSpeed * Time.deltaTime / 6f)
-        steeringWheelAnimFloat = Mathf.Lerp(steeringWheelAnimFloat, syncedWheelRotation, steeringWheelTurnSpeed * Time.deltaTime / 6f);
+        steeringWheelAnimFloat = Mathf.Lerp(steeringWheelAnimFloat, syncedWheelRotation, 6f * Time.deltaTime);
     }
 
     public void SetCarInteriorAnimations()
@@ -3869,11 +3869,13 @@ public class CruiserXLController : VehicleController
         syncThreshold = Mathf.Clamp(syncThreshold, 0.15f, 0.21f);
         if (syncCarDrivetrainInterval >= syncThreshold)
         {
+            float engineSpeed = NormaliseFloat(Mathf.Round(EngineRPM));
             float fWheelSyncRPM = NormaliseFloat(Mathf.Round(frontWheelRPM));
             float bWheelSyncRPM = NormaliseFloat(Mathf.Round(backWheelRPM));
 
             if (syncedFrontWheelRPM != fWheelSyncRPM ||
-                syncedBackWheelRPM != bWheelSyncRPM)
+                syncedBackWheelRPM != bWheelSyncRPM ||
+                syncedEngineRPM != engineSpeed)
             {
                 syncCarDrivetrainInterval = 0f;
 
@@ -3881,7 +3883,7 @@ public class CruiserXLController : VehicleController
                 syncedBackWheelRPM = bWheelSyncRPM;
 
                 syncedWheelRPM = wheelRPM;
-                syncedEngineRPM = NormaliseFloat(EngineRPM);
+                syncedEngineRPM = engineSpeed;
 
                 SyncCarDrivetrainRpc(frontWheelRPM, backWheelRPM, wheelRPM, syncedEngineRPM);
                 return;
