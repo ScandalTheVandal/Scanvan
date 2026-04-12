@@ -3,8 +3,7 @@
 The JcJenson Motor Division, in co-partnership with Vandal Electronics are proud to announce, the all new for 2428, Scanvan!
 This Lethal Company mod adds an 'new' vehicle: the Scanvan! to the terminal for `440` credits. It is a Cruiser based, 2-door luton-style van with an enclosed roof, with plenty extra features for you great little company assets! an ideal alternative to the Company Cruiser, some may say.
 
-Thunderstore link:
-TBD
+Thunderstore link: https://thunderstore.io/c/lethal-company/p/Scandal/Vandal_Electronics_Scanvan/
 
 ## Features
 * Three seats
