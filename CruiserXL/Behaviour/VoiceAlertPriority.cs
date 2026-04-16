@@ -2,8 +2,9 @@
 {
     None = 0,
     Low = 1,
-    Medium = 2,
-    IsIgnition = 3,
-    Override = 4,
-    IsImportant = 5
+    DoorAlert = 2,
+    Medium = 3,
+    IsIgnition = 4,
+    Override = 5,
+    IsImportant = 6
 }

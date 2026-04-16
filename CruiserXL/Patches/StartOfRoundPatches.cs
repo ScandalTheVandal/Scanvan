@@ -20,9 +20,6 @@ public static class StartOfRoundPatches
 
         if (RadioManager._stations.Count == 0)
         {
-            HUDManager.Instance.DisplayTip("No stations found",
-                $"Attempting to fetch stations!",
-                isWarning: false);
             RadioManager.GetRadioStations().Forget();
         }
     }
@@ -84,7 +81,9 @@ public static class StartOfRoundPatches
 
             controller.turboBoosts = turbos;
 
-            controller.voiceModule.hasJustPlayedSixBeepChime = ignition;
+            controller.voiceModule.ignitionChimeStarted = ignition;
+            controller.voiceModule.ignitionChimeFinished = ignition;
+
             controller.electricsOn = ignition;
             controller.keyIsInIgnition = ignition;
             controller.SetFrontCabinLightOn(setOn: ignition);

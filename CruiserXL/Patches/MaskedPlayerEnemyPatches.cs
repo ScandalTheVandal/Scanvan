@@ -21,7 +21,7 @@ internal class MaskedPlayerEnemyPatches
     // need to investigate this
     [HarmonyPatch(nameof(MaskedPlayerEnemy.OnCollideWithPlayer))]
     [HarmonyPrefix]
-    static bool OnCollideWithPlayer_Prefix(MaskedPlayerEnemy __instance, Collider other)
+    static bool OnCollideWithPlayer_Prefix(MaskedPlayerEnemy __instance, ref Collider other)
     {
         PlayerControllerB playerControllerB = __instance.MeetsStandardPlayerCollisionConditions(other, __instance.inKillAnimation || __instance.startingKillAnimationLocalClient || !__instance.enemyEnabled, false);
         if (playerControllerB == null)

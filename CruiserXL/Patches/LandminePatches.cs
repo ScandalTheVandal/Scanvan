@@ -24,17 +24,36 @@ public class LandminePatches
             !controller.hasBeenSpawned ||
             controller.alarmDebounce ||
             controller.ignitionStarted ||
-            controller.carDestroyed)
+            controller.carDestroyed ||
+            controller.magnetedToShip)
             return;
 
-        if (Vector3.Distance(controller.transform.position, explosionPosition) > 5f)
+        if (Vector3.Distance(controller.transform.position, explosionPosition) > 7.5f)
             return;
 
-        if ((float)UnityEngine.Random.Range(9, 85) > 17f)
+        if ((float)UnityEngine.Random.Range(9, 85) > 12f)
             return;
 
         controller.alarmDebounce = true;
         controller.TryBeginAlarm();
+    }
+
+    [HarmonyPatch(nameof(Landmine.SpawnExplosion))]
+    [HarmonyPrefix]
+    private static void SpawnExplosion_Prefix(Landmine __instance, Vector3 explosionPosition, bool spawnExplosionEffect, ref float killRange, ref float damageRange, int nonLethalDamage, float physicsForce, GameObject overridePrefab, bool goThroughCar)
+    {
+        if (References.truckController == null)
+            return;
+
+        if (!VehicleUtils.IsPlayerNearTruck(GameNetworkManager.Instance.localPlayerController, References.truckController))
+            return;
+
+        if (!goThroughCar &&
+            ((PlayerUtils.isPlayerInStorage && References.truckController.storageCompartment.ClosestPoint(explosionPosition) != explosionPosition) || PlayerUtils.isPlayerInCab || PlayerUtils.seatedInTruck))
+        {
+            killRange = -1f;
+            damageRange = -1f;
+        }
     }
 }
 

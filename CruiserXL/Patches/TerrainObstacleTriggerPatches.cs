@@ -24,8 +24,7 @@ public static class TerrainObstacleTriggerPatches
         // restore functionality for trees to damage the truck, while accounting for snowmen,
         // since they're breakable as of v70, but we do not want them to damage the truck as vanilla never accounts for this
 
-        // may add the angle check back in for consistency
-        if (controller.IsOwner && controller.averageVelocity.magnitude >= 5f) //&& Vector3.Angle(controller.averageVelocity, __instance.transform.position - controller.mainRigidbody.position) < 80f
+        if (controller.IsOwner && controller.averageVelocity.magnitude >= 5f && Vector3.Angle(controller.averageVelocity, __instance.transform.position - controller.mainRigidbody.position) < 80f) 
         {
             RoundManager.Instance.DestroyTreeOnLocalClient(__instance.transform.position);
             bool isObjectATree = __instance.transform.parent != null &&

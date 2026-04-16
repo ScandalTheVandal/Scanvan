@@ -275,6 +275,7 @@ public class RadioBehaviour : NetworkBehaviour
 
         if (_stream != null && _stream.decomp)
         {
+            StopStaticIfPlaying();
             _radioCheckInterval = 0f;
             _hasClientRequestedChange = false;
             _stationChangeRequested = false;

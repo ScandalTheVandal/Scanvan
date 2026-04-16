@@ -11,7 +11,7 @@ public static class MouthDogAIPatches
 {
     [HarmonyPatch(nameof(MouthDogAI.OnCollideWithPlayer))]
     [HarmonyPrefix]
-    static bool OnCollideWithPlayer_Prefix(MouthDogAI __instance, Collider other)
+    static bool OnCollideWithPlayer_Prefix(MouthDogAI __instance, ref Collider other)
     {
         PlayerControllerB playerControllerB = __instance.MeetsStandardPlayerCollisionConditions(other,  __instance.inKillAnimation, false);
         if (playerControllerB == null)

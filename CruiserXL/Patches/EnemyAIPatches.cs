@@ -12,7 +12,7 @@ public static class EnemyAIPatches
     [HarmonyPostfix]
     static void PlayerIsTargetable_Postfix(EnemyAI __instance, PlayerControllerB playerScript, bool cannotBeInShip, bool overrideInsideFactoryCheck, bool checkForMineshaftStartTile, ref bool __result)
     {
-        if (__instance is not BushWolfEnemy && __instance is not PumaAI) return;
+        if (__instance is not BushWolfEnemy) return;
         if (References.truckController == null) return;
 
         CruiserXLController controller = References.truckController;

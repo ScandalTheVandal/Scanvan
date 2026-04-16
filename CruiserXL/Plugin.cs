@@ -137,10 +137,10 @@ namespace CruiserXL
         [InputAction(KeyboardControl.Space, Name = "Jump")]
         public InputAction JumpKey { get; set; } = null!;
 
-        [InputAction(MouseControl.ScrollUp, Name = "Shift Gear Forward", GamepadControl = GamepadControl.LeftShoulder)]
+        [InputAction(MouseControl.ScrollUp, Name = "Shift Gear Up", GamepadControl = GamepadControl.LeftShoulder)]
         public InputAction GearShiftForwardKey { get; set; } = null!;
 
-        [InputAction(MouseControl.ScrollDown, Name = "Shift Gear Backward", GamepadControl = GamepadControl.RightShoulder)]
+        [InputAction(MouseControl.ScrollDown, Name = "Shift Gear Down", GamepadControl = GamepadControl.RightShoulder)]
         public InputAction GearShiftBackwardKey { get; set; } = null!;
 
         [InputAction(KeyboardControl.F, Name = "Headlamps")]

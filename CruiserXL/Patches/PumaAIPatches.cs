@@ -10,7 +10,7 @@ internal static class PumaAIPatches
 {
     [HarmonyPatch(nameof(PumaAI.OnCollideWithPlayer))]
     [HarmonyPrefix]
-    static bool OnCollideWithPlayer_Prefix(PumaAI __instance, Collider other)
+    static bool OnCollideWithPlayer_Prefix(PumaAI __instance, ref Collider other)
     {
         PlayerControllerB playerControllerB = __instance.MeetsStandardPlayerCollisionConditions(other, false, false);
 
@@ -28,7 +28,7 @@ internal static class PumaAIPatches
             if (avgSpeed >= 2f)
                 return false;
 
-            // player is protected, so do not allow the kill
+            // player is protected, so do not allow damage
             if (VehicleUtils.IsSeatedPlayerProtected(playerControllerB, controller))
                 return false;
             return true; // allow vanilla logic to run

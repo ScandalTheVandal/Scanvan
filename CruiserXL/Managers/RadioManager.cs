@@ -24,7 +24,7 @@ public static class RadioManager
     {
         GetRadioStations().Forget();
     }
-
+        
     public static async UniTask GetRadioStations()
     {
         try
@@ -84,14 +84,14 @@ public static class RadioManager
                 var hostName = (await Dns.GetHostEntryAsync(ipAddress)).HostName;
                 if (string.IsNullOrEmpty(hostName)) continue;
                 var result = await client.GetAsync($"https://{hostName}/");
-                Plugin.Logger.LogDebug($"{hostName}, is Success? {result.IsSuccessStatusCode}, ip? {ipAddress}");
+                Plugin.Logger.LogDebug($"{hostName}, Is success? {result.IsSuccessStatusCode}, IP? {ipAddress}");
                 if (!result.IsSuccessStatusCode) continue;
                 lastRoundTripTime = reply.RoundtripTime;
                 searchUrl = hostName;
             }
             catch (SocketException)
             {
-                Plugin.Logger.LogWarning("Cannot ping socket");
+                Plugin.Logger.LogWarning("Cannot ping socket!");
             }
         return searchUrl;
     }

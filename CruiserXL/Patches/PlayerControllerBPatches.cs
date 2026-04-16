@@ -261,7 +261,7 @@ internal class PlayerControllerBPatches
     // and cause obvious visual problems such as the ignition key not 
     // aligning properly during the ignition animation, or even causing
     // the players body to shift backwards, resulting in their hands
-    // not visually holding anything
+    // not visually holding anything such as the steering wheel
     [HarmonyPatch(nameof(PlayerControllerB.LateUpdate))]
     [HarmonyPostfix]
     private static void LateUpdate_Postfix(PlayerControllerB __instance)

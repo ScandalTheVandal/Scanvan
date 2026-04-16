@@ -31,7 +31,7 @@ internal static class ForestGiantAIPatches
 
     [HarmonyPatch(nameof(ForestGiantAI.OnCollideWithPlayer))]
     [HarmonyPrefix]
-    static bool OnCollideWithPlayer_Prefix(ForestGiantAI __instance, Collider other)
+    static bool OnCollideWithPlayer_Prefix(ForestGiantAI __instance, ref Collider other)
     {
         if ((__instance.inSpecialAnimationWithPlayer != null || __instance.inEatingPlayerAnimation) ||
             __instance.stunNormalizedTimer >= 0f ||

@@ -12,8 +12,6 @@ public static class PlayerUtils
     public static bool isPlayerInCab;
     public static bool isPlayerInStorage;
 
-    public static Animator playerAnimator = null!;
-
     public static readonly int stopAnimationID = Animator.StringToHash("SA_stopAnimation");
 
     private static float[] storedParameters = new float[0];
@@ -46,7 +44,7 @@ public static class PlayerUtils
     ///  Available from LethalMin, licensed under MIT License.
     ///  Source: https://github.com/NoteBoxz/LethalMin/blob/main/Scripts/CustomPlayerAnimationManager.cs
     /// </summary>
-    public static void StoreParameters()
+    public static void StoreParameters(Animator playerAnimator)
     {
         var parameters = playerAnimator.parameters;
         storedParameters = new float[parameters.Length];
@@ -88,7 +86,7 @@ public static class PlayerUtils
     ///  Available from LethalMin, licensed under MIT License.
     ///  Source: https://github.com/NoteBoxz/LethalMin/blob/main/Scripts/CustomPlayerAnimationManager.cs
     /// </summary>
-    public static void RestoreParameters()
+    public static void RestoreParameters(Animator playerAnimator)
     {
         var parameters = playerAnimator.parameters;
         for (int i = 0; i < parameters.Length; i++)

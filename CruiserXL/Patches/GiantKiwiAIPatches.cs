@@ -78,15 +78,15 @@ internal static class GiantKiwiAIPatches
     [HarmonyPrefix]
     static void AnimationEventB_Prefix(GiantKiwiAI __instance)
     {
-        PlayerControllerB playerControllerB = GameNetworkManager.Instance.localPlayerController;
+        if (References.truckController == null)
+            return;
 
-        if (playerControllerB == null || 
-            !playerControllerB.isPlayerControlled || 
+        PlayerControllerB playerControllerB = GameNetworkManager.Instance.localPlayerController;
+        if (playerControllerB == null ||
+            !playerControllerB.isPlayerControlled ||
             playerControllerB.isPlayerDead)
             return;
 
-        if (References.truckController == null)
-            return;
         CruiserXLController controller = References.truckController;
         var avgSpeed = controller.averageVelocity.magnitude;
 

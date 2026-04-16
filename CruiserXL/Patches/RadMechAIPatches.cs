@@ -13,7 +13,7 @@ internal static class RadMechAIPatches
     // considered 'protected'.
     [HarmonyPatch(nameof(RadMechAI.OnCollideWithPlayer))]
     [HarmonyPrefix]
-    static bool OnCollideWithPlayer_Prefix(RadMechAI __instance, Collider other)
+    static bool OnCollideWithPlayer_Prefix(RadMechAI __instance, ref Collider other)
     {
         PlayerControllerB playerControllerB = __instance.MeetsStandardPlayerCollisionConditions(other, false, false);
         if (playerControllerB == null)

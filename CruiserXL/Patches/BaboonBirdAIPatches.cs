@@ -10,7 +10,7 @@ internal class BaboonBirdAIPatches
 {
     [HarmonyPatch(nameof(BaboonBirdAI.OnCollideWithPlayer))]
     [HarmonyPrefix]
-    static bool OnCollideWithPlayer_Prefix(BaboonBirdAI __instance, Collider other)
+    static bool OnCollideWithPlayer_Prefix(BaboonBirdAI __instance, ref Collider other)
     {
         PlayerControllerB playerControllerB = __instance.MeetsStandardPlayerCollisionConditions(other, __instance.inSpecialAnimation || __instance.doingKillAnimation, false);
         if (playerControllerB == null)

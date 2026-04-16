@@ -17,11 +17,18 @@ public class VehiclePlayerSeat : MonoBehaviour
     {
         // safeguarding
         if (playerController == null ||
-            playerController.isPlayerDead ||
+            playerController.isPlayerDead ||    
             !playerController.isPlayerControlled)
+        {
+            if (playerController != null) 
+                playerController.playerBodyAnimator.runtimeAnimatorController = isLocalPlayer ? StartOfRound.Instance.localClientAnimatorController : StartOfRound.Instance.otherClientsAnimatorController;
+            cachedPlayerAnimatorController = null!;
+            thisPlayerAnimator = null!;
             return;
+        }
 
-        UncrouchPlayer(playerController);
+        if (isLocalPlayer)
+            UncrouchPlayer(playerController);
 
         // reset the players local data
         PlayerUtils.ResetPlayerData(playerController);
@@ -34,7 +41,7 @@ public class VehiclePlayerSeat : MonoBehaviour
 
         // save the parameters of the current animator
         if (isLocalPlayer)
-            PlayerUtils.StoreParameters();
+            PlayerUtils.StoreParameters(playerController.playerBodyAnimator);
 
         // apply the animator from our references
         playerController.playerBodyAnimator.runtimeAnimatorController = References.truckPlayerAnimator;
@@ -50,8 +57,16 @@ public class VehiclePlayerSeat : MonoBehaviour
     public void ReturnPlayerAnimator(PlayerControllerB playerController, bool isLocalPlayer, InteractTrigger seatTrigger)
     {
         // safeguarding
-        if (playerController == null)
+        if (playerController == null ||
+            playerController.isPlayerDead ||
+            !playerController.isPlayerControlled)
+        {
+            if (playerController != null) 
+                playerController.playerBodyAnimator.runtimeAnimatorController = isLocalPlayer ? StartOfRound.Instance.localClientAnimatorController : StartOfRound.Instance.otherClientsAnimatorController;
+            cachedPlayerAnimatorController = null!;
+            thisPlayerAnimator = null!;
             return;
+        }
 
         // reapply the original players animator, if it exists
         if (cachedPlayerAnimatorController != null)
@@ -60,7 +75,7 @@ public class VehiclePlayerSeat : MonoBehaviour
 
             // restore the original parameters for the original animator
             if (isLocalPlayer)
-                PlayerUtils.RestoreParameters();
+                PlayerUtils.RestoreParameters(playerController.playerBodyAnimator);
         }
         else
         {
@@ -71,8 +86,11 @@ public class VehiclePlayerSeat : MonoBehaviour
                 playerController.playerBodyAnimator.runtimeAnimatorController = StartOfRound.Instance.otherClientsAnimatorController;
         }
 
-        playerController.playerBodyAnimator.ResetTrigger(PlayerUtils.stopAnimationID); // fix the standing up bug
-        UncrouchPlayer(playerController);
+        if (isLocalPlayer)
+        {
+            playerController.playerBodyAnimator.ResetTrigger(PlayerUtils.stopAnimationID); // fix the standing up bug
+            UncrouchPlayer(playerController);
+        }
 
         // reset the players local data
         PlayerUtils.ResetPlayerData(playerController);
@@ -80,7 +98,6 @@ public class VehiclePlayerSeat : MonoBehaviour
         // clear old references
         cachedPlayerAnimatorController = null!;
         thisPlayerAnimator = null!;
-        PlayerUtils.playerAnimator = null!;
     }
 
     public static void UncrouchPlayer(PlayerControllerB player)
