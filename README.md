@@ -75,6 +75,7 @@ https://archive.org/details/78rpmCollection1920s1930sPopularMusic
 `Blinker in car by dersuperanton -- https://freesound.org/s/434819/ -- License: Attribution 4.0`
 `Rover 216 GSi handbrake moving up and down.aif by Tomlija -- https://freesound.org/s/109489/ -- License: Attribution 3.0`
 `Gear shifts and other noises - Toyota Verso Interior by JaimeLopes -- https://freesound.org/s/442766/ -- License: Attribution 4.0`
+`JCB_Engine_Shutoff.wav by mickyman5000 -- https://freesound.org/s/340682/ -- License: Creative Commons 0`
 
 - Misc
 `Various Sound Effects -- (https://pixabay.com)`
