@@ -72,13 +72,14 @@ https://archive.org/details/78rpmCollection1920s1930sPopularMusic
 `MITSUBISHI IMIEV electric car HEATER int.wav by jakobthiesen -- https://freesound.org/s/174842/ -- License: Attribution 3.0`\
 `Gear Shift - Park Reverse Drive - Interior Honda.wav by UnplugTheFridge -- https://freesound.org/s/529222/ -- License: Creative Commons 0`\
 `Indicator Stereo.mp3 by TurboTheSergal -- https://freesound.org/s/523354/ -- License: Attribution 4.0`\
-`Blinker in car by dersuperanton -- https://freesound.org/s/434819/ -- License: Attribution 4.0`
-`Rover 216 GSi handbrake moving up and down.aif by Tomlija -- https://freesound.org/s/109489/ -- License: Attribution 3.0`
-`Gear shifts and other noises - Toyota Verso Interior by JaimeLopes -- https://freesound.org/s/442766/ -- License: Attribution 4.0`
-`JCB_Engine_Shutoff.wav by mickyman5000 -- https://freesound.org/s/340682/ -- License: Creative Commons 0`
+`Blinker in car by dersuperanton -- https://freesound.org/s/434819/ -- License: Attribution 4.0`\
+`Rover 216 GSi handbrake moving up and down.aif by Tomlija -- https://freesound.org/s/109489/ -- License: Attribution 3.0`\
+`Gear shifts and other noises - Toyota Verso Interior by JaimeLopes -- https://freesound.org/s/442766/ -- License: Attribution 4.0`\
+`JCB_Engine_Shutoff.wav by mickyman5000 -- https://freesound.org/s/340682/ -- License: Creative Commons 0`\
 
 - Misc
-`Various Sound Effects -- (https://pixabay.com)`
+    `Various Sound Effects -- (https://pixabay.com)`\
+    `https://nox-sound-design.itch.io/essentials-series-sfx-nox-sound`\
 
 ## Special thanks to:
 * LLL and its maintainers, for including Extended Buyable Vehicles
