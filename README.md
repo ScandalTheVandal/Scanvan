@@ -78,8 +78,9 @@ https://archive.org/details/78rpmCollection1920s1930sPopularMusic
 `JCB_Engine_Shutoff.wav by mickyman5000 -- https://freesound.org/s/340682/ -- License: Creative Commons 0`\
 
 - Misc
-    `Various Sound Effects -- (https://pixabay.com)`\
-    `https://nox-sound-design.itch.io/essentials-series-sfx-nox-sound`\
+  
+`Various Sound Effects -- (https://pixabay.com)`\
+`https://nox-sound-design.itch.io/essentials-series-sfx-nox-sound`\
 
 ## Special thanks to:
 * LLL and its maintainers, for including Extended Buyable Vehicles
