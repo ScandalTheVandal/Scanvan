@@ -1,5 +1,5 @@
-﻿using CruiserXL.Patches;
-using CruiserXL.Utils;
+﻿using ScanVan.Patches;
+using ScanVan.Utils;
 using GameNetcodeStuff;
 using System.ComponentModel;
 using UnityEngine;
@@ -62,14 +62,15 @@ public class CruiserXLCollisionTrigger : MonoBehaviour
             timeSinceHittingPlayer = Time.realtimeSinceStartup;
             Vector3 impactForce = Vector3.ClampMagnitude(mainScript.averageVelocity, 40f);
 
+            // prevent hitting players standing on the truck or sitting in the truck
+            Transform physicsTransform = mainScript.physicsRegion.physicsTransform;
+            if (playerController.physicsParent == physicsTransform || playerController.overridePhysicsParent == physicsTransform)
+            {
+                return;
+            }
+
             if (playerController == GameNetworkManager.Instance.localPlayerController)
             {
-                // prevent hitting players standing on the truck or sitting in the truck
-                if (mainScript.physicsRegion.physicsTransform == GameNetworkManager.Instance.localPlayerController.physicsParent ||
-                    GameNetworkManager.Instance.localPlayerController.overridePhysicsParent == mainScript.physicsRegion.physicsTransform)
-                {
-                    return;
-                }
                 if (velocityMagnitude > 20f)
                 {
                     GameNetworkManager.Instance.localPlayerController.KillPlayer(impactForce, spawnBody: true, CauseOfDeath.Crushing, 9, default, false);

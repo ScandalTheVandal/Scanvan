@@ -5,6 +5,7 @@
     DoorAlert = 2,
     Medium = 3,
     IsIgnition = 4,
-    Override = 5,
-    IsImportant = 6
+    IsService = 5,
+    Override = 6,
+    IsImportant = 7
 }

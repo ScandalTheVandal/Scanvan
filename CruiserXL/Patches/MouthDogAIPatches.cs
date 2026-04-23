@@ -1,10 +1,10 @@
-﻿using CruiserXL;
-using CruiserXL.Utils;
+﻿using ScanVan;
+using ScanVan.Utils;
 using GameNetcodeStuff;
 using HarmonyLib;
 using UnityEngine;
 
-namespace CruiserXL.Patches;
+namespace ScanVan.Patches;
 
 [HarmonyPatch(typeof(MouthDogAI))]
 public static class MouthDogAIPatches

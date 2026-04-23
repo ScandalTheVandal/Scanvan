@@ -1,10 +1,11 @@
-using CruiserXL.Utils;
+using ScanVan.Utils;
 using GameNetcodeStuff;
 using HarmonyLib;
 using Unity.Netcode;
 using UnityEngine;
+using ScandalsTweaks.Utils;
 
-namespace CruiserXL.Patches;
+namespace ScanVan.Patches;
 
 [HarmonyPatch(typeof(Landmine))]
 public class LandminePatches
@@ -57,10 +58,10 @@ public class LandminePatches
     }
 }
 
-[HarmonyPatch(typeof(ScandalsTweaks.Patches.LandminePatches))]
+[HarmonyPatch(typeof(ScandalsTweaks.Patches.Landmine_Patches))]
 public class ExternalLandminePatches
 {
-    [HarmonyPatch(nameof(ScandalsTweaks.Patches.LandminePatches.DoesVehicleExist))]
+    [HarmonyPatch(nameof(ScandalsTweaks.Patches.Landmine_Patches.DoesVehicleExist))]
     [HarmonyPrefix]
     private static bool DoesVehicleExist_Prefix(ref bool __result)
     {
@@ -72,7 +73,7 @@ public class ExternalLandminePatches
         return true;
     }
 
-    [HarmonyPatch(nameof(ScandalsTweaks.Patches.LandminePatches.CanPlayerBeKnockedBackInVehicle))]
+    [HarmonyPatch(nameof(ScandalsTweaks.Patches.Landmine_Patches.CanPlayerBeKnockedBackInVehicle))]
     [HarmonyPrefix]
     private static bool CanPlayerBeKnockedBackInVehicle_Prefix(ref bool __result)
     {
@@ -84,23 +85,23 @@ public class ExternalLandminePatches
         return true;
     }
 
-    [HarmonyPatch(nameof(ScandalsTweaks.Patches.LandminePatches.GetCurrentCachedVehicle))]
+    [HarmonyPatch(nameof(ScandalsTweaks.Patches.Landmine_Patches.GetCurrentCachedVehicle))]
     [HarmonyPrefix]
     private static void GetCurrentCachedVehicle_Prefix()
     {
         if (References.truckController != null)
         {
-            ScandalsTweaks.Utils.References.vehicleController = References.truckController;
+            GlobalReferences.vehicleController = References.truckController;
         }
     }
 
-    [HarmonyPatch(nameof(ScandalsTweaks.Patches.LandminePatches.CurrentForceMultiplier))]
+    [HarmonyPatch(nameof(ScandalsTweaks.Patches.Landmine_Patches.CurrentForceMultiplier))]
     [HarmonyPrefix]
     private static bool CurrentForceMultiplier_Prefix(ref float __result)
     {
         if (References.truckController != null)
         {
-            __result = 5f;
+            __result = 1f;
             return false;
         }
         return true;

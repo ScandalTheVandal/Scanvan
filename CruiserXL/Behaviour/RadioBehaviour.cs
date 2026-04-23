@@ -1,16 +1,17 @@
 ﻿using Cysharp.Threading.Tasks;
-using CruiserXL.ClipLoading;
-using CruiserXL.Managers;
+using ScanVan.ClipLoading;
+using ScanVan.Managers;
 using System;
 using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
+using static TMPro.SpriteAssetUtilities.TexturePacker_JsonArray;
 
 /// <summary>
 ///  Available from RadioFurniture, licensed under GNU General Public License.
 ///  Source: https://github.com/legoandmars/RadioFurniture/blob/master/RadioFurniture/Behaviour/RadioBehaviour.cs
 /// </summary>
-namespace CruiserXL.Behaviour;
+namespace ScanVan.Behaviour;
 
 public class RadioBehaviour : NetworkBehaviour
 {
@@ -34,7 +35,7 @@ public class RadioBehaviour : NetworkBehaviour
     {
         _staticAudioSource.clip = _static;
         _currentFrequency = "FM";
-        SetVolumeOnLocalClient(0.4f);
+        SetVolumeOnLocalClient(-0.2f);
     }
 
     public void TogglePowerLocalClient(bool checkOn)

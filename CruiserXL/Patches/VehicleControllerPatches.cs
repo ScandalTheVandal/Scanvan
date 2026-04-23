@@ -1,7 +1,7 @@
 ﻿using HarmonyLib;
 using UnityEngine;
 
-namespace CruiserXL.Patches;
+namespace ScanVan.Patches;
 
 [HarmonyPatch(typeof(VehicleController))]
 public static class VehicleControllerPatches
@@ -112,7 +112,7 @@ public static class VehicleControllerPatches
 
     [HarmonyPatch(nameof(VehicleController.CarReactToObstacle))]
     [HarmonyPrefix]
-    static bool CarReactToObstacle_Prefix(VehicleController __instance, bool __runOriginal, Vector3 vel, Vector3 position, Vector3 impulse, CarObstacleType type, float obstacleSize, EnemyAI enemyScript, bool dealDamage)
+    static bool CarReactToObstacle_Prefix(VehicleController __instance, bool __runOriginal, ref Vector3 vel, ref Vector3 position, ref Vector3 impulse, ref CarObstacleType type, ref float obstacleSize, ref EnemyAI enemyScript, ref bool dealDamage)
     {
         if (!__runOriginal)
             return false;
@@ -126,7 +126,7 @@ public static class VehicleControllerPatches
 
     [HarmonyPatch(nameof(VehicleController.DealPermanentDamage))]
     [HarmonyPrefix]
-    static bool DealPermanentDamage_Prefix(VehicleController __instance, bool __runOriginal, int damageAmount, Vector3 damagePosition = default(Vector3))
+    static bool DealPermanentDamage_Prefix(VehicleController __instance, bool __runOriginal, ref int damageAmount, ref Vector3 damagePosition)
     {
         if (!__runOriginal)
             return false;
@@ -140,7 +140,7 @@ public static class VehicleControllerPatches
 
     [HarmonyPatch(nameof(VehicleController.DamagePlayerInVehicle))]
     [HarmonyPrefix]
-    static bool DamagePlayerInVehicle_Prefix(VehicleController __instance, bool __runOriginal, Vector3 vel, float magnitude)
+    static bool DamagePlayerInVehicle_Prefix(VehicleController __instance, bool __runOriginal, ref Vector3 vel, ref float magnitude)
     {
         if (!__runOriginal)
             return false;
@@ -154,7 +154,7 @@ public static class VehicleControllerPatches
 
     [HarmonyPatch(nameof(VehicleController.SetInternalStress))]
     [HarmonyPrefix]
-    static bool SetInternalStress_Prefix(VehicleController __instance, bool __runOriginal, float carStressIncrease)
+    static bool SetInternalStress_Prefix(VehicleController __instance, bool __runOriginal, ref float carStressIncrease)
     {
         if (!__runOriginal)
             return false;
@@ -182,7 +182,7 @@ public static class VehicleControllerPatches
 
     [HarmonyPatch(nameof(VehicleController.SetHeadlightMaterial))]
     [HarmonyPrefix]
-    static bool SetHeadlightMaterial_Prefix(VehicleController __instance, bool __runOriginal, bool on)
+    static bool SetHeadlightMaterial_Prefix(VehicleController __instance, bool __runOriginal, ref bool on)
     {
         if (!__runOriginal)
             return false;
@@ -208,7 +208,7 @@ public static class VehicleControllerPatches
 
     [HarmonyPatch(nameof(VehicleController.SetRadioOnLocalClient))]
     [HarmonyPrefix]
-    static bool SetRadioOnLocalClient_Prefix(VehicleController __instance, bool __runOriginal, bool on, bool setClip)
+    static bool SetRadioOnLocalClient_Prefix(VehicleController __instance, bool __runOriginal, ref bool on, ref bool setClip)
     {
         if (!__runOriginal)
             return false;
@@ -245,6 +245,48 @@ public static class VehicleControllerPatches
             return true;
 
         vehicle.ChangeRadioStation();
+        return false;
+    }
+
+    [HarmonyPatch(nameof(VehicleController.StartTryCarIgnition))]
+    [HarmonyPrefix]
+    static bool StartTryCarIgnition_Prefix(VehicleController __instance, bool __runOriginal)
+    {
+        if (!__runOriginal)
+            return false;
+
+        if (__instance is not CruiserXLController vehicle)
+            return true;
+
+        vehicle.StartTryCarIgnition();
+        return false;
+    }
+
+    [HarmonyPatch(nameof(VehicleController.CancelTryCarIgnition))]
+    [HarmonyPrefix]
+    static bool CancelTryCarIgnition_Prefix(VehicleController __instance, bool __runOriginal)
+    {
+        if (!__runOriginal)
+            return false;
+
+        if (__instance is not CruiserXLController vehicle)
+            return true;
+
+        vehicle.CancelTryCarIgnition();
+        return false;
+    }
+
+    [HarmonyPatch(nameof(VehicleController.RemoveKeyFromIgnition))]
+    [HarmonyPrefix]
+    static bool RemoveKeyFromIgnition_Prefix(VehicleController __instance, bool __runOriginal)
+    {
+        if (!__runOriginal)
+            return false;
+
+        if (__instance is not CruiserXLController vehicle)
+            return true;
+
+        vehicle.RemoveKeyFromIgnition();
         return false;
     }
 }

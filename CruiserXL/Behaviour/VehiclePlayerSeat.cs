@@ -1,11 +1,11 @@
-﻿using CruiserXL.Utils;
+﻿using ScanVan.Utils;
 using GameNetcodeStuff;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 
-namespace CruiserXL.Behaviour;
+namespace ScanVan.Behaviour;
 
 // a more universal way of having custom seat animations
 public class VehiclePlayerSeat : MonoBehaviour

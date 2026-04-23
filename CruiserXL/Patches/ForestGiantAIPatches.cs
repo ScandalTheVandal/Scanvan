@@ -1,9 +1,9 @@
-﻿using CruiserXL.Utils;
+﻿using ScanVan.Utils;
 using GameNetcodeStuff;
 using HarmonyLib;
 using UnityEngine;
 
-namespace CruiserXL.Patches;
+namespace ScanVan.Patches;
 
 [HarmonyPatch(typeof(ForestGiantAI))]
 internal static class ForestGiantAIPatches

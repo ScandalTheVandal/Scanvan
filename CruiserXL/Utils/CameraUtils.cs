@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace CruiserXL.Utils;
+namespace ScanVan.Utils;
 
 // kudos to Zaggy for being my teacher through-out this! /p3
 public static class CameraUtils

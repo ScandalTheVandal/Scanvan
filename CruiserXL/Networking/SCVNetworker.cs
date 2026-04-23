@@ -1,5 +1,5 @@
-﻿using CruiserXL.Behaviour;
-using CruiserXL.Utils;
+﻿using ScanVan.Behaviour;
+using ScanVan.Utils;
 using GameNetcodeStuff;
 using System;
 using System.Linq;
@@ -9,7 +9,7 @@ using System.Text;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace CruiserXL.Networking;
+namespace ScanVan.Networking;
 
 /// <summary>
 ///  Available from BRBNetworker, licensed under GNU General Public License.
@@ -103,6 +103,7 @@ internal class SCVNetworker : NetworkBehaviour
 
     // config
     internal NetworkVariable<bool> StreamerRadio { get; private set; } = new NetworkVariable<bool>(value: true, writePerm: NetworkVariableWritePermission.Server, readPerm: NetworkVariableReadPermission.Everyone);
+    internal NetworkVariable<bool> OldBirdSight { get; private set; } = new NetworkVariable<bool>(value: true, writePerm: NetworkVariableWritePermission.Server, readPerm: NetworkVariableReadPermission.Everyone);
 
     void UpdateConfig()
     {
@@ -111,5 +112,6 @@ internal class SCVNetworker : NetworkBehaviour
 
         // grab all values that should be server synced
         StreamerRadio.Value = (bool)UserConfig.StreamerRadio.Value;
+        OldBirdSight.Value = (bool)UserConfig.OldBirdSight.Value;
     }
 }

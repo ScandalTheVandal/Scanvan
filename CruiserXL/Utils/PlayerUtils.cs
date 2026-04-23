@@ -1,8 +1,8 @@
-﻿using CruiserXL.Patches;
+﻿using ScanVan.Patches;
 using GameNetcodeStuff;
 using UnityEngine;
 
-namespace CruiserXL.Utils;
+namespace ScanVan.Utils;
 public static class PlayerUtils
 {
     public static bool seatedInTruck = false;

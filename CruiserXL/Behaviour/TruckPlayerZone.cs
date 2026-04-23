@@ -1,10 +1,10 @@
-﻿using CruiserXL.Patches;
-using CruiserXL.Utils;
+﻿using ScanVan.Patches;
+using ScanVan.Utils;
 using GameNetcodeStuff;
 using System.ComponentModel;
 using UnityEngine;
 
-namespace CruiserXL.Behaviour;
+namespace ScanVan.Behaviour;
 
 public class TruckPlayerZone : MonoBehaviour
 {

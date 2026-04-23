@@ -1,7 +1,7 @@
 ﻿using GameNetcodeStuff;
 using UnityEngine;
 
-namespace CruiserXL.Utils;
+namespace ScanVan.Utils;
 public static class VehicleUtils
 {
     public static float lastCheckTime = 0f;

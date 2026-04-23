@@ -3,12 +3,13 @@ using HarmonyLib;
 using UnityEngine;
 using System;
 using System.Collections;
-using CruiserXL.Utils;
+using ScanVan.Utils;
 using System.Numerics;
-using CruiserXL.Behaviour;
+using ScanVan.Behaviour;
 using UnityEngine.UIElements;
+using System.ComponentModel;
 
-namespace CruiserXL.Patches;
+namespace ScanVan.Patches;
 
 [HarmonyPatch(typeof(InteractTrigger))]
 public class InteractTriggerPatches
@@ -28,10 +29,18 @@ public class InteractTriggerPatches
             return false;
 
         PlayerControllerB playerController = playerTransform.GetComponent<PlayerControllerB>();
-
         if (playerController == null ||
             playerController.isPlayerDead || 
-            !playerController.isPlayerControlled)
+            !playerController.isPlayerControlled || 
+            playerController != GameNetworkManager.Instance.localPlayerController)
+            return true;
+        playerController.playerBodyAnimator.ResetTrigger(PlayerUtils.stopAnimationID);
+
+        if (playerController != GameNetworkManager.Instance.localPlayerController)
+            return true;
+
+        if (playerController.inSpecialInteractAnimation && 
+            !playerController.isClimbingLadder && !__instance.allowUseWhileInAnimation)
             return true;
 
         if (!__instance.setVehicleAnimation || 
@@ -45,12 +54,6 @@ public class InteractTriggerPatches
             controller.StopCoroutine(specialInteractCoroutine);
 
         timeSinceSpecialInteraction = Time.realtimeSinceStartup;
-
-        if (playerController.inSpecialInteractAnimation && 
-            !playerController.isClimbingLadder && 
-            !__instance.allowUseWhileInAnimation)
-            return false;
-
         if (__instance.interactCooldown)
         {
             if (__instance.currentCooldownValue >= 0f)
@@ -60,7 +63,7 @@ public class InteractTriggerPatches
         }
 
         playerController.ResetFallGravity();
-        __instance.onInteract.Invoke(playerController);
+        //__instance.onInteract.Invoke(playerController);
         __instance.onInteractEarly.Invoke(null);
         return false;
     }

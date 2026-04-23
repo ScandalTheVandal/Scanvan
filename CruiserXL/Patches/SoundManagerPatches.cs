@@ -1,10 +1,10 @@
 ﻿using HarmonyLib;
-using CruiserXL.Utils;
+using ScanVan.Utils;
 
-namespace CruiserXL.Patches;
+namespace ScanVan.Patches;
 
 [HarmonyPatch(typeof(SoundManager))]
-public class SoundManagerPatches
+public static class SoundManagerPatches
 {
     [HarmonyPatch(nameof(SoundManager.Start))]
     [HarmonyPrefix]

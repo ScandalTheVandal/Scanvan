@@ -2,7 +2,7 @@
 using UnityEngine;
 using UnityEngine.Audio;
 
-namespace CruiserXL.Utils;
+namespace ScanVan.Utils;
 
 public static class References
 {

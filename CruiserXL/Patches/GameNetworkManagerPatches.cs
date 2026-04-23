@@ -1,9 +1,9 @@
 ﻿using System;
-using CruiserXL.Networking;
-using CruiserXL.Utils;
+using ScanVan.Networking;
+using ScanVan.Utils;
 using HarmonyLib;
 
-namespace CruiserXL.Patches;
+namespace ScanVan.Patches;
 
 [HarmonyPatch(typeof(GameNetworkManager))]
 internal class GameNetworkManagerPatches

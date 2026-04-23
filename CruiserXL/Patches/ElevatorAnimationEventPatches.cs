@@ -1,8 +1,8 @@
-﻿using CruiserXL.Utils;
+﻿using ScanVan.Utils;
 using GameNetcodeStuff;
 using HarmonyLib;
 
-namespace CruiserXL.Patches;
+namespace ScanVan.Patches;
 
 [HarmonyPatch(typeof(ElevatorAnimationEvents))]
 public static class ElevatorAnimationEventsPatches

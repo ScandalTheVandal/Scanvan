@@ -1,9 +1,9 @@
-﻿using CruiserXL.Utils;
+﻿using ScanVan.Utils;
 using GameNetcodeStuff;
 using UnityEngine;
 using HarmonyLib;
 
-namespace CruiserXL.Patches;
+namespace ScanVan.Patches;
 
 [HarmonyPatch(typeof(GiantKiwiAI))]
 internal static class GiantKiwiAIPatches

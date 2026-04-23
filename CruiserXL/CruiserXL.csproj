@@ -1,16 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<!-- BepInEx Properties -->
 	<PropertyGroup>
-		<AssemblyName>Scandal.CruiserXL</AssemblyName>
-		<Product>CruiserXL</Product>
+		<AssemblyName>scandal.scanvan</AssemblyName>
+		<Product>ScanVan</Product>
 		<!-- Change to whatever version you're currently on. -->
-		<Version>1.1.2</Version>
+		<Version>1.2.3</Version>
 	</PropertyGroup>
 
 	<!-- Project Properties -->
 	<PropertyGroup>
 		<TargetFramework>netstandard2.1</TargetFramework>
-		<RootNamespace>CruiserXL</RootNamespace>
+		<RootNamespace>ScanVan</RootNamespace>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<LangVersion>latest</LangVersion>
 	</PropertyGroup>
@@ -58,15 +58,6 @@
 
 	<!-- Manual References -->
 	<ItemGroup>
-		<Reference Include="RadioBrowser">
-			<HintPath>$(MANUAL_REFS_DIR)\Bobbie-RadioBrowser\RadioBrowser.dll</HintPath>
-		</Reference>	
-		<Reference Include="LethalElementsTheta" Publicize="true">
-			<HintPath>$(MANUAL_REFS_DIR)\pacoito-LethalElementsTheta\voxx.LethalElementsPlugin.dll</HintPath>
-		</Reference>
-		<Reference Include="ScandalsTweaks" Publicize="true">
-			<HintPath>$(MANUAL_REFS_DIR)\ScandalsTweaks\ScandalsTweaks.dll</HintPath>
-		</Reference>		
 		<Reference Include="UnityEngine.UnityWebRequestAudioModule">
 			<HintPath>$(LETHAL_COMPANY_DIR)\Lethal Company_Data\Managed\UnityEngine.UnityWebRequestAudioModule.dll</HintPath>
 		</Reference>	
@@ -103,6 +94,25 @@
 		<Reference Include="Unity.Animation.Rigging">
 			<HintPath>$(LETHAL_COMPANY_DIR)\Lethal Company_Data\Managed\Unity.Animation.Rigging.dll</HintPath>
 		</Reference>
+	</ItemGroup>
+  
+  <!-- Compatibility References -->
+	<ItemGroup>
+    <Reference Include="RadioBrowser">
+      <HintPath>$(MANUAL_REFS_DIR)\Bobbie-RadioBrowser\RadioBrowser.dll</HintPath>
+    </Reference>
+    <Reference Include="ScandalTweaks" Publicize="true">
+      <HintPath>$(MANUAL_REFS_DIR)\ScandalsTweaks\scandal.scandalstweaks.dll</HintPath>
+    </Reference>
+    <Reference Include="LethalElementsTheta" Publicize="true">
+			<HintPath>$(MANUAL_REFS_DIR)\pacoito-LethalElementsTheta\voxx.LethalElementsPlugin.dll</HintPath>
+		</Reference>
+		<Reference Include="LethalMin" Publicize="true">
+			<HintPath>$(MANUAL_REFS_DIR)\NotezyBox-LethalMin\NoteBoxz.LethalMin.dll</HintPath>
+		</Reference>
+		<Reference Include="ImmersiveVisor" Publicize="true">
+			<HintPath>$(MANUAL_REFS_DIR)\Woecust-ImmersiveVisor\ImmersiveVisor.dll</HintPath>
+		</Reference>  
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">

@@ -10,12 +10,13 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Http;
 using UnityEngine.Experimental.GlobalIllumination;
+using ScanVan;
 
 /// <summary>
 ///  Available from RadioFurniture, licensed under GNU General Public License.
 ///  Source: https://github.com/legoandmars/RadioFurniture/tree/master/RadioFurniture
 /// </summary>
-namespace CruiserXL.Managers;
+namespace ScanVan.Managers;
 
 public static class RadioManager
 {

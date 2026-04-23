@@ -1,5 +1,5 @@
 ﻿using BepInEx.Bootstrap;
-using CruiserXL.Utils;
+using ScanVan.Utils;
 using GameNetcodeStuff;
 using HarmonyLib;
 using System;
@@ -14,7 +14,7 @@ using VoxxWeatherPlugin.Weathers;
 using VoxxWeatherPlugin.Utils;
 using UnityEngine.VFX;
 
-namespace CruiserXL.Compatibility;
+namespace ScanVan.Compatibility;
 
 /// <summary>
 ///  Available from BrutalCompanyMinus, licensed under MIT licence.
@@ -23,12 +23,11 @@ namespace CruiserXL.Compatibility;
 ///  Available from BrutalCompanyMinusExtraReborn, licensed under GNU General Public License.
 ///  Source: https://github.com/TheSoftDiamond/BrutalCompanyMinusExtraReborn
 /// </summary>
+
 public class LethalElementsCompatibility
 {
-    // i may integrate a-lot of this into ScandalsTweaks
-
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    public static void PatchAllElements(Harmony harmony)
+    public static void PatchAllCompatibilityMethods(Harmony harmony)
     {
         ApplyElementsPatch(harmony);
     }
@@ -61,7 +60,7 @@ public class LethalElementsCompatibility
         // and again
         var prefixVehicleStartMethod = AccessTools.Method(typeof(LethalElementsCompatibility), nameof(VehicleSnowTracksPatch_Prefix));
         var prefixVehicleFixedUpdateMethod = AccessTools.Method(typeof(LethalElementsCompatibility), nameof(VehicleSnowTracksFixedUpdatePatch_Prefix));
-        
+
         harmony.Patch(originalHeatwaveStopMethod, prefix: new HarmonyMethod(prefixHeatwaveStopMethod));
         harmony.Patch(originalHeatwavePauseMethod, prefix: new HarmonyMethod(prefixHeatwavePauseMethod));
         harmony.Patch(originalSetTempMethod, prefix: new HarmonyMethod(prefixSetTempMethod));

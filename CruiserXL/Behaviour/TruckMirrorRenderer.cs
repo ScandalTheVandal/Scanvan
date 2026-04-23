@@ -1,9 +1,9 @@
-﻿using CruiserXL.Utils;
+﻿using ScanVan.Utils;
 using GameNetcodeStuff;
 using UnityEngine;
 using UnityEngine.Rendering.HighDefinition;
 
-namespace CruiserXL.Behaviour;
+namespace ScanVan.Behaviour;
 
 public class TruckMirrorRenderer : MonoBehaviour
 {

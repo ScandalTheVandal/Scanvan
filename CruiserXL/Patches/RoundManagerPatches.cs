@@ -1,7 +1,7 @@
 ﻿using HarmonyLib;
-using CruiserXL.Utils;
+using ScanVan.Utils;
 
-namespace CruiserXL.Patches;
+namespace ScanVan.Patches;
 
 [HarmonyPatch(typeof(RoundManager))]
 public class RoundManagerPatches

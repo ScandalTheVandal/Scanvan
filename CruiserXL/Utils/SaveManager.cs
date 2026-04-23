@@ -1,4 +1,4 @@
-﻿namespace CruiserXL.Utils;
+﻿namespace ScanVan.Utils;
 public static class SaveManager
 {
     static string SavePrefix = "ScanvanData.";

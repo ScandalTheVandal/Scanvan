@@ -1,13 +1,14 @@
-﻿using CruiserXL.Managers;
-using CruiserXL.Networking;
-using CruiserXL.Utils;
+﻿using ScanVan.Managers;
+using ScanVan.Networking;
+using ScanVan.Utils;
 using Cysharp.Threading.Tasks;
 using HarmonyLib;
 using System;
+using System.Linq;
 using UnityEngine;
 
 
-namespace CruiserXL.Patches;
+namespace ScanVan.Patches;
 
 [HarmonyPatch(typeof(StartOfRound))]
 public static class StartOfRoundPatches

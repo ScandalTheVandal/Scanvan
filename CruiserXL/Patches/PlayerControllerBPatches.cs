@@ -1,18 +1,19 @@
-using CruiserXL.Utils;
+using ScanVan.Utils;
 using GameNetcodeStuff;
 using HarmonyLib;
 using UnityEngine;
-using CruiserXL.Managers;
+using ScanVan.Managers;
 using Cysharp.Threading.Tasks;
-using CruiserXL.Behaviour;
+using ScanVan.Behaviour;
 using System.Collections.Generic;
 using UnityEngine.AI;
 using UnityEngine.InputSystem.XR;
+using System.Runtime.CompilerServices;
 
-namespace CruiserXL.Patches;
+namespace ScanVan.Patches;
 
 [HarmonyPatch(typeof(PlayerControllerB))]
-internal class PlayerControllerBPatches
+internal static class PlayerControllerBPatches
 {
     public static float checkInterval;
 
@@ -173,6 +174,23 @@ internal class PlayerControllerBPatches
 
         if (References.truckController == null)
             return;
+        CruiserXLController controller = References.truckController;
+
+        bool inTruck = 
+            __instance == controller.currentDriver || 
+            __instance == controller.currentPassenger || 
+            __instance == controller.currentMiddlePassenger;
+
+        if (inTruck)
+        {
+            PlayerUtils.seatedInTruck = true;
+        }
+        else if (PlayerUtils.seatedInTruck)
+        {
+            PlayerUtils.seatedInTruck = false;
+            __instance.gameplayCamera.transform.localPosition = Vector3.zero;
+            __instance.horizontalClamp = 70f;
+        }
 
         if (PlayerUtils.seatedInTruck && UserConfig.PreventKnockback.Value)
         {
@@ -202,10 +220,8 @@ internal class PlayerControllerBPatches
         CruiserXLController controller = References.truckController;
 
         Vector3 cameraOffset = Vector3.zero;
-        bool inVehicle = __instance.inVehicleAnimation && __instance.currentTriggerInAnimationWith && __instance.currentTriggerInAnimationWith.overridePlayerParent;
-        if (inVehicle && __instance.currentTriggerInAnimationWith.overridePlayerParent == controller.transform)
+        if (PlayerUtils.seatedInTruck)
         {
-            PlayerUtils.seatedInTruck = true;
             PlayerUtils.isPlayerInCab = true;
             PlayerUtils.isPlayerOnTruck = true;
             PlayerUtils.isPlayerInStorage = false;
@@ -215,10 +231,7 @@ internal class PlayerControllerBPatches
             if (UserConfig.SeatBoostEnabled.Value) cameraOffset = new Vector3(0f, 0.118f, -0.05f) * UserConfig.SeatBoostScale.Value;
             Vector3 lookFlat = __instance.gameplayCamera.transform.localRotation * Vector3.forward;
             lookFlat.y = 0;
-
             float angleToBack = Vector3.Angle(lookFlat, Vector3.back);
-            float cameraSpeed = 35f * Time.deltaTime;
-
             if (angleToBack < 70 && __instance != controller.currentMiddlePassenger)
             {
                 // if we're looking backwards, offset the camera to the side ('leaning')
@@ -247,12 +260,6 @@ internal class PlayerControllerBPatches
                     return;
                 }
             }
-        }
-        else if (!__instance.inVehicleAnimation && PlayerUtils.seatedInTruck == true)
-        {
-            PlayerUtils.seatedInTruck = false;
-            __instance.gameplayCamera.transform.localPosition = Vector3.zero;
-            __instance.horizontalClamp = 70f;
         }
     }
 

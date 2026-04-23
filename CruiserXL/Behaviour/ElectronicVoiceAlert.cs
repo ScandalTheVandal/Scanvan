@@ -18,4 +18,6 @@
     EngineTempAboveNormal = 15,
     EngineOverheating = 16,
     EngineOilLevel = 17,
+    DiskBrakePads = 18,
+    WasherFluidLow = 19,
 }

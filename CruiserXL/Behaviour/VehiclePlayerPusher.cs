@@ -1,8 +1,8 @@
-﻿using CruiserXL.Utils;
+﻿using ScanVan.Utils;
 using GameNetcodeStuff;
 using UnityEngine;
 
-namespace CruiserXL.Behaviour;
+namespace ScanVan.Behaviour;
 
 public class VehiclePlayerPusher : MonoBehaviour
 {

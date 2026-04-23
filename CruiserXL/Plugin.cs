@@ -10,34 +10,32 @@ using LethalCompanyInputUtils.BindingPathEnums;
 using System.Diagnostics;
 using System;
 using Unity.Netcode;
-using CruiserXL.Managers;
-using CruiserXL.Utils;
+using ScanVan.Managers;
+using ScanVan.Utils;
 using System.IO;
-using CruiserXL.Compatibility;
+using ScanVan.Compatibility;
 using BepInEx.Bootstrap;
+using ScanVan.Networking;
 
-namespace CruiserXL
+namespace ScanVan
 {
     [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
+    [BepInDependency("imabatby.lethallevelloader", BepInDependency.DependencyFlags.HardDependency)]
+    [BepInDependency("scandal.scandalstweaks", BepInDependency.DependencyFlags.HardDependency)]
     [BepInDependency("com.rune580.LethalCompanyInputUtils", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInDependency("voxx.LethalElementsPlugin", BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency("voxx.LethalElementsPlugin", BepInDependency.DependencyFlags.SoftDependency)] 
+    [BepInDependency("NoteBoxz.LethalMin", BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency("ImmersiveVisor", BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
     {
         public static Plugin Instance { get; private set; } = null!;
         internal new static ManualLogSource Logger { get; private set; } = null!;
         internal static Harmony? Harmony { get; set; }
 
-        private static bool initialized;
-
         internal static VehicleControls VehicleControlsInstance = null!;
 
         public void Awake()
         {
-            if (initialized)
-            {
-                return;
-            }
-            initialized = true;
             Logger = base.Logger;
             Instance = this;
 
@@ -62,7 +60,7 @@ namespace CruiserXL
             VehicleControlsInstance = new VehicleControls();
             UserConfig.InitConfig();
 
-            NetcodePatcher();
+            NetworkVariableInitalizer.Init();
             Patch();
 
             RadioManager.PreloadStations();
@@ -77,10 +75,9 @@ namespace CruiserXL
 
             Harmony.PatchAll();
 
-            if (CompatibilityCheck("voxx.LethalElementsPlugin"))
-            {
-                LethalElementsCompatibility.PatchAllElements(Harmony);
-            }
+            if (IsModPresent("voxx.LethalElementsPlugin")) LethalElementsCompatibility.PatchAllCompatibilityMethods(Harmony);
+            if (IsModPresent("NoteBoxz.LethalMin")) LethalMinCompatibility.PatchAllCompatibilityMethods(Harmony);
+            if (IsModPresent("ImmersiveVisor")) ImmersiveVisorCompatibility.PatchAllCompatibilityMethods(Harmony);
 
             Logger.LogDebug("Finished patching!");
         }
@@ -94,62 +91,9 @@ namespace CruiserXL
             Logger.LogDebug("Finished unpatching!");
         }
 
-        internal static bool CompatibilityCheck(string name)
+        internal static bool IsModPresent(string name)
         {
             return Chainloader.PluginInfos.ContainsKey(name);
         }
-
-        private void NetcodePatcher()
-        {
-            var types = Assembly.GetExecutingAssembly().GetTypes();
-            foreach (var type in types)
-            {
-                var methods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                foreach (var method in methods)
-                {
-                    var attributes = method.GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
-                    if (attributes.Length > 0)
-                    {
-                        method.Invoke(null, null);
-                    }
-                }
-            }
-        }
-    }
-
-    internal class VehicleControls : LcInputActions
-    {
-        [InputAction(KeyboardControl.W, Name = "Gas Pedal", GamepadControl = GamepadControl.RightTrigger)]
-        public InputAction GasPedalKey { get; set; } = null!;
-
-        [InputAction(KeyboardControl.A, Name = "Steer Left", GamepadControl = GamepadControl.LeftStick)]
-        public InputAction SteerLeftKey { get; set; } = null!;
-
-        [InputAction(KeyboardControl.S, Name = "Brake Pedal", GamepadControl = GamepadControl.LeftTrigger)]
-        public InputAction BrakePedalKey { get; set; } = null!;
-
-        [InputAction(KeyboardControl.D, Name = "Steer Right", GamepadControl = GamepadControl.RightStick)]
-        public InputAction SteerRightKey { get; set; } = null!;
-
-        [InputAction(KeyboardControl.LeftShift, Name = "Clutch Pedal")]
-        public InputAction ClutchPedalKey { get; set; } = null!;
-
-        [InputAction(KeyboardControl.Space, Name = "Jump")]
-        public InputAction JumpKey { get; set; } = null!;
-
-        [InputAction(MouseControl.ScrollUp, Name = "Shift Gear Up", GamepadControl = GamepadControl.LeftShoulder)]
-        public InputAction GearShiftForwardKey { get; set; } = null!;
-
-        [InputAction(MouseControl.ScrollDown, Name = "Shift Gear Down", GamepadControl = GamepadControl.RightShoulder)]
-        public InputAction GearShiftBackwardKey { get; set; } = null!;
-
-        [InputAction(KeyboardControl.F, Name = "Headlamps")]
-        public InputAction ToggleHeadlightsKey { get; set; } = null!;
-
-        [InputAction(KeyboardControl.H, Name = "Horn")]
-        public InputAction ActivateHornKey { get; set; } = null!;
-
-        [InputAction(KeyboardControl.None, Name = "Wipers")]
-        public InputAction ToggleWipersKey { get; set; } = null!;
     }
 }

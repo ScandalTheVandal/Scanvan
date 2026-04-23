@@ -6,7 +6,7 @@ using UnityEngine;
 ///  Available from RadioFurniture, licensed under GNU General Public License.
 ///  Source: https://github.com/legoandmars/RadioFurniture/tree/master/RadioFurniture
 /// </summary>
-namespace CruiserXL.ClipLoading;
+namespace ScanVan.ClipLoading;
 
 public class UnityAudioStream : MonoBehaviour
 {
