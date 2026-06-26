@@ -20,4 +20,5 @@
     EngineOilLevel = 17,
     DiskBrakePads = 18,
     WasherFluidLow = 19,
+    BrakeFluidLow = 20
 }

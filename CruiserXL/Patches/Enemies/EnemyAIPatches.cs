@@ -3,7 +3,7 @@ using GameNetcodeStuff;
 using HarmonyLib;
 using UnityEngine;
 
-namespace ScanVan.Patches;
+namespace ScanVan.Patches.Enemies;
 
 [HarmonyPatch(typeof(EnemyAI))]
 public static class EnemyAIPatches
@@ -12,21 +12,23 @@ public static class EnemyAIPatches
     [HarmonyPostfix]
     static void PlayerIsTargetable_Postfix(EnemyAI __instance, PlayerControllerB playerScript, bool cannotBeInShip, bool overrideInsideFactoryCheck, bool checkForMineshaftStartTile, ref bool __result)
     {
-        if (__instance is not BushWolfEnemy) return;
-        if (References.truckController == null) return;
+        if (__instance is not BushWolfEnemy)
+            return;
 
-        CruiserXLController controller = References.truckController;
-        var data = PlayerControllerBPatches.GetData(playerScript);
+        CruiserXLController controller = References.vanController;
+        if (controller == null)
+            return;
 
+        var playerData = PlayerControllerBPatches.playerData[playerScript];
         bool isOccupant = controller.currentDriver == playerScript ||
                           controller.currentMiddlePassenger == playerScript ||
                           controller.currentPassenger == playerScript;
 
-        if (isOccupant && VehicleUtils.IsSeatedPlayerProtected(playerScript, controller))
+        if (isOccupant && VehicleUtils.IsSeatedPlayerProtected(playerController: playerScript, vanController: controller, checkWindows: true))
             __result = false;
 
-        if ((data.isPlayerInCab && !controller.driverSideDoor.boolValue && !controller.passengerSideDoor.boolValue) || 
-            (data.isPlayerInStorage && !controller.liftGateOpen && !controller.sideDoorOpen))
+        if (playerData.playerRidingInVanCab && !controller.driverSideDoor.boolValue && !controller.passengerSideDoor.boolValue ||
+            playerData.playerRidingInVanStorage && !controller.liftGateOpen && !controller.sideDoorOpen)
             __result = false;
     }
 }

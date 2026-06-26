@@ -34,8 +34,8 @@ public class RadioBehaviour : NetworkBehaviour
     public void Awake()
     {
         _staticAudioSource.clip = _static;
-        _currentFrequency = "FM";
-        SetVolumeOnLocalClient(-0.2f);
+        _currentFrequency = "FM";    
+        SetVolumeOnLocalClient(0.4f);
     }
 
     public void TogglePowerLocalClient(bool checkOn)

@@ -1,6 +1,7 @@
 ﻿using ScanVan.Utils;
 using GameNetcodeStuff;
 using HarmonyLib;
+using UnityEngine;
 
 namespace ScanVan.Patches;
 
@@ -11,26 +12,43 @@ public static class ElevatorAnimationEventsPatches
     [HarmonyPrefix]
     static void ElevatorFullyRunning_PlayerSafety_Prefix()
     {
-        if (References.truckController == null) return;
-        if (!References.truckController.magnetedToShip) return;
+        CruiserXLController controller = References.vanController;
+        if (controller == null) 
+            return;
+        if (!controller.magnetedToShip) 
+            return;
+
+        TryDespawnItemsInVan(vanController: controller);
 
         // save players who are on the magneted truck from being abandoned
         PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
-        if (PlayerUtils.seatedInTruck || PlayerUtils.isPlayerOnTruck)
+        if (PlayerUtils.isSeatedInVan || VehicleUtils.IsPlayerInVanBounds(controller))
             localPlayer.isInElevator = true;
     }
 
-    [HarmonyPatch(nameof(ElevatorAnimationEvents.ElevatorFullyRunning))]
-    [HarmonyPrefix]
-    static void ElevatorFullyRunning_ItemSafety_Prefix()
+    static void TryDespawnItemsInVan(CruiserXLController vanController)
     {
-        References.justDepartedIntoOrbit = true;
+        if (!RoundManager.Instance.IsServer)
+            return;
 
-        CruiserXLController controller = References.truckController;
-        if (controller != null && controller.magnetedToShip)
+        Bounds onTopOfVanBounds = vanController.ontopOfTruckCollider.bounds;
+        Bounds inBackOfVanBounds = vanController.storageCompartment.bounds;
+
+        //GrabbableObject[] vanItems = vanController.GetComponentsInChildren<GrabbableObject>();
+        foreach (GrabbableObject vanItem in References.itemsInTruck)
         {
-            controller.CollectItemsInTruck();
+            if (References.itemsInTruck.Count == 0 || vanItem == null) 
+                continue;
+
+            if ((inBackOfVanBounds.ClosestPoint(vanItem.transform.position) == vanItem.transform.position && vanController.liftGateOpen) || 
+                onTopOfVanBounds.ClosestPoint(vanItem.transform.position) == vanItem.transform.position)
+            {
+                Plugin.Logger.LogDebug($"ScanVan: Item \"{vanItem.name}\" (#{vanItem.GetInstanceID()}) lost in orbit");
+                if (vanItem.NetworkObject != null && vanItem.NetworkObject.IsSpawned)
+                    vanItem.NetworkObject.Despawn();
+                else
+                    Object.Destroy(vanItem.gameObject);
+            }
         }
-        References.justDepartedIntoOrbit = false;
     }
 }

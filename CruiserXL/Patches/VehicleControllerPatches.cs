@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using GameNetcodeStuff;
+using HarmonyLib;
 using UnityEngine;
 
 namespace ScanVan.Patches;
@@ -6,6 +7,73 @@ namespace ScanVan.Patches;
 [HarmonyPatch(typeof(VehicleController))]
 public static class VehicleControllerPatches
 {
+    [HarmonyPatch(nameof(VehicleController.DisableVehicleCollisionForAllPlayers))]
+    [HarmonyPrefix]
+    static bool DisableVehicleCollisionForAllPlayers_Prefix(VehicleController __instance, bool __runOriginal)
+    {
+        if (!__runOriginal)
+            return false;
+
+        if (__instance is not CruiserXLController)
+            return true;
+
+        return false;
+    }
+
+    [HarmonyPatch(nameof(VehicleController.EnableVehicleCollisionForAllPlayers))]
+    [HarmonyPrefix]
+    static bool EnableVehicleCollisionForAllPlayers_Prefix(VehicleController __instance, bool __runOriginal)
+    {
+        if (!__runOriginal)
+            return false;
+
+        if (__instance is not CruiserXLController)
+            return true;
+
+        return false;
+    }
+
+    [HarmonyPatch(nameof(VehicleController.SetVehicleCollisionForPlayer))]
+    [HarmonyPrefix]
+    static bool SetVehicleCollisionForPlayer_Prefix(VehicleController __instance, bool __runOriginal, bool setEnabled, PlayerControllerB player)
+    {
+        if (!__runOriginal)
+            return false;
+
+        if (__instance is not CruiserXLController)
+            return true;
+
+        return false;
+    }
+
+    [HarmonyPatch(nameof(VehicleController.SetBackDoorOpen))]
+    [HarmonyPrefix]
+    static bool SetBackDoorOpen_Prefix(VehicleController __instance, bool __runOriginal, bool open)
+    {
+        if (!__runOriginal)
+            return false;
+
+        if (__instance is not CruiserXLController)
+            return true;
+
+        return false;
+    }
+
+    [HarmonyPatch(nameof(VehicleController.SetFrontCabinLightOn))]
+    [HarmonyPrefix]
+    static bool SetFrontCabinLightOn_Prefix(VehicleController __instance, bool __runOriginal, bool setOn)
+    {
+        if (!__runOriginal)
+            return false;
+
+        if (__instance is not CruiserXLController vehicle)
+            return true;
+
+        vehicle.SetFrontCabinLightOn(setOn);
+        return false;
+
+    }
+
     // thank you MattyMatty, and DiFFoZ for helping me with this!!
     [HarmonyPatch(nameof(VehicleController.AddEngineOil))]
     [HarmonyPrefix]
@@ -48,8 +116,6 @@ public static class VehicleControllerPatches
         if (__instance is not CruiserXLController vehicle)
             return true;
 
-        // need to investigate some stuff regarding this
-        //vehicle.StartMagneting();
         return false;
     }
 
@@ -63,7 +129,6 @@ public static class VehicleControllerPatches
         if (__instance is not CruiserXLController vehicle)
             return true;
 
-        vehicle.CollectItemsInTruck();
         return false;
     }
 

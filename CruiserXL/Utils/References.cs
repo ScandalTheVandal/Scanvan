@@ -1,4 +1,5 @@
 ﻿using GameNetcodeStuff;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
 
@@ -8,17 +9,10 @@ public static class References
 {
     // optimisation
     internal static ItemDropship itemShip = null!;
-    internal static CruiserXLController truckController = null!;
+    internal static CruiserXLController vanController = null!;
     internal static CadaverGrowthAI cadaverGrowthAI = null!;
+    internal static HashSet<GrabbableObject> itemsInTruck = new HashSet<GrabbableObject>();
 
     // fixes
     internal static PlayerControllerB lastDriver = null!;
-    internal static AudioMixerGroup diageticSFXGroup = null!;
-
-    // custom animations
-    internal static RuntimeAnimatorController truckPlayerAnimator = null!;
-
-    // misc
-    internal static bool justDepartedIntoOrbit;
-    internal static bool isDespawningProps;
 }

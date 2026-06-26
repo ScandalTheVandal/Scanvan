@@ -22,7 +22,7 @@ namespace ScanVan.Compatibility;
 ///  Source: https://github.com/TheSoftDiamond/BrutalCompanyMinusExtraReborn
 /// </summary>
 
-public class LethalMinCompatibility
+public static class LethalMinCompatibility
 {
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
     public static void PatchAllCompatibilityMethods(Harmony harmony)
@@ -64,12 +64,11 @@ public class LethalMinCompatibility
         return true;
     }
 
-    public static bool OnTriggerEnter_Prefix(CruiserXLCollisionTrigger __instance, ref Collider other)
+    public static bool OnTriggerEnter_Prefix(CruiserXLCollisionTrigger __instance, Collider other)
     {
         try
         {
-            PikminCollisionDetect detect;
-            if (other.gameObject.CompareTag("Enemy") && other.gameObject.TryGetComponent<PikminCollisionDetect>(out detect))
+            if (other.gameObject.CompareTag("Enemy") && other.gameObject.TryGetComponent<PikminCollisionDetect>(out _))
             {
                 return false;
             }

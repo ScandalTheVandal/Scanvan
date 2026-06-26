@@ -16,7 +16,8 @@ public class TruckMirrorRenderer : MonoBehaviour
     public MeshRenderer[] mirrorMeshes = null!;
     public Camera[] mirrorCameras = null!;
 
-    public bool playerInTruck;
+    private bool enableRendering;
+
     public float elapsed;
     public float cameraFramerate;
     public int camerasToRenderPerFrame = 1;
@@ -55,14 +56,15 @@ public class TruckMirrorRenderer : MonoBehaviour
         if (player == null) 
             return;
 
-        foreach (var camera in mirrorCameras)
+        for (var j = 0; j < mirrorCameras.Length; j++)
         {
-            if (camera == null)
+            if (mirrorCameras[j] == null)
                 continue;
-            camera.enabled = false;
+            mirrorCameras[j].enabled = false;
         }
 
-        if (!PlayerUtils.seatedInTruck)
+        if (!UserConfig.MirrorsEnabled.Value ||
+            !PlayerUtils.isSeatedInVan)
         {
             leftMirrorMesh.enabled = false;
             centerMirrorMesh.enabled = false;

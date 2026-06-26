@@ -6,23 +6,22 @@ using HarmonyLib;
 namespace ScanVan.Patches;
 
 [HarmonyPatch(typeof(GameNetworkManager))]
-internal class GameNetworkManagerPatches
+public static class GameNetworkManagerPatches
 {
     [HarmonyPatch(nameof(GameNetworkManager.Start))]
     [HarmonyPostfix]
     public static void Start_Postfix()
     {
-        SCVNetworker.Init();
+        ScanVanNetworker.Init();
     }
 
     [HarmonyPatch(nameof(GameNetworkManager.SaveItemsInShip))]
     [HarmonyPostfix]
     static void SaveItemsInShip_Postfix(GameNetworkManager __instance)
     {
-        //save Scanvan data if we have one
         try
         {
-            if (StartOfRound.Instance.attachedVehicle && StartOfRound.Instance.attachedVehicle.TryGetComponent<CruiserXLController>(out var controller))
+            if (StartOfRound.Instance.attachedVehicle && StartOfRound.Instance.attachedVehicle is CruiserXLController controller)
             {
                 SaveManager.Save("AttachedVehicleRotation", controller.magnetTargetRotation.eulerAngles);
                 SaveManager.Save("AttachedVehiclePosition", controller.magnetTargetPosition);
@@ -31,10 +30,8 @@ internal class GameNetworkManagerPatches
                 SaveManager.Save("AttachedVehicleIgnition", controller.ignitionStarted);
                 SaveManager.Save("AttachedVehicleSteeringRotation", controller.steeringWheelAnimFloat);
                 SaveManager.Save("AttachedVehicleHealth", controller.carHP);
-                SaveManager.Save("AttachedVehicleWindshield", controller.windshieldShattered);
-                SaveManager.Save("AttachedVehicleWindshieldBroken", controller.windshieldBroken);
 
-                Plugin.Logger.LogMessage("Successfully saved Scanvan data.");
+                Plugin.Logger.LogMessage("ScanVan: Successfully saved Scanvan data.");
             }
             else
             {
@@ -45,15 +42,13 @@ internal class GameNetworkManagerPatches
                 SaveManager.Delete("AttachedVehicleIgnition");
                 SaveManager.Delete("AttachedVehicleSteeringRotation");
                 SaveManager.Delete("AttachedVehicleHealth");
-                SaveManager.Delete("AttachedVehicleWindshield");
-                SaveManager.Delete("AttachedVehicleWindshieldBroken");
 
-                Plugin.Logger.LogMessage("Successfully deleted Scanvan data.");
+                Plugin.Logger.LogMessage("ScanVan: Successfully deleted Scanvan data.");
             }
         }
         catch (Exception e)
         {
-            Plugin.Logger.LogError("Exception caught saving Scanvan data:\n" + e);
+            Plugin.Logger.LogError("ScanVan: Exception caught saving Scanvan data:\n" + e);
         }
     }
 }

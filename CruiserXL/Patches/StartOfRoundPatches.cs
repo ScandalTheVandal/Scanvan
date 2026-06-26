@@ -17,7 +17,7 @@ public static class StartOfRoundPatches
     [HarmonyPostfix]
     static void Awake_Postfix(StartOfRound __instance)
     {
-        SCVNetworker.Create();
+        ScanVanNetworker.Create();
 
         if (RadioManager._stations.Count == 0)
         {
@@ -39,14 +39,14 @@ public static class StartOfRoundPatches
         {
             if (controller == null)
             {
-                Plugin.Logger.LogError("attempted to send client data, but the truck is null? please report this to Scandal.");
+                Plugin.Logger.LogError("ScanVan: Attempted to send client data, but the van is null? please report this to Scandal.");
                 return;
             }
             controller.SendClientSyncData();
         }
         catch (Exception e)
         {
-            Plugin.Logger.LogError("exception caught sending saved Scanvan data:\n" + e);
+            Plugin.Logger.LogError("ScanVan: Exception caught sending saved Scanvan data:\n" + e);
         }
     }
 
@@ -59,51 +59,61 @@ public static class StartOfRoundPatches
         {
             if (controller == null)
             {
-                Plugin.Logger.LogError("attempted to load saved data, but the truck is null? please report this to Scandal.");
+                Plugin.Logger.LogError("ScanVan: Attempted to load saved data, but the van is null? please report this to Scandal.");
                 return;
             }
+            if (SaveManager.TryLoad<bool>("AttachedVehicleVariant", out var variant))
+            {
+                controller.isSpecial = variant;
+                controller.SetVariant(controller.isSpecial);
+            }
+            if (SaveManager.TryLoad<Vector3>("AttachedVehiclePosition", out var position) &&
+                SaveManager.TryLoad<Vector3>("AttachedVehicleRotation", out var rotation))
+            {
+                controller.transform.rotation = Quaternion.Euler(rotation);
+                controller.transform.position = StartOfRound.Instance.elevatorTransform.TransformPoint(position);
+            }
+            if (SaveManager.TryLoad<int>("AttachedVehicleTurbo", out var turbos))
+            {
+                controller.turboBoosts = turbos;
+            }
+            if (SaveManager.TryLoad<bool>("AttachedVehicleIgnition", out var ignition))
+            {
+                controller.voiceModule.ignitionChimeStarted = ignition;
+                controller.voiceModule.ignitionChimeFinished = ignition;
 
-            SaveManager.TryLoad<bool>("AttachedVehicleVariant", out var variant);
-            SaveManager.TryLoad<Vector3>("AttachedVehicleRotation", out var rotation);
-            SaveManager.TryLoad<Vector3>("AttachedVehiclePosition", out var position);
-            SaveManager.TryLoad<int>("AttachedVehicleTurbo", out var turbos);
-            SaveManager.TryLoad<bool>("AttachedVehicleIgnition", out var ignition);
-            SaveManager.TryLoad<float>("AttachedVehicleSteeringRotation", out var wheelPosition);
-            //SaveManager.TryLoad<int>("AttachedVehicleGear", out var carGear);
-            SaveManager.TryLoad<int>("AttachedVehicleHealth", out var carHealth);
-            SaveManager.TryLoad<bool>("AttachedVehicleWindshield", out var carWindow);
-            SaveManager.TryLoad<bool>("AttachedVehicleWindshieldBroken", out var carWindowBroken);
+                controller.disableAnimations = !ignition;
+                controller.inIgnitionAnimation = !ignition;
+                controller.accessoryMode = ignition;
 
-            controller.isSpecial = variant;
-            controller.SetVariant(controller.isSpecial);
+                controller.accessoryMode = ignition;
+                controller.keyIsInIgnition = ignition;
 
-            controller.transform.rotation = Quaternion.Euler(rotation);
-            controller.transform.position = StartOfRound.Instance.elevatorTransform.TransformPoint(position);
+                controller.SetKeyIgnitionValues(trying: false, keyInHand: false, keyInSlot: ignition);
+                controller.SetIgnition(ignition, ignition);
+                controller.SetFrontCabinLightOn(setOn: ignition);
+                controller.TrySetCarIgnitionTriggers();
 
-            controller.turboBoosts = turbos;
-
-            controller.voiceModule.ignitionChimeStarted = ignition;
-            controller.voiceModule.ignitionChimeFinished = ignition;
-
-            controller.electricsOn = ignition;
-            controller.keyIsInIgnition = ignition;
-            controller.SetFrontCabinLightOn(setOn: ignition);
-            controller.SetIgnition(ignition, ignition);
-            if (ignition) controller.dashboardSymbolPreStartup = controller.StartCoroutine(controller.PreIgnitionSymbolCheck());
-            controller.driversSideWindow.interactable = ignition;
-            controller.passengersSideWindow.interactable = ignition;
-
-            controller.syncedWheelRotation = wheelPosition;
-            controller.steeringWheelAnimFloat = wheelPosition;
-            //controller.autoGear = (TruckGearShift)carGear;
-            controller.carHP = carHealth;
-
-            if (carWindow) controller.ShatterWindshield();
-            if (carWindowBroken) controller.BreakWindshield();
+                if (ignition) controller.dashboardSymbolPreStartup = controller.StartCoroutine(controller.PreIgnitionSymbolCheck());
+                controller.SetSymbolActive(controller.vehicleDisplay, controller.vehicleDisplayLight, ignition);
+                controller.driversSideWindow.interactable = ignition;
+                controller.passengersSideWindow.interactable = ignition;
+                controller.ignitionCollider.enabled = ignition;
+                controller.ignitionAnimator.SetInteger("SAIgnition_Anim", ignition ? 1 : 0);
+            }
+            if (SaveManager.TryLoad<float>("AttachedVehicleSteeringRotation", out var wheelPosition))
+            {
+                controller.syncedSteeringWheelRotation = wheelPosition;
+                controller.steeringWheelAnimFloat = wheelPosition;
+            }
+            if (SaveManager.TryLoad<int>("AttachedVehicleHealth", out var carHealth))
+            {
+                controller.carHP = carHealth;
+            }
         }
         catch (Exception e)
         {
-            Plugin.Logger.LogError("exception caught loading saved Scanvan data:\n" + e);
+            Plugin.Logger.LogError("ScanVan: Exception caught loading saved Scanvan data:\n" + e);
         }
     }
 }

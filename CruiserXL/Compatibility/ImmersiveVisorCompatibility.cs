@@ -22,7 +22,7 @@ namespace ScanVan.Compatibility;
 ///  Source: https://github.com/TheSoftDiamond/BrutalCompanyMinusExtraReborn
 /// </summary>
 
-public class ImmersiveVisorCompatibility
+public static class ImmersiveVisorCompatibility
 {
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
     public static void PatchAllCompatibilityMethods(Harmony harmony)
@@ -42,11 +42,11 @@ public class ImmersiveVisorCompatibility
 
     public static bool LineCastForCeiling_Prefix(VisorRainState __instance, ref bool __result)
     {
-        if (References.truckController == null)
+        CruiserXLController controller = References.vanController;
+        if (controller == null)
             return true;
-        CruiserXLController controller = References.truckController;
 
-        if (PlayerUtils.seatedInTruck || PlayerUtils.isPlayerInCab || PlayerUtils.isPlayerInStorage)
+        if (PlayerUtils.isSeatedInVan || VehicleUtils.IsPlayerInVanCabin(controller) || VehicleUtils.IsPlayerInVanStorage(controller))
         {
             __result = true;
             return false;

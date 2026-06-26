@@ -1,0 +1,211 @@
+﻿using GameNetcodeStuff;
+using ScanVan.Utils;
+using UnityEngine;
+
+namespace ScanVan.Scripts;
+
+// An extended physics region, allowing the ability to still read whether the player is "within the physics regions bounds" even while the truck is past
+// the tipping angle, also includes some minor optimisations over the base physics region.
+public class VanPhysicsRegion : PlayerPhysicsRegion
+{
+    public CruiserXLController vanController = null!;
+
+    private float playerInsideInterval;
+    private bool playerInsideThisFrame;
+
+    private bool removePlayerFromZoneNextFrame;
+    private float checkZoneInterval;
+
+    private bool addedRegionToList;
+
+    public bool playerInZone;
+    public bool isRegionActive;
+
+    public bool parentPlayerBodies;
+
+    public new void OnDestroy()
+    {
+        disablePhysicsRegion = true;
+        TryRemovePhysicsRegionFromList();
+        for (int i = 0; i < StartOfRound.Instance?.allPlayerScripts.Length; i++)
+        {
+            if (StartOfRound.Instance.allPlayerScripts[i].transform.parent == physicsTransform)
+            {
+                StartOfRound.Instance.allPlayerScripts[i].transform.SetParent(null);
+                Debug.Log($"ScanVan: Player {i} setting parent null since physics region was destroyed");
+            }
+        }
+        if (!allowDroppingItems || itemDropCollider == null) return;
+        GrabbableObject[] componentsInChildren = physicsTransform.GetComponentsInChildren<GrabbableObject>();
+        for (int j = 0; j < componentsInChildren.Length; j++)
+        {
+            if (RoundManager.Instance.mapPropsContainer != null)
+            {
+                componentsInChildren[j].transform.SetParent(RoundManager.Instance.mapPropsContainer.transform, worldPositionStays: true);
+            }
+            else
+            {
+                componentsInChildren[j].transform.SetParent(null, worldPositionStays: true);
+            }
+            if (!componentsInChildren[j].isHeld)
+            {
+                componentsInChildren[j].FallToGround();
+            }
+        }
+    }
+
+    public new void OnTriggerStay(Collider other)
+    {
+        if (disablePhysicsRegion)
+        {
+            return;
+        }
+        PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
+        if (localPlayer == null)
+        {
+            hasLocalPlayer = false;
+            playerInZone = false;
+            return;
+        }
+        string tag = other.gameObject.tag;
+        if (parentPlayerBodies && tag.StartsWith("PlayerRagdoll"))
+        {
+            PlayerControllerB playerControllerB = null!;
+            if (other.gameObject.TryGetComponent<DeadBodyInfo>(out var deadBodyInfo))
+            {
+                playerControllerB = deadBodyInfo.playerScript;
+            }
+            if (playerControllerB != null && playerControllerB.deadBody != null &&
+                !playerControllerB.deadBody.isParentedToPhysicsRegion)
+            {
+                playerControllerB.deadBody.SetPhysicsParent(physicsTransform, physicsCollider);
+            }
+            return;
+        }
+        if (!other.gameObject.CompareTag("Player"))
+        {
+            return;
+        }
+        if (other.gameObject != localPlayer.gameObject)
+        {
+            return;
+        }
+        playerInsideThisFrame = true;
+        playerInsideInterval = 0f;
+    }
+
+    public void SetPhysicsRegionActive()
+    {
+        if (!isRegionActive)
+        {
+            if (addedRegionToList)
+                TryRemovePhysicsRegionFromList();
+            return;
+        }
+        checkInterval = 0f;
+        removePlayerNextFrame = false;
+        TryAddPhysicsRegionToList();
+    }
+
+    public void SetPlayerZoneActive()
+    {
+        if (VehicleUtils.IsPlayerSeatedInVan())
+            return;
+
+        checkZoneInterval = 0f;
+        removePlayerFromZoneNextFrame = false;
+        playerInZone = true;
+    }
+
+    public new bool IsPhysicsRegionActive()
+    {
+        return Vector3.Angle(transform.up, Vector3.up) <= maxTippingAngle && !disablePhysicsRegion;
+    }
+
+    public void TryRemovePhysicsRegionFromList()
+    {
+        StartOfRound.Instance?.CurrentPlayerPhysicsRegions?.Remove(this);
+        addedRegionToList = false;
+        hasLocalPlayer = false;
+        removePlayerNextFrame = false;
+        checkInterval = 0f;
+    }
+
+    public void TryAddPhysicsRegionToList()
+    {
+        if (addedRegionToList || !isRegionActive)
+            return;
+
+        if (StartOfRound.Instance.CurrentPlayerPhysicsRegions != null &&
+            !StartOfRound.Instance.CurrentPlayerPhysicsRegions.Contains(this))
+        {
+            StartOfRound.Instance.CurrentPlayerPhysicsRegions.Add(this);
+            addedRegionToList = true;
+            hasLocalPlayer = true;
+        }
+    }
+
+    public new void Update()
+    {
+        if (disablePhysicsRegion)
+        {
+            return;
+        }
+        isRegionActive = IsPhysicsRegionActive();
+        UpdatePhysicsRegion();
+        SetPhysicsRegionAndZone(ref checkInterval, ref removePlayerNextFrame, ref hasLocalPlayer, true);
+        if (VehicleUtils.IsPlayerSeatedInVan())
+        {
+            playerInZone = true;
+            removePlayerFromZoneNextFrame = false;
+            checkZoneInterval = 0f;
+        }
+        else
+        {
+            SetPhysicsRegionAndZone(ref checkZoneInterval, ref removePlayerFromZoneNextFrame, ref playerInZone);
+        }
+    }
+
+    public void UpdatePhysicsRegion()
+    {
+        if (!playerInsideThisFrame)
+        {
+            return;
+        }
+        if (playerInsideThisFrame)
+        {
+            SetPhysicsRegionActive();
+            SetPlayerZoneActive();
+        }
+        if (playerInsideInterval <= 0.15f)
+        {
+            playerInsideInterval += Time.deltaTime;
+            return;
+        }
+        playerInsideThisFrame = false;
+        playerInsideInterval = 0f;
+    }
+
+    public void SetPhysicsRegionAndZone(ref float interval, ref bool removeNextFrame, ref bool hasPlayer, bool removeFromPhysicsList = false)
+    {
+        if (!hasPlayer)
+        {
+            return;
+        }
+        if (interval <= 0.15f)
+        {
+            interval += Time.deltaTime;
+            return;
+        }
+        if (!removeNextFrame)
+        {
+            removeNextFrame = true;
+            return;
+        }
+        removeNextFrame = false;
+        interval = 0f;
+        hasPlayer = false;
+        if (removeFromPhysicsList)
+            TryRemovePhysicsRegionFromList();
+    }
+}

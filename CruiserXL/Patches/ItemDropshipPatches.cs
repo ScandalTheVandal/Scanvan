@@ -5,7 +5,7 @@ using UnityEngine;
 namespace ScanVan.Patches;
 
 [HarmonyPatch(typeof(ItemDropship))]
-public class ItemDropshipPatches
+public static class ItemDropshipPatches
 {
     // optimisation stuff
     [HarmonyPatch(nameof(ItemDropship.Start))]

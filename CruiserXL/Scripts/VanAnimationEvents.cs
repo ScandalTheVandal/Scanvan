@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace ScanVan.Behaviour;
 
-public class TruckAnimationEvents : MonoBehaviour
+public class VanAnimationEvents : MonoBehaviour
 {
 
 }

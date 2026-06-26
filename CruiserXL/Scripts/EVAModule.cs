@@ -37,7 +37,9 @@ public class EVAModule : NetworkBehaviour
     public AudioClip singleAlert = null!;
     public AudioClip highToneAlert = null!;
     public AudioClip highToneAlertAlt = null!;
+
     public AudioClip doorAlertAlt = null!;
+    public AudioClip keysAlertAlt = null!;
 
     public Coroutine playAudioCoroutine = null!;
     public Coroutine audioTimedCoroutine = null!;
@@ -74,24 +76,24 @@ public class EVAModule : NetworkBehaviour
         {
             new VoiceAlertDefinition
             {
-                alertType = ElectronicVoiceAlert.AllSystemsOk,
-                triggerCondition = () => controller.electricsOn && ignitionChimeFinished && !hasAlertedOnEngineStart && !audioIsPlaying && controller.carHP > 22 && controller.wheelRPM > 50f,
-                resetCondition = () => !controller.electricsOn,
-                priority = VoiceAlertPriority.IsIgnition
-            },
-            new VoiceAlertDefinition
-            {
                 alertType = ElectronicVoiceAlert.WasherFluidLow,
-                triggerCondition = () => controller.electricsOn && ignitionChimeFinished,
-                resetCondition = () => !controller.electricsOn || !ignitionChimeFinished,
+                triggerCondition = () => controller.accessoryMode && ignitionChimeFinished,
+                resetCondition = () => !controller.accessoryMode || !ignitionChimeFinished,
                 priority = VoiceAlertPriority.IsService
             },
+            //new VoiceAlertDefinition
+            //{
+            //    alertType = ElectronicVoiceAlert.DiskBrakePads,
+            //    triggerCondition = () => controller.electricsOn && ignitionChimeFinished && randomServiceAlert > 0,
+            //    resetCondition = () => !controller.electricsOn || !ignitionChimeFinished || randomServiceAlert == -1,
+            //    priority = VoiceAlertPriority.IsService
+            //},
             new VoiceAlertDefinition
             {
-                alertType = ElectronicVoiceAlert.DiskBrakePads,
-                triggerCondition = () => controller.electricsOn && ignitionChimeFinished && randomServiceAlert > 0,
-                resetCondition = () => !controller.electricsOn || !ignitionChimeFinished || randomServiceAlert == -1,
-                priority = VoiceAlertPriority.IsService
+                alertType = ElectronicVoiceAlert.AllSystemsOk,
+                triggerCondition = () => controller.accessoryMode && ignitionChimeFinished && !hasAlertedOnEngineStart && !audioIsPlaying && controller.carHP > 22 && Mathf.Abs(controller.wheelRPM) > 50f,
+                resetCondition = () => !controller.accessoryMode,
+                priority = VoiceAlertPriority.IsIgnition
             },
             new VoiceAlertDefinition
             {
@@ -170,52 +172,60 @@ public class EVAModule : NetworkBehaviour
 
             new VoiceAlertDefinition
             {
+                alertType = ElectronicVoiceAlert.TransFluidLevel,
+                triggerCondition = () => controller.transmissionHP <= 12 && controller.ignitionStarted,
+                resetCondition = () => controller.transmissionHP > 12 || !controller.accessoryMode || isImportantAlert,
+                priority = VoiceAlertPriority.Medium
+            },
+
+            new VoiceAlertDefinition
+            {
                 alertType = ElectronicVoiceAlert.FuelLevel,
-                triggerCondition = () => audioTimedCoroutine == null && controller.carHP <= 38,
-                resetCondition = () => controller.carHP > 38 || !controller.electricsOn || isImportantAlert,
+                triggerCondition = () => controller.carHP <= 38 && controller.accessoryMode,
+                resetCondition = () => controller.carHP > 38 || !controller.accessoryMode || isImportantAlert,
                 priority = VoiceAlertPriority.Low
             },
             new VoiceAlertDefinition
             {
                 alertType = ElectronicVoiceAlert.EngineCoolantLevel,
-                triggerCondition = () => audioTimedCoroutine == null && controller.carHP <= 30,
-                resetCondition = () => controller.carHP > 30 || !controller.electricsOn || isImportantAlert,
+                triggerCondition = () => controller.carHP <= 30  && controller.accessoryMode,
+                resetCondition = () => controller.carHP > 30 || !controller.accessoryMode || isImportantAlert,
                 priority = VoiceAlertPriority.Low
             },
             new VoiceAlertDefinition
             {
                 alertType = ElectronicVoiceAlert.EngineOilLevel,
-                triggerCondition = () => audioTimedCoroutine == null && controller.carHP <= 25,
-                resetCondition = () => controller.carHP > 25 || !controller.electricsOn || isImportantAlert,
+                triggerCondition = () => controller.carHP <= 25 && controller.accessoryMode,
+                resetCondition = () => controller.carHP > 25 || !controller.accessoryMode || isImportantAlert,
                 priority = VoiceAlertPriority.Low
             },
             new VoiceAlertDefinition
             {
                 alertType = ElectronicVoiceAlert.ChargeSysMalfunction,
-                triggerCondition = () => audioTimedCoroutine == null && controller.carHP <= 22,
-                resetCondition = () => controller.carHP > 22 || !controller.electricsOn || isImportantAlert,
+                triggerCondition = () => controller.carHP <= 22 && controller.accessoryMode,
+                resetCondition = () => controller.carHP > 22 || !controller.accessoryMode || isImportantAlert,
                 priority = VoiceAlertPriority.Medium
             },
             new VoiceAlertDefinition
             {
                 alertType = ElectronicVoiceAlert.EngineOilPressure,
-                triggerCondition = () => audioTimedCoroutine == null && controller.carHP <= 16,
-                resetCondition = () => controller.carHP > 16 || !controller.electricsOn || isImportantAlert,
+                triggerCondition = () => controller.carHP <= 16 && controller.accessoryMode,
+                resetCondition = () => controller.carHP > 16 || !controller.accessoryMode || isImportantAlert,
                 priority = VoiceAlertPriority.Low
             },
 
             new VoiceAlertDefinition
             {
                 alertType = ElectronicVoiceAlert.EngineTempAboveNormal,
-                triggerCondition = () => audioTimedCoroutine == null && controller.carHP <= 12 && randomOverheatClipToPlay == 15,
-                resetCondition = () => controller.carHP > 12 || !controller.electricsOn || randomOverheatClipToPlay == 0 || isImportantAlert,
+                triggerCondition = () => controller.carHP <= 12 && randomOverheatClipToPlay == 15 && controller.accessoryMode,
+                resetCondition = () => controller.carHP > 12 || !controller.accessoryMode || randomOverheatClipToPlay == 0 || isImportantAlert,
                 priority = VoiceAlertPriority.Medium
             },
             new VoiceAlertDefinition
             {
                 alertType = ElectronicVoiceAlert.EngineOverheating,
-                triggerCondition = () => audioTimedCoroutine == null && controller.carHP <= 12 && randomOverheatClipToPlay == 16,
-                resetCondition = () => controller.carHP > 12 || !controller.electricsOn || randomOverheatClipToPlay == 0 || isImportantAlert,
+                triggerCondition = () => controller.carHP <= 12 && randomOverheatClipToPlay == 16 && controller.accessoryMode,
+                resetCondition = () => controller.carHP > 12 || !controller.accessoryMode || randomOverheatClipToPlay == 0 || isImportantAlert,
                 priority = VoiceAlertPriority.Medium
             }
         };
@@ -238,9 +248,9 @@ public class EVAModule : NetworkBehaviour
         }
         alertSystemInterval = 0f;
 
+        SetIgnitionClips();
         SetRandomOverheatClip();
         SetVoiceAlertClips();
-        SetIgnitionClips();
         TryPlayQueuedClips();
     }
 
@@ -266,6 +276,9 @@ public class EVAModule : NetworkBehaviour
 
     public void SetVoiceAlertClips()
     {
+        if (!ignitionChimeFinished || isImportantAlert || isKeysForgotten)
+            return;
+
         foreach (var alert in alerts)
         {
             if (alert.triggerCondition() && !alert.hasPlayed)
@@ -276,6 +289,7 @@ public class EVAModule : NetworkBehaviour
                     {
                         // if we can interrupt entirely, stop the current audio, clear the queue and set this clip in queue
                         CancelVoiceAudioCoroutine();
+                        voiceAudio.Stop();
                         alertClipQueue.Clear();
                         SetClipInQueue(alert.alertType);
                     }
@@ -306,7 +320,6 @@ public class EVAModule : NetworkBehaviour
             else if (alert.resetCondition() && alert.hasPlayed)
             {
                 // reset the alert "played" flag
-                ResetAudioClip(alert.alertType);
                 alert.hasPlayed = false;
             }
         }
@@ -422,7 +435,7 @@ public class EVAModule : NetworkBehaviour
             return;
         }
 
-        if (controller.electricsOn)
+        if (controller.accessoryMode)
         {
             if (!ignitionChimeStarted && currentClipId != (int)ElectronicVoiceAlert.ThankYou &&
                 !isImportantAlert && !isKeysForgotten)
@@ -443,6 +456,12 @@ public class EVAModule : NetworkBehaviour
             }
             return;
         }
+        foreach (var alert in alerts)
+        {
+            if (alert.priority == VoiceAlertPriority.IsImportant)
+                continue;
+            alert.hasPlayed = false;
+        }
         ResetAudioClip(ElectronicVoiceAlert.ThankYou);
         ignitionChimeFinished = false;
         ignitionChimeStarted = false;
@@ -459,8 +478,8 @@ public class EVAModule : NetworkBehaviour
         if (audioTimedCoroutine != null || playAudioCoroutine != null)
             return;
 
-        bool meetsConditionsToPlay = !isImportantAlert && !isKeysForgotten && ignitionChimeStarted;
-        if (!meetsConditionsToPlay)
+        bool doesNotMeetConditionsToPlay = isImportantAlert || isKeysForgotten || !ignitionChimeFinished;
+        if (doesNotMeetConditionsToPlay)
             return;
 
         playAudioCoroutine = StartCoroutine(TryPlayAudioClipsInQueue());
@@ -469,6 +488,7 @@ public class EVAModule : NetworkBehaviour
     private void StopAudioClipIfPlaying()
     {
         CancelVoiceAudioCoroutine();
+        voiceAudio.Stop();
         voiceAudio.clip = null;
         currentClipId = -1;
         clusterScreen.text = null;
@@ -479,7 +499,10 @@ public class EVAModule : NetworkBehaviour
     [Rpc(SendTo.NotMe, RequireOwnership = false)]
     public void StopAudioClipRpc()
     {
+        isKeysForgotten = false;
+        isImportantAlert = false;
         CancelVoiceAudioCoroutine();
+        voiceAudio.Stop();
         voiceAudio.clip = null;
         currentClipId = -1;
         clusterScreen.text = null;
@@ -530,28 +553,61 @@ public class EVAModule : NetworkBehaviour
             }
         }
         CancelVoiceAudioCoroutine();
+        voiceAudio.Stop();
         alertClipQueue.Clear();
 
         PlayAudioClip(2, true, false, false, 0);
-        PlayAudioClipRpc(2, true, false, false, -1);
+        SetThankYouClipRpc(isImportantAlert, isKeysForgotten);
+    }
+
+    [Rpc(SendTo.NotMe, RequireOwnership = false)]
+    public void SetThankYouClipRpc(bool isLamps, bool isKeys)
+    {
+        isKeysForgotten = isKeys;
+        isImportantAlert = isLamps;
+        CancelVoiceAudioCoroutine();
+        voiceAudio.Stop();
+        alertClipQueue.Clear();
+        PlayAudioClip(2, true, false, false, 0);
     }
 
     public void SetImportantAlert(int clipToPlay, int clipType)
     {
         CancelVoiceAudioCoroutine();
+        voiceAudio.Stop();
         alertClipQueue.Clear();
 
         PlayAudioClip(clipToPlay, false, true, false, clipType);
-        PlayAudioClipRpc(clipToPlay, false, true, false, clipType);
+        SetImportantAlertRpc(clipToPlay, clipType, isKeysForgotten, isImportantAlert);
+    }
+
+    [Rpc(SendTo.NotMe, RequireOwnership = false)]
+    public void SetImportantAlertRpc(int clipToPlay, int clipType, bool isKeys, bool isLamps)
+    {
+        isKeysForgotten = isKeys;
+        isImportantAlert = isLamps;
+        CancelVoiceAudioCoroutine();
+        voiceAudio.Stop();
+        alertClipQueue.Clear();
+        PlayAudioClip(clipToPlay, false, true, false, clipType);
     }
 
     public void SetIgnitionChime()
     {
         CancelVoiceAudioCoroutine();
+        voiceAudio.Stop();
         alertClipQueue.Clear();
-
         PlayAudioClip(-1, false, false, true, -1);
-        PlayAudioClipRpc(-1, false, false, true, -1);
+        SetIgnitionChimeRpc();
+    }
+
+    [Rpc(SendTo.NotMe, RequireOwnership = false)]
+    public void SetIgnitionChimeRpc()
+    {
+        CancelVoiceAudioCoroutine();
+        voiceAudio.Stop();
+        alertClipQueue.Clear();
+        PlayAudioClip(-1, false, false, true, -1);
     }
 
     [Rpc(SendTo.NotMe, RequireOwnership = false)]
@@ -560,6 +616,7 @@ public class EVAModule : NetworkBehaviour
         if (overridePlayback)
         {
             CancelVoiceAudioCoroutine();
+            voiceAudio.Stop();
             alertClipQueue.Clear();
             PlayAudioClip(clipToPlay, isThankYouClip, isImportantWarning, isIgnitionChime, importantType);
         }
@@ -644,7 +701,6 @@ public class EVAModule : NetworkBehaviour
         }
 
         audioTimedCoroutine = StartCoroutine(PlayVoiceAlert(clipId));
-        return;
     }
 
     private IEnumerator PlayIgnitionChime()
@@ -692,7 +748,7 @@ public class EVAModule : NetworkBehaviour
         voiceAudio.loop = false;
         if (clipId == -1 && clipType == -1)
         {
-            while (true)
+            while (isImportantAlert || isKeysForgotten)
             {
                 yield return SetScreenTextAfterDelay((int)ElectronicVoiceAlert.KeyInIgnition, 0.08f);
 
@@ -728,7 +784,7 @@ public class EVAModule : NetworkBehaviour
         }
         else
         {
-            while (true)
+            while (isImportantAlert || isKeysForgotten)
             {
                 yield return SetScreenTextAfterDelay(clipId, 0.08f);
 

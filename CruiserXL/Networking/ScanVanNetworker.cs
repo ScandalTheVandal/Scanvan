@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Unity.Netcode;
 using UnityEngine;
+using ScanVan.Patches;
 
 namespace ScanVan.Networking;
 
@@ -15,12 +16,12 @@ namespace ScanVan.Networking;
 ///  Available from BRBNetworker, licensed under GNU General Public License.
 ///  Source: https://github.com/ButteryStancakes/ButteRyBalance/blob/master/Network/BRBNetworker.cs
 /// </summary>
-internal class SCVNetworker : NetworkBehaviour
+internal class ScanVanNetworker : NetworkBehaviour
 {
     // --- INIT ---
 
     internal static GameObject networkPrefab = null!;
-    internal static SCVNetworker? Instance { get; private set; }
+    internal static ScanVanNetworker? Instance { get; private set; }
 
     internal static void Init()
     {
@@ -32,18 +33,18 @@ internal class SCVNetworker : NetworkBehaviour
         try
         {
             // create "prefab" to hold our network references
-            networkPrefab = new(nameof(SCVNetworker))
+            networkPrefab = new(nameof(ScanVanNetworker))
             {
                 hideFlags = HideFlags.HideAndDontSave
             };
 
             // assign a unique hash so it can be network registered
             NetworkObject netObj = networkPrefab.AddComponent<NetworkObject>();
-            byte[] hash = MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(typeof(SCVNetworker).Assembly.GetName().Name + networkPrefab.name));
+            byte[] hash = MD5.Create().ComputeHash(Encoding.UTF8.GetBytes(typeof(ScanVanNetworker).Assembly.GetName().Name + networkPrefab.name));
             netObj.GlobalObjectIdHash = System.BitConverter.ToUInt32(hash, 0);
 
             // and now it holds our network handler!
-            networkPrefab.AddComponent<SCVNetworker>();
+            networkPrefab.AddComponent<ScanVanNetworker>();
 
             // register it, and then it can be spawned
             NetworkManager.Singleton.PrefabHandler.AddNetworkPrefab(networkPrefab);
@@ -83,7 +84,7 @@ internal class SCVNetworker : NetworkBehaviour
             if (Instance != null && Instance.TryGetComponent(out NetworkObject netObj) && !netObj.IsSpawned && Instance != networkPrefab)
                 Destroy(Instance);
 
-            Plugin.Logger.LogWarning($"There are 2 {nameof(SCVNetworker)}s instantiated, and the wrong one was assigned as Instance. This shouldn't happen, but is recoverable");
+            Plugin.Logger.LogWarning($"There are 2 {nameof(ScanVanNetworker)}s instantiated, and the wrong one was assigned as Instance. This shouldn't happen, but is recoverable");
 
             Instance = this;
         }
@@ -113,5 +114,31 @@ internal class SCVNetworker : NetworkBehaviour
         // grab all values that should be server synced
         StreamerRadio.Value = (bool)UserConfig.StreamerRadio.Value;
         OldBirdSight.Value = (bool)UserConfig.OldBirdSight.Value;
+    }
+
+    [Rpc(SendTo.NotMe, RequireOwnership = false)]
+    internal void SyncPlayerZoneRpc(NetworkObjectReference player, bool setSeated, bool setStorage, bool setCab, bool setRiding)
+    {
+        if (player.TryGet(out NetworkObject netObj))
+        {
+            if (!netObj.TryGetComponent<PlayerControllerB>(out var playerObj))
+            {
+                Plugin.Logger.LogError("ScanVan: Failed to find player network object!");
+                return;
+            }
+            var playerObjData = PlayerControllerBPatches.playerData[playerObj];
+            if (playerObjData == null)
+            {
+                Plugin.Logger.LogError($"ScanVan: Failed to find player data. clientId? {playerObj.playerClientId}");
+                return;
+            }
+            //Plugin.Logger.LogDebug($"ScanVan: Setting zones for player {playerObj.playerClientId} with params: seated? {setSeated}, storage? {setStorage}, cabin? {setCab}, riding? {setRiding}");
+            playerObjData.playerSeatedInVan = setSeated;
+            playerObjData.playerRidingInVanCab = setCab;
+            playerObjData.playerRidingInVanStorage = setStorage;
+            playerObjData.playerRidingOnVan = setRiding;
+        }
+        else
+            Plugin.Logger.LogError($"V55: Failed to set player zone data.");
     }
 }

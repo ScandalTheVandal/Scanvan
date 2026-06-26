@@ -23,7 +23,7 @@ namespace ScanVan
     [BepInDependency("imabatby.lethallevelloader", BepInDependency.DependencyFlags.HardDependency)]
     [BepInDependency("scandal.scandalstweaks", BepInDependency.DependencyFlags.HardDependency)]
     [BepInDependency("com.rune580.LethalCompanyInputUtils", BepInDependency.DependencyFlags.HardDependency)]
-    [BepInDependency("voxx.LethalElementsPlugin", BepInDependency.DependencyFlags.SoftDependency)] 
+    [BepInDependency("voxx.LethalElementsPlugin", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("NoteBoxz.LethalMin", BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("ImmersiveVisor", BepInDependency.DependencyFlags.SoftDependency)]
     public class Plugin : BaseUnityPlugin
@@ -38,24 +38,6 @@ namespace ScanVan
         {
             Logger = base.Logger;
             Instance = this;
-
-            AssetBundle PlayerAnimationBundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Info.Location), "scanvananimationbundle"));
-            if (PlayerAnimationBundle == null)
-            {
-                Logger.LogError("[AssetBundle] Failed to load asset bundle: scanvananimationbundle");
-                return;
-            }
-
-            References.truckPlayerAnimator = PlayerAnimationBundle.LoadAsset<RuntimeAnimatorController>("truckPlayerMetarig.controller");
-            if (References.truckPlayerAnimator != null)
-            {
-                Logger.LogInfo("[AssetBundle] Successfully loaded runtime controller: truckPlayerMetarig");
-            }
-            else
-            {
-                Logger.LogError("[AssetBundle] Failed to load runtime controller: truckPlayerMetarig");
-                return;
-            }
 
             VehicleControlsInstance = new VehicleControls();
             UserConfig.InitConfig();

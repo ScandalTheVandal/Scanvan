@@ -13,6 +13,7 @@ internal class UserConfig
     internal static ConfigEntry<bool> OldBirdSight = null!;
 
     // General
+    internal static ConfigEntry<bool> MirrorsEnabled = null!;
     internal static ConfigEntry<bool> SeatBoostEnabled = null!;
     internal static ConfigEntry<float> SeatBoostScale = null!;
     internal static ConfigEntry<bool> PreventKnockback = null!;
@@ -35,6 +36,7 @@ internal class UserConfig
         OldBirdSight = config.Bind("Host", "Enemy sight", true, "[Host] If true, will allow enemies such as Old Birds to see players in the front seats");
 
         // General
+        MirrorsEnabled = config.Bind("General", "Enable Mirrors", true, "Enable rendering for the side mirrors? (may impact performance for low end hardware)");
         SeatBoostEnabled = config.Bind("General", "Enable Seat Boost", true, "Should the camera be boosted when sat in the truck?");
         AcceptableValueRange<float> seatScale = new(1.0f, 2.0f);
         SeatBoostScale = config.Bind("General", "Seat Boost Scale", 1.0f, new ConfigDescription("How much to boost the seat up? (Default: 1.0)", seatScale));

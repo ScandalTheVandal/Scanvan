@@ -4,75 +4,98 @@ using UnityEngine;
 namespace ScanVan.Utils;
 public static class VehicleUtils
 {
-    public static float lastCheckTime = 0f;
-    public static float cooldown = 0.25f;
-
-    // kind of unused
-    public static bool MeetsSpecialConditionsToCheck()
+    public static bool IsEnemyInVan(EnemyAI enemyScript, CruiserXLController vanController)
     {
-        if (Time.realtimeSinceStartup - lastCheckTime < cooldown)
-            return false;
-
-        lastCheckTime = Time.realtimeSinceStartup;
-        return true;
-    }
-
-    public static bool IsEnemyInVehicle(EnemyAI enemyScript, CruiserXLController controller)
-    {
-        if ((controller.collisionTrigger.insideTruckNavMeshBounds.ClosestPoint(enemyScript.transform.position) == enemyScript.transform.position) ||
-            (controller.collisionTrigger.insideTruckNavMeshBounds.ClosestPoint(enemyScript.agent.destination) == enemyScript.agent.destination))
+        if ((vanController.collisionTrigger.insideTruckNavMeshBounds.ClosestPoint(enemyScript.transform.position) == enemyScript.transform.position) ||
+            (vanController.collisionTrigger.insideTruckNavMeshBounds.ClosestPoint(enemyScript.agent.destination) == enemyScript.agent.destination))
             return true;
         return false;
     }
 
-    public static bool IsPlayerInVehicleBounds()
+    public static bool IsPlayerInVanBounds(CruiserXLController vanController)
     {
-        return PlayerUtils.isPlayerOnTruck;
+        return vanController.vanZone.playerInZone;
     }
 
-    public static bool IsPlayerSeatedInVehicle(CruiserXLController controller)
+    public static bool IsPlayerInVanCabin(CruiserXLController vanController)
     {
-        return PlayerUtils.seatedInTruck;
+        return vanController.vanCabinZone.playerInZone;
     }
 
-    public static bool IsSeatedPlayerProtected(PlayerControllerB player, CruiserXLController controller)
+    public static bool IsPlayerInVanStorage(CruiserXLController vanController)
     {
-        bool driverSideEnclosed = controller.driverSideDoor.boolValue;
-        bool passengerSideEnclosed = controller.passengerSideDoor.boolValue;
+        return vanController.vanStorageZone.playerInZone;
+    }
 
-        if ((player == controller.currentDriver && driverSideEnclosed) ||
-            (player == controller.currentMiddlePassenger && (driverSideEnclosed || passengerSideEnclosed)) ||
-            (player == controller.currentPassenger && passengerSideEnclosed))
+    public static bool IsPlayerSeatedInVan()
+    {
+        return PlayerUtils.isSeatedInVan;
+    }
+
+    public static bool IsSeatedPlayerProtected(PlayerControllerB playerController, CruiserXLController vanController, bool checkWindows = false, bool windshieldCheck = false, bool velocityCheck = false, float velocityMagnitude = 0f)
+    {
+        float avgVel = vanController.averageVelocity.magnitude;
+
+        if (velocityCheck && avgVel > velocityMagnitude)
+            return true;
+
+        bool windshieldBroken = vanController.windshieldBroken;
+
+        if (windshieldCheck && windshieldBroken)
             return false;
+
+        bool leftSideOpen = vanController.driverSideDoor.boolValue || (checkWindows && vanController.driversSideWindowTrigger.boolValue);
+        bool rightSideOpen = vanController.passengerSideDoor.boolValue || (checkWindows && vanController.passengersSideWindowTrigger.boolValue);
+
+        if ((playerController == vanController.currentDriver && leftSideOpen) ||
+            (playerController == vanController.currentMiddlePassenger && (leftSideOpen || rightSideOpen)) ||
+            (playerController == vanController.currentPassenger && rightSideOpen))
+            return false;
+
         return true;
     }
 
-    public static bool IsPlayerProtectedByVehicle(PlayerControllerB player, CruiserXLController controller)
+    public static bool IsPlayerProtectedByVan(PlayerControllerB playerController, CruiserXLController vanController, bool checkWindows = false, bool windshieldCheck = false, bool velocityCheck = false, float velocityMagnitude = 0f)
     {
-        if (controller.carDestroyed)
+        if (vanController.carDestroyed)
             return false;
 
-        bool driverDoorOpen = controller.driverSideDoor.boolValue;
-        bool passengerDoorOpen = controller.passengerSideDoor.boolValue;
-        bool backDoorOpen = controller.liftGateOpen;
-        bool sideDoorOpen = controller.sideDoorOpen;
+        float avgVel = vanController.averageVelocity.magnitude;
 
-        if (PlayerUtils.isPlayerInCab && (driverDoorOpen || passengerDoorOpen))
+        if (velocityCheck && avgVel > velocityMagnitude)
+            return true;
+
+        bool windshieldBroken = vanController.windshieldBroken;
+
+        bool frontDoorsOpen = vanController.driverSideDoor.boolValue || 
+                              vanController.passengerSideDoor.boolValue;
+
+        bool frontWindowsOpen = vanController.driversSideWindowTrigger.boolValue ||
+                                vanController.passengersSideWindowTrigger.boolValue;
+
+        bool backDoorOpen = vanController.liftGateOpen;
+        bool sideDoorOpen = vanController.sideDoorOpen;
+
+        if (IsPlayerInVanCabin(vanController) && 
+            frontDoorsOpen || 
+            (checkWindows && frontWindowsOpen) || 
+            (windshieldCheck && windshieldBroken))
             return false;
-        else if (PlayerUtils.isPlayerInStorage && (backDoorOpen || sideDoorOpen))
+        else if (IsPlayerInVanStorage(vanController) && 
+            (backDoorOpen || sideDoorOpen))
             return false;
-        else if (PlayerUtils.isPlayerOnTruck &&
-            !PlayerUtils.isPlayerInCab &&
-            !PlayerUtils.isPlayerInStorage)
+        else if (IsPlayerInVanBounds(vanController) &&
+            !IsPlayerInVanCabin(vanController) &&
+            !IsPlayerInVanStorage(vanController))
             return false;
 
         return true;
     }
 
-    public static bool IsPlayerNearTruck(PlayerControllerB player, CruiserXLController vehicle)
+    public static bool IsPlayerNearVan(PlayerControllerB playerController, CruiserXLController vanController)
     {
-        Vector3 vehicleTransform = vehicle.mainRigidbody.position;
-        Vector3 playerTransform = player.transform.position;
+        Vector3 vehicleTransform = vanController.mainRigidbody.position;
+        Vector3 playerTransform = playerController.transform.position;
 
         if (Vector3.Distance(playerTransform, vehicleTransform) > 10f)
             return false;

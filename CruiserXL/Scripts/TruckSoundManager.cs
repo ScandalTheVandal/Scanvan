@@ -16,16 +16,7 @@ public class TruckSoundManager : MonoBehaviour
     public OccludeAudio[] insideOcclusion = null!;
     public OccludeAudio[] outsideOcclusion = null!;
 
-    public float checkInterval = -0.1f;
-
-    public bool IsItRaining()
-    {
-        if ((GlobalReferences.wesleyHurricaneRainObj != null && GlobalReferences.wesleyHurricaneRainObj.activeSelf) || 
-            (GlobalReferences.wesleyForsakenRainObj != null && GlobalReferences.wesleyForsakenRainObj.activeSelf)) return true;
-        return TimeOfDay.Instance.currentLevelWeather == LevelWeatherType.Rainy ||
-               TimeOfDay.Instance.currentLevelWeather == LevelWeatherType.Flooded ||
-               TimeOfDay.Instance.currentLevelWeather == LevelWeatherType.Stormy;
-    }
+    public float checkInterval;
 
     public void Start()
     {
@@ -33,9 +24,9 @@ public class TruckSoundManager : MonoBehaviour
         {
             insideOcclusion[i].lowPassOverride = 3500f;
         }
-        for (int i = 0; i < outsideOcclusion.Length; i++)
+        for (int j = 0; j < outsideOcclusion.Length; j++)
         {
-            outsideOcclusion[i].lowPassOverride = 3500f;
+            outsideOcclusion[j].lowPassOverride = 3500f;
         }
     }
 
@@ -44,29 +35,41 @@ public class TruckSoundManager : MonoBehaviour
         if (controller == null)
             return;
 
-        if (checkInterval > 0.5f)
+        if (checkInterval < 0.5f)
         {
-            checkInterval = 0f;
+            checkInterval += Time.deltaTime;
             return;
         }
-        checkInterval += Time.deltaTime;
+        checkInterval = 0f;
 
-        bool inTruck = PlayerUtils.isPlayerOnTruck && (PlayerUtils.seatedInTruck || PlayerUtils.isPlayerInCab || PlayerUtils.isPlayerInStorage);
-        bool roofRainAudioActive = IsItRaining() && inTruck;
+        PlayerControllerB localPlayerController = GameNetworkManager.Instance.localPlayerController;
+        if (localPlayerController == null)
+            return;
+
+        PlayerControllerB perspectivePlayer = localPlayerController;
+        if (localPlayerController.isPlayerDead && localPlayerController.spectatedPlayerScript != null)
+        {
+            perspectivePlayer = localPlayerController.spectatedPlayerScript;
+        }
+
+        var perspectiveData = PlayerControllerBPatches.playerData[perspectivePlayer];
+
+        bool perspectiveInCab = perspectiveData?.playerRidingInVanCab ?? false;
+        bool perspectiveInStorage = perspectiveData?.playerRidingInVanStorage ?? false;
+        bool perspectiveInVehicle = perspectiveInCab || perspectiveInStorage;
+
+        controller.roofRainAudioActive = GlobalUtilities.IsItRaining() && perspectiveInVehicle;
         bool soundAudible = controller.driverSideDoor.boolValue ||
                             controller.driversSideWindowTrigger.boolValue ||
                             controller.passengerSideDoor.boolValue ||
                             controller.passengersSideWindowTrigger.boolValue ||
                             controller.windshieldBroken;
-        bool storageOpen = controller.sideDoorOpen || controller.liftGateOpen;
 
-        controller.SetVehicleAudioProperties(controller.roofRainAudio, roofRainAudioActive, 0, 1f, 3f, useVolumeInsteadOfPitch: true);
-        controller.roofRainAudio.spatialBlend = Mathf.MoveTowards(controller.roofRainAudio.spatialBlend, roofRainAudioActive ? 0f : 1f, 4f * Time.deltaTime);
+        bool storageOpen = controller.sideDoorOpen || controller.liftGateOpen;
 
         for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
         {
             PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[i];
-            PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
 
             if (player == null ||
                 player.isPlayerDead ||
@@ -75,26 +78,49 @@ public class TruckSoundManager : MonoBehaviour
                 player.sinkingValue > 0.73f)
                 continue;
 
-            if (player == localPlayer)
+            if (player == localPlayerController)
                 continue;
 
-            var data = PlayerControllerBPatches.GetData(player);
-            if (data == null)
+            var playerData = PlayerControllerBPatches.playerData[player];
+            if (playerData == null)
                 continue;
 
-            if (player.currentVoiceChatIngameSettings == null ||
-                player.currentVoiceChatIngameSettings.voiceAudio == null)
+            if (player.currentVoiceChatIngameSettings?.voiceAudio == null)
                 continue;
 
             if (!player.currentVoiceChatIngameSettings.voiceAudio.TryGetComponent<OccludeAudio>(out var audioOcclusion))
                 continue;
 
-            bool playerInCab = data.isPlayerInCab;
-            bool playerInStorage = data.isPlayerInStorage;
+            bool playerInCab = playerData.playerRidingInVanCab;
+            bool playerInStorage = playerData.playerRidingInVanStorage;
             bool playerInVehicle = playerInCab || playerInStorage;
 
+            if (playerInVehicle || perspectiveInVehicle)
+            {
+                if (player.speakingToWalkieTalkie && perspectivePlayer.holdingWalkieTalkie)
+                {
+                    playerData.applyVoiceEffects = false;
+                    player.voiceMuffledByEnemy = false;
+                    audioOcclusion.overridingLowPass = true;
+                    audioOcclusion.lowPassOverride = 4000f;
+                    continue;
+                }
+            }
+
+            if (!playerInVehicle && !perspectiveInVehicle)
+            {
+                if (playerData.applyVoiceEffects)
+                {
+                    playerData.applyVoiceEffects = false;
+                    player.voiceMuffledByEnemy = false;
+                    audioOcclusion.overridingLowPass = false;
+                }
+                continue;
+            }
+            playerData.applyVoiceEffects = true;
+
             bool muffled = false;
-            if (inTruck)
+            if (perspectiveInVehicle)
             {
                 if (playerInVehicle)
                 {
@@ -102,9 +128,9 @@ public class TruckSoundManager : MonoBehaviour
                 }
                 else
                 {
-                    if (PlayerUtils.isPlayerInCab)
+                    if (perspectiveInCab)
                         muffled = !soundAudible;
-                    else if (PlayerUtils.isPlayerInStorage)
+                    else if (perspectiveInStorage)
                         muffled = !storageOpen;
                 }
             }
@@ -122,6 +148,16 @@ public class TruckSoundManager : MonoBehaviour
                     muffled = false;
                 }
             }
+
+            if (perspectiveInVehicle && playerInVehicle)
+            {
+                if ((perspectiveInCab && playerInCab) ||
+                    (perspectiveInStorage && playerInStorage))
+                {
+                    muffled = false;
+                }
+            }
+
             player.voiceMuffledByEnemy = muffled;
             audioOcclusion.overridingLowPass = muffled;
             if (muffled) audioOcclusion.lowPassOverride = 600f;
@@ -129,7 +165,7 @@ public class TruckSoundManager : MonoBehaviour
 
         for (int i = 0; i < insideOcclusion.Length; i++)
         {
-            if (inTruck)
+            if (perspectiveInVehicle)
                 insideOcclusion[i].overridingLowPass = false;
             else
                 insideOcclusion[i].overridingLowPass = !soundAudible;
@@ -137,7 +173,7 @@ public class TruckSoundManager : MonoBehaviour
 
         for (int i = 0; i < outsideOcclusion.Length; i++)
         {
-            if (inTruck)
+            if (perspectiveInVehicle)
                 outsideOcclusion[i].overridingLowPass = !soundAudible;
             else
                 outsideOcclusion[i].overridingLowPass = false;

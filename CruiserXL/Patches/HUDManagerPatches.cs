@@ -5,17 +5,18 @@ using UnityEngine;
 namespace ScanVan.Patches;
 
 [HarmonyPatch(typeof(HUDManager))]
-public class HUDManagerPatches
+public static class HUDManagerPatches
 {
     [HarmonyPatch(nameof(HUDManager.HelmetCondensationDrops))]
     [HarmonyPostfix]
     private static void HelmetCondensationDrops_Postfix(HUDManager __instance)
     {
-        if (References.truckController == null)
+        CruiserXLController controller = References.vanController;
+        if (controller == null)
             return;
 
-        if (PlayerUtils.isPlayerInCab ||
-            PlayerUtils.isPlayerInStorage)
+        if (VehicleUtils.IsPlayerInVanCabin(controller) ||
+            VehicleUtils.IsPlayerInVanStorage(controller))
         {
             __instance.increaseHelmetCondensation = false;
         }

@@ -1,9 +1,7 @@
-﻿using ScanVan.Utils;
-using GameNetcodeStuff;
-using HarmonyLib;
-using UnityEngine;
+﻿using HarmonyLib;
+using ScanVan.Utils;
 
-namespace ScanVan.Patches;
+namespace ScanVan.Patches.Enemies;
 
 [HarmonyPatch(typeof(BushWolfEnemy))]
 public static class BushWolfEnemyPatches
@@ -12,32 +10,20 @@ public static class BushWolfEnemyPatches
     [HarmonyPostfix]
     static void Update_Postfix(BushWolfEnemy __instance)
     {
-        if (!__instance.foundSpawningPoint || StartOfRound.Instance.livingPlayers == 0) 
-            return;
-        if (!__instance.isEnemyDead) 
-            return;
-        if (__instance.stunNormalizedTimer > 0f || __instance.matingCallTimer >= 0f) 
-            return;
-        if (__instance.currentBehaviourStateIndex != 2) 
-            return;
-        if (__instance.timeSinceKillingPlayer < 2f || __instance.timeSinceTakingDamage < 0.35f) 
-            return;
-        if (__instance.failedTongueShoot) 
-            return;
-        if (__instance.targetPlayer == null) 
+        if (__instance.targetPlayer == null)
             return;
         if (__instance.targetPlayer.isPlayerDead || !__instance.targetPlayer.isPlayerControlled ||
             __instance.targetPlayer.inAnimationWithEnemy || __instance.stunNormalizedTimer > 0f) return;
 
-        if (References.truckController == null)
+        CruiserXLController controller = References.vanController;
+        if (controller == null)
             return;
-        CruiserXLController controller = References.truckController;
 
         bool isOccupant = controller.currentDriver == __instance.targetPlayer ||
                           controller.currentMiddlePassenger == __instance.targetPlayer ||
                           controller.currentPassenger == __instance.targetPlayer;
 
-        if (isOccupant && VehicleUtils.IsSeatedPlayerProtected(__instance.targetPlayer, controller))
+        if (isOccupant && VehicleUtils.IsSeatedPlayerProtected(playerController: __instance.targetPlayer, vanController: controller, checkWindows: true))
         {
             __instance.agent.speed = 0f;
             __instance.CancelReelingPlayerIn();
@@ -46,11 +32,12 @@ public static class BushWolfEnemyPatches
                 __instance.SwitchToBehaviourState(0);
                 return;
             }
+            return;
         }
 
-        var data = PlayerControllerBPatches.GetData(__instance.targetPlayer);
-        if ((data.isPlayerInCab && !controller.driverSideDoor.boolValue && !controller.passengerSideDoor.boolValue) || 
-            (data.isPlayerInStorage && !controller.liftGateOpen && !controller.sideDoorOpen))
+        var targetData = PlayerControllerBPatches.playerData[__instance.targetPlayer];
+        if (targetData.playerRidingInVanCab && !controller.driverSideDoor.boolValue && !controller.passengerSideDoor.boolValue ||
+            targetData.playerRidingInVanStorage && !controller.liftGateOpen && !controller.sideDoorOpen)
         {
             __instance.agent.speed = 0f;
             __instance.CancelReelingPlayerIn();
@@ -59,6 +46,7 @@ public static class BushWolfEnemyPatches
                 __instance.SwitchToBehaviourState(0);
                 return;
             }
+            return;
         }
     }
 }
