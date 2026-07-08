@@ -4,7 +4,7 @@
 		<AssemblyName>scandal.scanvan</AssemblyName>
 		<Product>ScanVan</Product>
 		<!-- Change to whatever version you're currently on. -->
-		<Version>1.7.3</Version>
+		<Version>1.7.8</Version>
 	</PropertyGroup>
 
 	<!-- Project Properties -->

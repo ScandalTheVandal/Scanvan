@@ -21,18 +21,18 @@ internal class VehicleControls : LcInputActions
     [InputAction(KeyboardControl.Unbound, Name = "(Arcade) Reverse Pedal", GamepadControl = GamepadControl.Unbound, ActionType = InputActionType.Value)]
     public InputAction ReversePedalKey { get; set; } = null!;
 
-
+    /*
     [InputAction(KeyboardControl.A, Name = "Steer Left", GamepadControl = GamepadControl.Unbound, ActionType = InputActionType.Value)]
     public InputAction SteerLeftKey { get; set; } = null!;
-
+    */
 
     [InputAction(KeyboardControl.S, Name = "Brake Pedal", GamepadControl = GamepadControl.Unbound, ActionType = InputActionType.Value)]
     public InputAction BrakePedalKey { get; set; } = null!;
 
-
+    /*
     [InputAction(KeyboardControl.D, Name = "Steer Right", GamepadControl = GamepadControl.Unbound, ActionType = InputActionType.Value)]
     public InputAction SteerRightKey { get; set; } = null!;
-
+    */
 
     [InputAction(KeyboardControl.LeftShift, Name = "Clutch Pedal", GamepadControl = GamepadControl.Unbound, ActionType = InputActionType.Value)]
     public InputAction ClutchPedalKey { get; set; } = null!;

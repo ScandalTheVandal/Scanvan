@@ -109,9 +109,6 @@ public class VanPhysicsRegion : PlayerPhysicsRegion
 
     public void SetPlayerZoneActive()
     {
-        if (VehicleUtils.IsPlayerSeatedInVan())
-            return;
-
         checkZoneInterval = 0f;
         removePlayerFromZoneNextFrame = false;
         playerInZone = true;
@@ -154,22 +151,19 @@ public class VanPhysicsRegion : PlayerPhysicsRegion
         isRegionActive = IsPhysicsRegionActive();
         UpdatePhysicsRegion();
         SetPhysicsRegionAndZone(ref checkInterval, ref removePlayerNextFrame, ref hasLocalPlayer, true);
-        if (VehicleUtils.IsPlayerSeatedInVan())
-        {
-            playerInZone = true;
-            removePlayerFromZoneNextFrame = false;
-            checkZoneInterval = 0f;
-        }
-        else
-        {
-            SetPhysicsRegionAndZone(ref checkZoneInterval, ref removePlayerFromZoneNextFrame, ref playerInZone);
-        }
+        //SetPhysicsRegionAndZone(ref checkZoneInterval, ref removePlayerFromZoneNextFrame, ref playerInZone);
     }
 
     public void UpdatePhysicsRegion()
     {
         if (!playerInsideThisFrame)
         {
+            if (playerInZone)
+            {
+                checkZoneInterval = 0f;
+                removePlayerFromZoneNextFrame = false;
+                playerInZone = false;
+            }
             return;
         }
         if (playerInsideThisFrame)

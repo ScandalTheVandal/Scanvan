@@ -18,6 +18,7 @@ using UnityEngine.InputSystem.XR;
 using ScandalsTweaks.Utils;
 using ScanVan.Scripts;
 using System.ComponentModel;
+using ScandalsTweaks.Scripts;
 
 public class CruiserXLController : VehicleController
 {
@@ -477,6 +478,7 @@ public class CruiserXLController : VehicleController
 
     public bool isFmRadio = false;
 
+    private float syncedSongTime;
     private float timeLastSyncedRadio;
     private float radioPingTimestamp;
 
@@ -608,9 +610,9 @@ public class CruiserXLController : VehicleController
         maxThrottleSpeed = 2f;
         throttleReleaseSpeed = 3f;
 
-        minimalBumpForce = 12500f;
-        mediumBumpForce = 51000f;
-        maximumBumpForce = 98000f;
+        minimalBumpForce = 15000f;
+        mediumBumpForce = 65000f;
+        maximumBumpForce = 120000f;
 
         minInclineCompensation = 1.78f;
         maxInclineCompensation = 4.1f;
@@ -1179,6 +1181,8 @@ public class CruiserXLController : VehicleController
             localPlayer.playerBodyAnimator.SetInteger(CAR_ANIM, 3);
         else if (localPlayer.playerBodyAnimator.GetInteger(CAR_ANIM) == 12 && keyIsInIgnition)
             localPlayer.playerBodyAnimator.SetInteger(CAR_ANIM, 3);
+        else if (localPlayer.playerBodyAnimator.GetInteger(CAR_ANIM) == 9 && keyIsInIgnition)
+            localPlayer.playerBodyAnimator.SetInteger(CAR_ANIM, 3);
         else
             localPlayer.playerBodyAnimator.SetInteger(CAR_ANIM, 0);
 
@@ -1466,6 +1470,15 @@ public class CruiserXLController : VehicleController
         trigger.hoverTip = tip;
     }
 
+    [Rpc(SendTo.Everyone, RequireOwnership = false)]
+    public void CancelSetPlayerInSeatRpc(int playerId)
+    {
+        PlayerControllerB playerController = StartOfRound.Instance.allPlayerScripts[playerId];
+        if (GameNetworkManager.Instance.localPlayerController != playerController)
+            return;
+        GlobalUtilities.CancelVehicleSeatInteraction();
+    }
+
 
     // --- DRIVER OCCUPANT METHODS ---
     public void SetDriverInCar()
@@ -1482,6 +1495,7 @@ public class CruiserXLController : VehicleController
             !playerController.isPlayerControlled ||
             currentDriver != null)
         {
+            CancelSetPlayerInSeatRpc(playerId);
             return;
         }
         currentDriver = StartOfRound.Instance.allPlayerScripts[playerId];
@@ -1626,6 +1640,7 @@ public class CruiserXLController : VehicleController
             !playerController.isPlayerControlled ||
             currentMiddlePassenger != null)
         {
+            CancelSetPlayerInSeatRpc(playerId);
             return;
         }
         currentMiddlePassenger = playerController;
@@ -1746,6 +1761,7 @@ public class CruiserXLController : VehicleController
             !playerController.isPlayerControlled ||
             currentPassenger != null)
         {
+            CancelSetPlayerInSeatRpc(playerId);
             return;
         }
         currentPassenger = playerController;
@@ -2000,7 +2016,7 @@ public class CruiserXLController : VehicleController
         SyncPlayerInputs();
 
         moveInputVector = IngamePlayerSettings.Instance.playerInput.actions.FindAction("Move", false).ReadValue<Vector2>();
-        moveInputVector.x = Mathf.Round(moveInputVector.x);
+        moveInputVector.x = StartOfRound.Instance.localPlayerUsingController ? moveInputVector.x : Mathf.Round(moveInputVector.x);
         moveInputVector.y = Mathf.Round(moveInputVector.y);
 
         brakePedalPressed = Plugin.VehicleControlsInstance.BrakePedalKey.IsPressed();
@@ -2020,9 +2036,13 @@ public class CruiserXLController : VehicleController
             return;
         }
 
+        /*
         if (Plugin.VehicleControlsInstance.SteerLeftKey.IsPressed()) steeringAnimValue = -1f;
         else if (Plugin.VehicleControlsInstance.SteerRightKey.IsPressed()) steeringAnimValue = 1f;
         else steeringAnimValue = 0f;
+        */
+
+        steeringAnimValue = moveInputVector.x;
 
         if (UserConfig.SmoothWheel.Value)
         {
@@ -2857,16 +2877,24 @@ public class CruiserXLController : VehicleController
 
     // --- RADIO TIME SYNC ---
     [Rpc(SendTo.NotServer, RequireOwnership = false)]
-    public void SyncRadioTimeRpc(float songTime)
+    public void SyncRadioTimeRpc(float songTime, float syncedTime)
     {
         currentSongTime = songTime;
+        syncedSongTime = syncedTime;
+        timeLastSyncedRadio = Time.realtimeSinceStartup;
         SetRadioTime();
     }
 
     public void SetRadioTime()
     {
-        if (radioAudio.clip == null || !radioOn || !radioAudio.isPlaying) return;
-        radioAudio.time = Mathf.Clamp(currentSongTime % radioAudio.clip.length, 0f, radioAudio.clip.length);
+        if (isFmRadio || 
+            radioAudio.clip == null || 
+            !radioOn) return;
+        float setRadioTime = (syncedSongTime + (Time.realtimeSinceStartup - timeLastSyncedRadio)) % radioAudio.clip.length;
+        if (Mathf.Abs(setRadioTime - radioAudio.time) > 1f)
+        {
+            radioAudio.time = setRadioTime;
+        }
     }
 
 
@@ -2886,11 +2914,13 @@ public class CruiserXLController : VehicleController
         {
             liveRadioController.TurnRadioOnOff(false);
             radioInterference.Stop();
-            if (radioAudio.loop) radioAudio.loop = false;
             SetCurrentRadioClip();
-            currentSongTime = lastSongTime;
-            SetRadioTime();
+            if (radioAudio.loop) radioAudio.loop = false;
             if (radioAudio.clip != null) radioAudio.Play();
+            currentSongTime = lastSongTime;
+            syncedSongTime = currentSongTime;
+            timeLastSyncedRadio = Time.realtimeSinceStartup;
+            radioAudio.time = currentSongTime;
             radioOn = true;
         }
         else
@@ -2898,6 +2928,9 @@ public class CruiserXLController : VehicleController
             liveRadioController.TogglePowerLocalClient(false);
             if (!radioAudio.loop) radioAudio.loop = true;
             lastSongTime = currentSongTime;
+            syncedSongTime = lastSongTime;
+            timeLastSyncedRadio = Time.realtimeSinceStartup;
+            radioAudio.time = lastSongTime;
             radioOn = true;
         }
         ChangeRadioTypeRpc(isFmRadio, currentRadioClip, lastSongTime, currentSongTime);
@@ -2912,16 +2945,21 @@ public class CruiserXLController : VehicleController
         {
             liveRadioController.TurnRadioOnOff(false);
             radioInterference.Stop();
-            if (radioAudio.loop) radioAudio.loop = false;
             SetCurrentRadioClip();
-            currentSongTime = currentTime;
-            SetRadioTime();
+            if (radioAudio.loop) radioAudio.loop = false;
             if (radioAudio.clip != null) radioAudio.Play();
+            currentSongTime = currentTime;
+            syncedSongTime = currentTime;
+            timeLastSyncedRadio = Time.realtimeSinceStartup;
+            radioAudio.time = currentTime;
             radioOn = true;
             return;
         }
         if (!radioAudio.loop) radioAudio.loop = true;
         lastSongTime = lastTime;
+        syncedSongTime = lastTime;
+        timeLastSyncedRadio = Time.realtimeSinceStartup;
+        radioAudio.time = lastTime;
         radioOn = true;
     }
 
@@ -2960,11 +2998,13 @@ public class CruiserXLController : VehicleController
             else currentRadioClip = (currentRadioClip - 1 + streamerRadioClips.Length) % streamerRadioClips.Length;
         }
         SetCurrentRadioClip();
-        currentSongTime = 0f;
-        lastSongTime = 0f;
-        SetRadioTime();
         if (radioAudio.loop) radioAudio.loop = false;
         if (radioAudio.clip != null) radioAudio.Play();
+        currentSongTime = 0f;
+        lastSongTime = 0f;
+        syncedSongTime = 0f;
+        timeLastSyncedRadio = Time.realtimeSinceStartup;
+        radioAudio.time = 0f;
         SetRadioStationRpc(currentRadioClip);
     }
 
@@ -2974,11 +3014,13 @@ public class CruiserXLController : VehicleController
         if (!radioOn) radioOn = true;
         currentRadioClip = radioStation;
         SetCurrentRadioClip();
-        currentSongTime = 0f;
-        lastSongTime = 0f;
-        SetRadioTime();
         if (radioAudio.loop) radioAudio.loop = false;
         if (radioAudio.clip != null) radioAudio.Play();
+        currentSongTime = 0f;
+        lastSongTime = 0f;
+        syncedSongTime = 0f;
+        timeLastSyncedRadio = Time.realtimeSinceStartup;
+        radioAudio.time = 0f;
     }
 
 
@@ -3016,13 +3058,17 @@ public class CruiserXLController : VehicleController
         if (radioOn)
         {
             SetCurrentRadioClip();
-            currentSongTime = lastSongTime;
-            SetRadioTime();
             if (radioAudio.clip != null) radioAudio.Play();
+            currentSongTime = lastSongTime;
+            syncedSongTime = lastSongTime;
+            timeLastSyncedRadio = Time.realtimeSinceStartup;
+            radioAudio.time = lastSongTime;
         }
         else
         {
             lastSongTime = currentSongTime;
+            syncedSongTime = currentSongTime;
+            timeLastSyncedRadio = Time.realtimeSinceStartup;
             if (radioAudio.clip != null) radioAudio.Stop();
         }
         SetRadioRpc(radioOn, currentRadioClip, currentSongTime, lastSongTime);
@@ -3037,7 +3083,7 @@ public class CruiserXLController : VehicleController
     }
 
     [Rpc(SendTo.NotMe, RequireOwnership = false)]
-    public void SetRadioRpc(bool on, int currentClip, float songTime, float lastRadioTime)
+    public void SetRadioRpc(bool on, int currentClip, float radioTime, float lastRadioTime)
     {
         if (radioOn == on) return;
         if (radioAudio.loop) radioAudio.loop = false;
@@ -3046,13 +3092,17 @@ public class CruiserXLController : VehicleController
         if (on)
         {
             SetCurrentRadioClip();
-            currentSongTime = songTime;
-            SetRadioTime();
             if (radioAudio.clip != null) radioAudio.Play();
+            currentSongTime = radioTime;
+            syncedSongTime = radioTime;
+            timeLastSyncedRadio = Time.realtimeSinceStartup;
+            radioAudio.time = radioTime;
         }
         else
         {
             lastSongTime = lastRadioTime;
+            syncedSongTime = lastRadioTime;
+            timeLastSyncedRadio = Time.realtimeSinceStartup;
             if (radioAudio.clip != null) radioAudio.Stop();
         }
     }
@@ -3113,7 +3163,8 @@ public class CruiserXLController : VehicleController
             if (Time.realtimeSinceStartup - timeLastSyncedRadio > 1f)
             {
                 timeLastSyncedRadio = Time.realtimeSinceStartup;
-                SyncRadioTimeRpc(currentSongTime);
+                syncedSongTime = radioAudio.time;
+                SyncRadioTimeRpc(currentSongTime, syncedSongTime);
             }
         }
     }
@@ -3372,7 +3423,7 @@ public class CruiserXLController : VehicleController
         if (RoundManager.Instance.currentLevel != null && 
             !RoundManager.Instance.currentLevel.planetHasTime)
         {
-            return DateTime.Now.ToString("h:mm tt"); // users computer time
+            return DateTime.Now.ToString("h:mm"); // users computer time, 12 hour like the ingame clock
         }
         return clockText
             .Trim()
@@ -4645,9 +4696,6 @@ public class CruiserXLController : VehicleController
         setPosition /= (float)contactCount;
         collisionImpulse /= Time.fixedDeltaTime;
 
-        float collisionVolume = 0.5f;
-        int audioType = -1;
-
         if (collisionImpulse < minimalBumpForce || averageVelocity.magnitude < 6f)
         {
             if (collisionImpulse > 3 && averageVelocity.magnitude > 2.5f)
@@ -4655,14 +4703,81 @@ public class CruiserXLController : VehicleController
                 SetInternalStress(0.15f);
                 lastStressType = "Scraping";
             }
-            audioType = 0;
-            collisionVolume = Mathf.Clamp((collisionImpulse - minimalBumpForce) / (mediumBumpForce - minimalBumpForce), 0.25f, 1f);
-            collisionVolume = Mathf.Clamp(collisionVolume + UnityEngine.Random.Range(-0.15f, 0.25f), 0.25f, 1f);
+            return;
+        }
+
+        /*
+        HUDManager.Instance.enableConsoleLogging = true;
+        HUDManager.Instance.SetDebugText($"diff? {differenceInVelocity}\nlastVel? {lastVelocity.magnitude}\nbumpForce? {collisionImpulse}");
+        */
+
+        
+        float collisionVolume = 0.5f;
+        int audioType = -1;
+
+        /*
+        if (differenceInVelocity >= 9f && lastVelocity.magnitude > 34f)
+        {
+            if (carHP < 3)
+            {
+                DestroyCarRpc();
+                DestroyCar();
+                return;
+            }
+            if (!windshieldBroken)
+            {
+                BreakWindshield();
+                BreakWindshieldRpc();
+            }
+            DamageVehicle((float)UnityEngine.Random.Range(20, 30), collision.relativeVelocity, carHP - 10);
+            audioType = 2;
+            collisionVolume = Mathf.Clamp((collisionImpulse - maximumBumpForce) / 20000f, 0.8f, 1f);
+            collisionVolume = Mathf.Clamp(collisionVolume + UnityEngine.Random.Range(-0.15f, 0.25f), 0.7f, 1f);
             PlayCollisionAudio(setPosition, audioType, collisionVolume);
             return;
         }
 
-        if (lastVelocity.magnitude > 38f)
+        if (collisionImpulse > maximumBumpForce && lastVelocity.magnitude >= 20f)
+        {
+            audioType = 2;
+            collisionVolume = Mathf.Clamp((collisionImpulse - maximumBumpForce) / 20000f, 0.8f, 1f);
+            collisionVolume = Mathf.Clamp(collisionVolume + UnityEngine.Random.Range(-0.15f, 0.25f), 0.7f, 1f);
+            DamageVehicle(differenceInVelocity, collision.relativeVelocity, 1);
+        }
+        else if (collisionImpulse > mediumBumpForce && lastVelocity.magnitude >= 10f)
+        {
+            audioType = 1;
+            collisionVolume = Mathf.Clamp((collisionImpulse - mediumBumpForce) / (maximumBumpForce - mediumBumpForce), 0.67f, 1f);
+            collisionVolume = Mathf.Clamp(collisionVolume + UnityEngine.Random.Range(-0.15f, 0.25f), 0.5f, 1f);
+        }
+        else if (lastVelocity.magnitude > 3f)
+        {
+            audioType = 1;
+            collisionVolume = Mathf.Clamp((collisionImpulse - mediumBumpForce) / (maximumBumpForce - mediumBumpForce), 0.25f, 1f);
+            collisionVolume = Mathf.Clamp(collisionVolume + UnityEngine.Random.Range(-0.15f, 0.25f), 0.25f, 1f);
+        }
+
+        if (audioType != -1)
+        {
+            PlayCollisionAudio(setPosition, audioType, collisionVolume);
+            if (collisionImpulse > maximumBumpForce + 10000f && lastVelocity.magnitude > 20f && differenceInVelocity >= 9f)
+            {
+                DamageVehicle((float)UnityEngine.Random.Range(10, 20), Vector3.ClampMagnitude(-collision.relativeVelocity, 60f), (int)(differenceInVelocity/2f));
+                if (!windshieldBroken)
+                {
+                    BreakWindshield();
+                    BreakWindshieldRpc();
+                }
+                CarCollisionRpc(Vector3.ClampMagnitude(-collision.relativeVelocity, 60f), differenceInVelocity);
+                DealPermanentDamage(2);
+                return;
+            }
+            CarBumpLocalClient(Vector3.ClampMagnitude(-collision.relativeVelocity, 40f));
+        }
+        */
+
+        
+        if (differenceInVelocity >= 11f && lastVelocity.magnitude > 38f)
         {
             if (carHP < 3)
             {
@@ -4688,30 +4803,26 @@ public class CruiserXLController : VehicleController
             return;
         }
 
-        if (collisionImpulse >= minimalBumpForce && collisionImpulse < mediumBumpForce && 
-            lastVelocity.magnitude > 6f)
+        if (collisionImpulse >= minimalBumpForce && collisionImpulse < mediumBumpForce && differenceInVelocity > 4f)
         {
             audioType = 0;
             collisionVolume = Mathf.Clamp((collisionImpulse - minimalBumpForce) / (mediumBumpForce - minimalBumpForce), 0.25f, 1f);
             collisionVolume = Mathf.Clamp(collisionVolume + UnityEngine.Random.Range(-0.15f, 0.25f), 0.25f, 1f);
         }
-        else if (collisionImpulse >= mediumBumpForce && collisionImpulse < maximumBumpForce && 
-            lastVelocity.magnitude > 9f)
+        else if (collisionImpulse >= mediumBumpForce && collisionImpulse < maximumBumpForce && differenceInVelocity > 9f)
         {
             audioType = 1;
             collisionVolume = Mathf.Clamp((collisionImpulse - mediumBumpForce) / (maximumBumpForce - mediumBumpForce), 0.67f, 1f);
             collisionVolume = Mathf.Clamp(collisionVolume + UnityEngine.Random.Range(-0.15f, 0.25f), 0.5f, 1f);
         }
-        else if (collisionImpulse >= maximumBumpForce + 1000f && 
-            lastVelocity.magnitude > 18f && lastVelocity.magnitude < 28f)
+        else if (collisionImpulse >= maximumBumpForce && differenceInVelocity > 9.5f)
         {
             audioType = 2;
             collisionVolume = Mathf.Clamp((collisionImpulse - maximumBumpForce) / 20000f, 0.8f, 1f);
             collisionVolume = Mathf.Clamp(collisionVolume + UnityEngine.Random.Range(-0.15f, 0.25f), 0.7f, 1f);
-            PlayCollisionAudio(setPosition, audioType, collisionVolume);
             DamageVehicle(differenceInVelocity, collision.relativeVelocity, 1);
-            return;
         }
+
         PlayCollisionAudio(setPosition, audioType, collisionVolume);
         if (collisionImpulse > maximumBumpForce + 10000f && lastVelocity.magnitude >= 28f)
         {
@@ -4732,9 +4843,10 @@ public class CruiserXLController : VehicleController
             }
         }
         CarBumpLocalClient(Vector3.ClampMagnitude(-collision.relativeVelocity, 40f));
+        
     }
 
-    public void DamageVehicle(float diff, Vector3 collision, int damageAmount = 2)
+    public void DamageVehicle(float diff, Vector3 collision, int damageAmount = 1)
     {
         DamagePlayerInVehicle(Vector3.ClampMagnitude(-collision, 60f), diff / 1.5f);
         CarCollisionRpc(Vector3.ClampMagnitude(-collision, 60f), diff / 1.5f);

@@ -74,11 +74,8 @@ public static class PlayerControllerBPatches
 
     [HarmonyPatch(nameof(PlayerControllerB.UpdatePlayerAnimationsToOtherClients))]
     [HarmonyPrefix]
-    static bool UpdatePlayerAnimationsToOtherClients_Prefix(PlayerControllerB __instance, Vector2 moveInputVector, bool __runOriginal)
+    static bool UpdatePlayerAnimationsToOtherClients_Prefix(PlayerControllerB __instance, Vector2 moveInputVector)
     {
-        if (!__runOriginal)
-            return false;
-
         if (__instance != GameNetworkManager.Instance.localPlayerController)
             return true;
 
@@ -89,7 +86,7 @@ public static class PlayerControllerBPatches
     // i'm not sure if this actually works, i'll need to look into this
     [HarmonyPatch(nameof(PlayerControllerB.SpawnPlayerAnimation))]
     [HarmonyPostfix]
-    static void SpawnPlayerAnimation_Postfix(ref PlayerControllerB __instance)
+    static void SpawnPlayerAnimation_Postfix(PlayerControllerB __instance)
     {
         if (__instance != GameNetworkManager.Instance.localPlayerController) 
             return;

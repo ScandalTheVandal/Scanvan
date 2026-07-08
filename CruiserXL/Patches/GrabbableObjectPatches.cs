@@ -23,9 +23,6 @@ public static class GrabbableObjectPatches
         if (vanController == null)
             return;
 
-        if (__instance.transform.parent != vanController.transform)
-            return;
-
         bool isInVan = __instance.transform.parent == vanController.transform;
         if (!isInVan || __instance.isHeld || __instance.isHeldByEnemy)
         {
