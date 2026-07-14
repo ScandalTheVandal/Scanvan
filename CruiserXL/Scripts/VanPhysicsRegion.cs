@@ -26,13 +26,18 @@ public class VanPhysicsRegion : PlayerPhysicsRegion
     public new void OnDestroy()
     {
         disablePhysicsRegion = true;
-        TryRemovePhysicsRegionFromList();
+        if (StartOfRound.Instance.CurrentPlayerPhysicsRegions.Contains(this))
+        {
+            StartOfRound.Instance.CurrentPlayerPhysicsRegions.Remove(this);
+        }
         for (int i = 0; i < StartOfRound.Instance?.allPlayerScripts.Length; i++)
         {
-            if (StartOfRound.Instance.allPlayerScripts[i].transform.parent == physicsTransform)
+            PlayerControllerB playerController = StartOfRound.Instance.allPlayerScripts[i];
+            if (playerController.transform.parent == physicsTransform)
             {
-                StartOfRound.Instance.allPlayerScripts[i].transform.SetParent(null);
-                Debug.Log($"ScanVan: Player {i} setting parent null since physics region was destroyed");
+                Transform playerTransform = playerController.isInElevator ? playerController.playersManager.elevatorTransform : playerController.playersManager.playersContainer;
+                playerController.transform.SetParent(playerTransform);
+                Debug.Log($"ScanVan: Player {i} setting parent since physics region was destroyed");
             }
         }
         if (!allowDroppingItems || itemDropCollider == null) return;
@@ -146,6 +151,7 @@ public class VanPhysicsRegion : PlayerPhysicsRegion
     {
         if (disablePhysicsRegion)
         {
+            physicsCollider.enabled = false;
             return;
         }
         isRegionActive = IsPhysicsRegionActive();

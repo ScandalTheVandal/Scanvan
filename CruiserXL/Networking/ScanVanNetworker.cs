@@ -103,7 +103,7 @@ internal class ScanVanNetworker : NetworkBehaviour
     }
 
     // config
-    internal NetworkVariable<bool> StreamerRadio { get; private set; } = new NetworkVariable<bool>(value: true, writePerm: NetworkVariableWritePermission.Server, readPerm: NetworkVariableReadPermission.Everyone);
+    internal NetworkVariable<bool> NoMusic { get; private set; } = new NetworkVariable<bool>(value: true, writePerm: NetworkVariableWritePermission.Server, readPerm: NetworkVariableReadPermission.Everyone);
     internal NetworkVariable<bool> OldBirdSight { get; private set; } = new NetworkVariable<bool>(value: true, writePerm: NetworkVariableWritePermission.Server, readPerm: NetworkVariableReadPermission.Everyone);
 
     void UpdateConfig()
@@ -112,7 +112,7 @@ internal class ScanVanNetworker : NetworkBehaviour
             return;
 
         // grab all values that should be server synced
-        StreamerRadio.Value = (bool)UserConfig.StreamerRadio.Value;
+        NoMusic.Value = (bool)UserConfig.NoMusic.Value;
         OldBirdSight.Value = (bool)UserConfig.OldBirdSight.Value;
     }
 
@@ -139,6 +139,6 @@ internal class ScanVanNetworker : NetworkBehaviour
             playerObjData.playerRidingOnVan = setRiding;
         }
         else
-            Plugin.Logger.LogError($"V55: Failed to set player zone data.");
+            Plugin.Logger.LogError($"ScanVan: Failed to set player zone data.");
     }
 }

@@ -9,7 +9,7 @@ namespace ScanVan.Utils;
 internal class UserConfig
 {
     // Host
-    internal static ConfigEntry<bool> StreamerRadio = null!;
+    internal static ConfigEntry<bool> NoMusic = null!;
     internal static ConfigEntry<bool> OldBirdSight = null!;
 
     // General
@@ -32,7 +32,7 @@ internal class UserConfig
         config.SaveOnConfigSet = false;
 
         // Host
-        StreamerRadio = config.Bind("Host", "DMCA Radio", true, "[Host] If true, will enable streamer-friendly music on the radio, and disable the live-radio system");
+        NoMusic = config.Bind("Host", "No Music", true, "[Host] If true, disable the radio entirely, including the live radio");
         OldBirdSight = config.Bind("Host", "Enemy sight", true, "[Host] If true, will allow enemies such as Old Birds to see players in the front seats");
 
         // General

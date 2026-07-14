@@ -626,7 +626,7 @@ public class CruiserXLController : VehicleController
         clutchReturnSpeed = 1.5f;
         minClutchReturnSpeed = 0.5f;
 
-        jumpForce = 4450f; // 3600f
+        jumpForce = 4900f; // 3600f
 
         brakeSpeed = 10000f;
         maxBrakingPower = 12000f;
@@ -2713,6 +2713,21 @@ public class CruiserXLController : VehicleController
     {
         RemoveCarRainCollision();
         DisableControl();
+        vanZone.disablePhysicsRegion = true;
+        if (StartOfRound.Instance.CurrentPlayerPhysicsRegions.Contains(vanZone))
+        {
+            StartOfRound.Instance.CurrentPlayerPhysicsRegions.Remove(vanZone);
+        }
+        for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
+        {
+            PlayerControllerB playerController = StartOfRound.Instance.allPlayerScripts[i];
+            if (playerController.transform.parent == vanZone.physicsTransform)
+            {
+                Transform playerTransform = playerController.isInElevator ? playerController.playersManager.elevatorTransform : playerController.playersManager.playersContainer;
+                playerController.transform.SetParent(playerTransform);
+                Plugin.Logger.LogWarning($"Hauler: Player {i} setting parent since vehicle was disabled");
+            }
+        }
         if (localPlayerInControl || localPlayerInPassengerSeat || localPlayerInMiddlePassengerSeat)
             GameNetworkManager.Instance.localPlayerController.CancelSpecialTriggerAnimations();
         GrabbableObject[] componentsInChildren = physicsRegion.physicsTransform.GetComponentsInChildren<GrabbableObject>();
@@ -2730,11 +2745,6 @@ public class CruiserXLController : VehicleController
             {
                 componentsInChildren[i].FallToGround(false, false, default(Vector3));
             }
-        }
-        physicsRegion.disablePhysicsRegion = true;
-        if (StartOfRound.Instance.CurrentPlayerPhysicsRegions.Contains(physicsRegion))
-        {
-            StartOfRound.Instance.CurrentPlayerPhysicsRegions.Remove(physicsRegion);
         }
         truckMat.mainTexture = defaultTruckTex;
         References.vanController = null!;
@@ -2759,10 +2769,21 @@ public class CruiserXLController : VehicleController
         if (NetworkObject != null && !NetworkObject.IsSpawned)
         {
             RemoveCarRainCollision();
-            physicsRegion.disablePhysicsRegion = true;
-            if (StartOfRound.Instance.CurrentPlayerPhysicsRegions.Contains(physicsRegion))
-                StartOfRound.Instance.CurrentPlayerPhysicsRegions.Remove(physicsRegion);
-
+            vanZone.disablePhysicsRegion = true;
+            if (StartOfRound.Instance.CurrentPlayerPhysicsRegions.Contains(vanZone))
+            {
+                StartOfRound.Instance.CurrentPlayerPhysicsRegions.Remove(vanZone);
+            }
+            for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
+            {
+                PlayerControllerB playerController = StartOfRound.Instance.allPlayerScripts[i];
+                if (playerController.transform.parent == vanZone.physicsTransform)
+                {
+                    Transform playerTransform = playerController.isInElevator ? playerController.playersManager.elevatorTransform : playerController.playersManager.playersContainer;
+                    playerController.transform.SetParent(playerTransform);
+                    Plugin.Logger.LogWarning($"ScanVan: Player {i} setting parent since vehicle was removed");
+                }
+            }
             if (localPlayerInControl || localPlayerInPassengerSeat || localPlayerInMiddlePassengerSeat)
                 GameNetworkManager.Instance.localPlayerController.CancelSpecialTriggerAnimations();
 
@@ -2901,7 +2922,7 @@ public class CruiserXLController : VehicleController
     // --- RADIO TYPE (FM/CD) ---
     public void ChangeRadioType()
     {
-        if (ScanVanNetworker.Instance!.StreamerRadio.Value)
+        if (ScanVanNetworker.Instance!.NoMusic.Value)
         {
             HUDManager.Instance.DisplayTip("Live radio disabled", 
                 "The host has disabled this feature!");
@@ -2967,6 +2988,12 @@ public class CruiserXLController : VehicleController
     // --- RADIO SEEK (CHANGE CHANNEL/TRACK) ---
     public void ChangeRadioStation(bool seekForward)
     {
+        if (ScanVanNetworker.Instance!.NoMusic.Value)
+        {
+            HUDManager.Instance.DisplayTip("DMCA-Free Radio disabled", 
+                "This feature has temporarily been pulled due to outrageous copyright laws prohibiting the use of most vintage music");
+            return;
+        }
         if (isFmRadio)
         {
             TrySetFMRadioRpc(lastSongTime);
@@ -2980,7 +3007,7 @@ public class CruiserXLController : VehicleController
             return;
         }
 
-        if (!ScanVanNetworker.Instance!.StreamerRadio.Value)
+        if (!ScanVanNetworker.Instance!.NoMusic.Value)
         {
             if (radioClips.Length > 0)
             {
@@ -3039,6 +3066,12 @@ public class CruiserXLController : VehicleController
     // --- RADIO TOGGLE ---
     public new void SwitchRadio()
     {
+        if (ScanVanNetworker.Instance!.NoMusic.Value)
+        {
+            HUDManager.Instance.DisplayTip("DMCA-Free Radio disabled",
+                "This feature has temporarily been pulled due to outrageous copyright laws prohibiting the use of most vintage music");
+            return;
+        }
         if (localPlayerInControl && keyIgnitionCoroutine == null && ignitionStarted)
         {
             timeSinceTogglingRadio = Time.realtimeSinceStartup;
@@ -3109,7 +3142,7 @@ public class CruiserXLController : VehicleController
 
     private void SetCurrentRadioClip()
     {
-        if (!ScanVanNetworker.Instance!.StreamerRadio.Value)
+        if (!ScanVanNetworker.Instance!.NoMusic.Value)
         {
             if (radioClips == null || radioClips.Length == 0)
             {
@@ -3408,8 +3441,8 @@ public class CruiserXLController : VehicleController
     // return the current CD track
     private string SetRadioCDTrack(int currentTrack)
     {
-        if (!ScanVanNetworker.Instance!.StreamerRadio.Value && 
-            radioClips.Length == 0)
+        if ((!ScanVanNetworker.Instance!.NoMusic.Value && radioClips.Length == 0) || 
+            ScanVanNetworker.Instance!.NoMusic.Value)
         {
             return "NO CD";
         }

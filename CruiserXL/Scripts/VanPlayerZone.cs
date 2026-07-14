@@ -77,6 +77,7 @@ public class VanPlayerZone : MonoBehaviour
     {
         if (disableZone)
         {
+            physicsCollider.enabled = false;
             return;
         }
         if (VehicleUtils.IsPlayerSeatedInVan())
