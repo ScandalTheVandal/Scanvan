@@ -10,7 +10,6 @@ internal class UserConfig
 {
     // Host
     internal static ConfigEntry<bool> NoMusic = null!;
-    internal static ConfigEntry<bool> OldBirdSight = null!;
 
     // General
     internal static ConfigEntry<bool> MirrorsEnabled = null!;
@@ -33,7 +32,6 @@ internal class UserConfig
 
         // Host
         NoMusic = config.Bind("Host", "No Music", true, "[Host] If true, disable the radio entirely, including the live radio");
-        OldBirdSight = config.Bind("Host", "Enemy sight", true, "[Host] If true, will allow enemies such as Old Birds to see players in the front seats");
 
         // General
         MirrorsEnabled = config.Bind("General", "Enable Mirrors", true, "Enable rendering for the side mirrors? (may impact performance for low end hardware)");

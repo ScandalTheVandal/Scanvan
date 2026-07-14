@@ -104,7 +104,6 @@ internal class ScanVanNetworker : NetworkBehaviour
 
     // config
     internal NetworkVariable<bool> NoMusic { get; private set; } = new NetworkVariable<bool>(value: true, writePerm: NetworkVariableWritePermission.Server, readPerm: NetworkVariableReadPermission.Everyone);
-    internal NetworkVariable<bool> OldBirdSight { get; private set; } = new NetworkVariable<bool>(value: true, writePerm: NetworkVariableWritePermission.Server, readPerm: NetworkVariableReadPermission.Everyone);
 
     void UpdateConfig()
     {
@@ -113,7 +112,6 @@ internal class ScanVanNetworker : NetworkBehaviour
 
         // grab all values that should be server synced
         NoMusic.Value = (bool)UserConfig.NoMusic.Value;
-        OldBirdSight.Value = (bool)UserConfig.OldBirdSight.Value;
     }
 
     [Rpc(SendTo.NotMe, RequireOwnership = false)]

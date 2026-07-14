@@ -41,12 +41,7 @@ public static class ScandalsTweaksPatches
     {
         if (IsPlayerInVan(player, false))
         {
-            if (enemy is BaboonBirdAI)
-            {
-                __result = true;
-                return false;
-            }
-            __result = ScanVanNetworker.Instance!.OldBirdSight.Value;
+            __result = true;
             return false;
         }
         return true;
