@@ -1,6 +1,7 @@
 using ScanVan.Utils;
 using HarmonyLib;
 using UnityEngine;
+using GameNetcodeStuff;
 
 namespace ScanVan.Patches;
 
@@ -9,16 +10,19 @@ public static class HUDManagerPatches
 {
     [HarmonyPatch(nameof(HUDManager.HelmetCondensationDrops))]
     [HarmonyPostfix]
-    private static void HelmetCondensationDrops_Postfix(HUDManager __instance)
+    private static void HUDManager_Post_HelmetCondensationDrops(HUDManager __instance)
     {
-        CruiserXLController controller = References.vanController;
-        if (controller == null)
+        CruiserXLController vanController = VehicleUtils.vanController;
+        if (vanController == null)
             return;
 
-        if (VehicleUtils.IsPlayerInVanCabin(controller) ||
-            VehicleUtils.IsPlayerInVanStorage(controller))
-        {
+        PlayerControllerB playerController = GameNetworkManager.Instance.localPlayerController;
+
+        bool playerInCab = VehicleUtils.IsPlayerInVanCabin(playerController, vanController);
+        bool playerInStorage = VehicleUtils.IsPlayerInVanStorage(playerController, vanController);
+        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(playerController, vanController);
+
+        if (playerInCab || playerInStorage || playerSeated)
             __instance.increaseHelmetCondensation = false;
-        }
     }
 }

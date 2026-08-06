@@ -52,8 +52,8 @@ public class TruckMirrorRenderer : MonoBehaviour
             rightMirrorMesh == null)
             return;
 
-        PlayerControllerB player = GameNetworkManager.Instance.localPlayerController;
-        if (player == null) 
+        PlayerControllerB playerController = GameNetworkManager.Instance.localPlayerController;
+        if (playerController == null) 
             return;
 
         for (var j = 0; j < mirrorCameras.Length; j++)
@@ -64,7 +64,7 @@ public class TruckMirrorRenderer : MonoBehaviour
         }
 
         if (!UserConfig.MirrorsEnabled.Value ||
-            !PlayerUtils.isSeatedInVan)
+            !VehicleUtils.IsPlayerSeatedInVan(playerController, mainTruckScript))
         {
             leftMirrorMesh.enabled = false;
             centerMirrorMesh.enabled = false;
@@ -84,7 +84,7 @@ public class TruckMirrorRenderer : MonoBehaviour
         var activeCamCount = 0;
         for (var i = 0; i < 3; i++)
         {
-            if (!mirrorMeshes[i].IsVisibleToPlayersLocalCamera(player.gameplayCamera))
+            if (!mirrorMeshes[i].IsVisibleToPlayersLocalCamera(playerController.gameplayCamera))
                 continue;
             activeCamCount++;
         }
@@ -95,7 +95,7 @@ public class TruckMirrorRenderer : MonoBehaviour
         var stopIndex = (nextCameraToRender + mirrorCameras.Length - 1) % mirrorCameras.Length;
         while (cameraRenderCountRemainder >= 0)
         {
-            if (mirrorMeshes[nextCameraToRender].IsVisibleToPlayersLocalCamera(player.gameplayCamera))
+            if (mirrorMeshes[nextCameraToRender].IsVisibleToPlayersLocalCamera(playerController.gameplayCamera))
             {
                 mirrorCameras[nextCameraToRender].enabled = true;
                 cameraRenderCountRemainder--;

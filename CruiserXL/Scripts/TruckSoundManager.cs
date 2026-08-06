@@ -30,9 +30,9 @@ public class TruckSoundManager : MonoBehaviour
         }
     }
 
-    public void LateUpdate()
+    public void Update()
     {
-        if (controller == null)
+        if (controller == null || !controller.IsSpawned)
             return;
 
         if (checkInterval < 0.5f)
@@ -52,20 +52,24 @@ public class TruckSoundManager : MonoBehaviour
             perspectivePlayer = localPlayerController.spectatedPlayerScript;
         }
 
+        bool vehicleDestroyed = controller.carDestroyed;
+
         var perspectiveData = PlayerControllerBPatches.playerData[perspectivePlayer];
 
         bool perspectiveInCab = perspectiveData?.playerRidingInVanCab ?? false;
         bool perspectiveInStorage = perspectiveData?.playerRidingInVanStorage ?? false;
         bool perspectiveInVehicle = perspectiveInCab || perspectiveInStorage;
 
-        controller.roofRainAudioActive = GlobalUtilities.IsItRaining() && perspectiveInVehicle;
-        bool soundAudible = controller.driverSideDoor.boolValue ||
-                            controller.driversSideWindowTrigger.boolValue ||
+        UpdateRainAudio(perspectiveInVehicle);
+        bool soundAudible = vehicleDestroyed || 
+                           (controller.driverSideDoor.boolValue ||
+                            controller.frontLeftWindow.isWindowOpen ||
                             controller.passengerSideDoor.boolValue ||
-                            controller.passengersSideWindowTrigger.boolValue ||
-                            controller.windshieldBroken;
+                            controller.frontRightWindow.isWindowOpen ||
+                            controller.windshieldBroken);
 
-        bool storageOpen = controller.sideDoorOpen || controller.liftGateOpen;
+        bool storageOpen = vehicleDestroyed || 
+                           (controller.sideDoorOpen || controller.liftGateOpen);
 
         for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
         {
@@ -178,5 +182,12 @@ public class TruckSoundManager : MonoBehaviour
             else
                 outsideOcclusion[i].overridingLowPass = false;
         }
+    }
+
+    public void UpdateRainAudio(bool perspectiveInVan = false)
+    {
+        if (controller.carDestroyed)
+            return;
+        controller.roofRainAudioActive = Utilities.IsItRaining() && perspectiveInVan;
     }
 }

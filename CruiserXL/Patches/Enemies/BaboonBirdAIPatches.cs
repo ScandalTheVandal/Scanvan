@@ -11,46 +11,48 @@ public static class BaboonBirdAIPatches
 {
     [HarmonyPatch(nameof(BaboonBirdAI.OnCollideWithPlayer))]
     [HarmonyPrefix]
-    static bool OnCollideWithPlayer_Prefix(BaboonBirdAI __instance, Collider other, bool __runOriginal)
+    static bool BaboonBirdAI_Pre_OnCollideWithPlayer(BaboonBirdAI __instance, Collider other, bool __runOriginal)
     {
         if (!__runOriginal)
             return false;
 
-        CruiserXLController controller = References.vanController;
-        if (controller == null)
+        CruiserXLController vanController = VehicleUtils.vanController;
+        if (vanController == null)
             return true;
 
-        PlayerControllerB playerControllerB = __instance.MeetsStandardPlayerCollisionConditions(other, __instance.inSpecialAnimation || __instance.doingKillAnimation, false);
-        if (playerControllerB == null)
+        PlayerControllerB playerController = 
+            __instance.MeetsStandardPlayerCollisionConditions(other, __instance.inSpecialAnimation || __instance.doingKillAnimation, false);
+        if (playerController == null)
             return true;
 
-        if (VehicleUtils.IsPlayerSeatedInVan())
-        {
-            if (VehicleUtils.IsSeatedPlayerProtected(playerController: playerControllerB, vanController: controller, checkWindows: true, windshieldCheck: true, velocityCheck: true, velocityMagnitude: 5f))
-            {
-                return false;
-            }
-            return true;
-        }
-        bool enemyInVan = VehicleUtils.IsEnemyInVan(enemyScript: __instance, vanController: controller);
-        bool playerInStorage = VehicleUtils.IsPlayerInVanStorage(vanController: controller);
-        bool backDoorsOpen = controller.liftGateOpen || controller.sideDoorOpen;
-        if (VehicleUtils.IsPlayerInVanBounds(vanController: controller))
-        {
-            if (playerInStorage && !backDoorsOpen && !enemyInVan || !playerInStorage && enemyInVan)
-            {
-                return false;
-            }
-            if (VehicleUtils.IsPlayerProtectedByVan(playerController: playerControllerB, vanController: controller, checkWindows: true, windshieldCheck: true, velocityCheck: true, velocityMagnitude: 5f))
-            {
-                return false;
-            }
-            return true;
-        }
-        if (enemyInVan)
-        {
+        BoxCollider truckNavMeshBounds = vanController.collisionTrigger.insideTruckNavMeshBounds;
+        bool enemyInVan = VehicleUtils.IsEnemyInVan(__instance, truckNavMeshBounds);
+        bool playerOnVan = VehicleUtils.IsPlayerInVanBounds(playerController, vanController);
+        bool playerInCab = VehicleUtils.IsPlayerInVanCabin(playerController, vanController);
+        bool playerInStorage = VehicleUtils.IsPlayerInVanStorage(playerController, vanController);
+        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(playerController, vanController);
+        bool storageEnclosed = VehicleUtils.IsVanStorageEnclosed(vanController);
+
+        if (playerSeated)
+            return !VehicleUtils.IsSeatedPlayerProtected(playerController, vanController, checkWindows: true, windshieldCheck: true, velocityCheck: true, velocityMagnitude: 5f);
+
+        if (!playerOnVan)
+            return !enemyInVan;
+
+        bool protectedByStorage =
+            playerInStorage &&
+            storageEnclosed &&
+            !enemyInVan;
+
+        if (protectedByStorage)
             return false;
-        }
-        return true;
+
+        if (enemyInVan && playerInStorage)
+            return true;
+
+        if (!playerInCab)
+            return true;
+
+        return !VehicleUtils.IsPlayerProtectedByVan(playerController, vanController, checkWindows: true, windshieldCheck: true, velocityCheck: true, velocityMagnitude: 5f);
     }
 }

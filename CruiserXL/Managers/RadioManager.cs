@@ -30,7 +30,7 @@ public static class RadioManager
     {
         try
         {
-            Plugin.Logger.LogDebug("Searching Radio API for stations!");
+            Plugin.LogDebug("Searching Radio API for stations.");
 
             var apiUrl = await GetRadioBrowserApiUrl();
             var radioBrowser = new RadioBrowserClient(apiUrl);
@@ -44,12 +44,12 @@ public static class RadioManager
                 (x.UrlResolved.Scheme == Uri.UriSchemeHttp || x.UrlResolved.Scheme == Uri.UriSchemeHttps))
                 .ToList();
 
-            Plugin.Logger.LogDebug("Finished searching radio API for stations.");
-            Plugin.Logger.LogDebug($"Found {_stations.Count}");
+            Plugin.LogDebug("Finished searching radio API for stations.");
+            Plugin.LogDebug($"Found {_stations.Count}.");
         }
         catch (Exception ex)
         {
-            Plugin.Logger.LogError($"Error finding radio stations: {ex.Message}");
+            Plugin.LogError($"Error finding radio stations: {ex.Message}.");
         }
     }
 
@@ -57,8 +57,8 @@ public static class RadioManager
     {
         if (_stations.Count == 0) return null;
         var station = _stations[UnityEngine.Random.Range(0, _stations.Count)];
-        Plugin.Logger.LogDebug(station.Name);
-        Plugin.Logger.LogDebug(station.StationUuid);
+        Plugin.LogDebug(station.Name);
+        Plugin.LogDebug(station.StationUuid.ToString());
         return station;
     }
 
@@ -85,14 +85,14 @@ public static class RadioManager
                 var hostName = (await Dns.GetHostEntryAsync(ipAddress)).HostName;
                 if (string.IsNullOrEmpty(hostName)) continue;
                 var result = await client.GetAsync($"https://{hostName}/");
-                Plugin.Logger.LogDebug($"{hostName}, Is success? {result.IsSuccessStatusCode}, IP? {ipAddress}");
+                Plugin.LogDebug($"Success status code for {hostName}? {result.IsSuccessStatusCode}, Ip for {hostName}? {ipAddress}");
                 if (!result.IsSuccessStatusCode) continue;
                 lastRoundTripTime = reply.RoundtripTime;
                 searchUrl = hostName;
             }
             catch (SocketException)
             {
-                Plugin.Logger.LogWarning("Cannot ping socket!");
+                Plugin.LogWarning("Cannot ping socket.");
             }
         return searchUrl;
     }

@@ -10,60 +10,56 @@ public static class ForestGiantAIPatches
 {
     [HarmonyPatch(nameof(ForestGiantAI.AnimationEventA))]
     [HarmonyPrefix]
-    static bool AnimationEventA_Prefix(ForestGiantAI __instance, bool __runOriginal)
+    static bool ForestGiantAI_Pre_AnimationEventA(ForestGiantAI __instance, bool __runOriginal)
     {
         if (!__runOriginal)
             return false;
 
-        CruiserXLController controller = References.vanController;
-        if (controller == null)
+        CruiserXLController vanController = VehicleUtils.vanController;
+        if (vanController == null)
             return true;
 
-        PlayerControllerB playerControllerB = GameNetworkManager.Instance.localPlayerController;
-        if (playerControllerB == null)
+        PlayerControllerB playerController = GameNetworkManager.Instance.localPlayerController;
+        if (playerController == null)
             return false;
 
-        // do not allow fall death in the truck
-        if (VehicleUtils.IsPlayerInVanCabin(vanController: controller) ||
-            VehicleUtils.IsPlayerInVanStorage(vanController: controller) ||
-            VehicleUtils.IsPlayerSeatedInVan())
+        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(playerController, vanController);
+        bool playerInCab = VehicleUtils.IsPlayerInVanCabin(playerController, vanController);
+        bool playerInStorage = VehicleUtils.IsPlayerInVanStorage(playerController, vanController);
+
+        if (playerSeated ||
+            playerInCab ||
+            playerInStorage)
             return false;
 
-        // not in our truck, run vanilla logic
         return true;
     }
 
     [HarmonyPatch(nameof(ForestGiantAI.OnCollideWithPlayer))]
     [HarmonyPrefix]
-    static bool OnCollideWithPlayer_Prefix(ForestGiantAI __instance, Collider other, bool __runOriginal)
+    static bool ForestGiantAI_Pre_OnCollideWithPlayer(ForestGiantAI __instance, Collider other, bool __runOriginal)
     {
         if (!__runOriginal)
             return false;
 
-        CruiserXLController controller = References.vanController;
-        if (controller == null)
+        CruiserXLController vanController = VehicleUtils.vanController;
+        if (vanController == null)
             return true;
 
-        PlayerControllerB playerControllerB = __instance.MeetsStandardPlayerCollisionConditions(other, __instance.inEatingPlayerAnimation, false);
-        if (playerControllerB == null)
+        PlayerControllerB playerController =
+            __instance.MeetsStandardPlayerCollisionConditions(other, __instance.inEatingPlayerAnimation, false);
+        if (playerController == null)
             return true;
 
-        if (VehicleUtils.IsPlayerSeatedInVan())
-        {
-            if (VehicleUtils.IsSeatedPlayerProtected(playerController: playerControllerB, vanController: controller, checkWindows: true, windshieldCheck: true, velocityCheck: true, velocityMagnitude: 8f))
-            {
-                return false;
-            }
+        bool playerOnVan = VehicleUtils.IsPlayerInVanBounds(playerController, vanController);
+        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(playerController, vanController);
+
+        if (playerSeated)
+            return !VehicleUtils.IsSeatedPlayerProtected(playerController, vanController, checkWindows: true, windshieldCheck: true, velocityCheck: true, velocityMagnitude: 8f);
+
+        if (!playerOnVan)
             return true;
-        }
-        if (VehicleUtils.IsPlayerInVanBounds(vanController: controller))
-        {
-            if (VehicleUtils.IsPlayerProtectedByVan(playerController: playerControllerB, vanController: controller, checkWindows: true, windshieldCheck: true, velocityCheck: true, velocityMagnitude: 8f))
-            {
-                return false;
-            }
-            return true;
-        }
-        return true;
+
+        return !VehicleUtils.IsPlayerProtectedByVan(playerController, vanController, checkWindows: true, windshieldCheck: true, velocityCheck: true, velocityMagnitude: 8f);
     }
 }

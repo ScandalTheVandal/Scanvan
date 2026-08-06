@@ -13,9 +13,6 @@ public class VanPhysicsRegion : PlayerPhysicsRegion
     private float playerInsideInterval;
     private bool playerInsideThisFrame;
 
-    private bool removePlayerFromZoneNextFrame;
-    private float checkZoneInterval;
-
     private bool addedRegionToList;
 
     public bool playerInZone;
@@ -37,7 +34,7 @@ public class VanPhysicsRegion : PlayerPhysicsRegion
             {
                 Transform playerTransform = playerController.isInElevator ? playerController.playersManager.elevatorTransform : playerController.playersManager.playersContainer;
                 playerController.transform.SetParent(playerTransform);
-                Debug.Log($"ScanVan: Player {i} setting parent since physics region was destroyed");
+                Plugin.LogDebug($"ScanVan: Player {i} setting parent since physics region was destroyed.");
             }
         }
         if (!allowDroppingItems || itemDropCollider == null) return;
@@ -114,8 +111,6 @@ public class VanPhysicsRegion : PlayerPhysicsRegion
 
     public void SetPlayerZoneActive()
     {
-        checkZoneInterval = 0f;
-        removePlayerFromZoneNextFrame = false;
         playerInZone = true;
     }
 
@@ -157,7 +152,6 @@ public class VanPhysicsRegion : PlayerPhysicsRegion
         isRegionActive = IsPhysicsRegionActive();
         UpdatePhysicsRegion();
         SetPhysicsRegionAndZone(ref checkInterval, ref removePlayerNextFrame, ref hasLocalPlayer, true);
-        //SetPhysicsRegionAndZone(ref checkZoneInterval, ref removePlayerFromZoneNextFrame, ref playerInZone);
     }
 
     public void UpdatePhysicsRegion()
@@ -166,8 +160,6 @@ public class VanPhysicsRegion : PlayerPhysicsRegion
         {
             if (playerInZone)
             {
-                checkZoneInterval = 0f;
-                removePlayerFromZoneNextFrame = false;
                 playerInZone = false;
             }
             return;

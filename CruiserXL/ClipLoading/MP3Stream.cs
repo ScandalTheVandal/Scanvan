@@ -230,7 +230,7 @@ public class MP3Stream
                 }
                 else if (fullyDownloaded && bufferedSeconds < 0.5)
                 {
-                    Plugin.Logger.LogMessage("Reached end of stream");
+                    Plugin.LogMessage("Reached end of stream.");
                     StopPlayback();
                 }
             }

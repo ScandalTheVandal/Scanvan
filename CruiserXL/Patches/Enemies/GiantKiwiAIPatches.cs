@@ -10,12 +10,12 @@ public static class GiantKiwiAIPatches
 {
     [HarmonyPatch(nameof(GiantKiwiAI.IsEggInsideClosedTruck))]
     [HarmonyPrefix]
-    static bool IsEggInsideClosedTruck_Prefix(GiantKiwiAI __instance, KiwiBabyItem egg, bool closedTruck, ref bool __result, bool __runOriginal)
+    static bool GiantKiwiAI_Pre_IsEggInsideClosedTruck(GiantKiwiAI __instance, KiwiBabyItem egg, bool closedTruck, ref bool __result, bool __runOriginal)
     {
         if (!__runOriginal)
             return false;
 
-        CruiserXLController controller = References.vanController;
+        CruiserXLController controller = VehicleUtils.vanController;
         if (controller == null)
             return true;
 
@@ -29,49 +29,54 @@ public static class GiantKiwiAIPatches
 
     [HarmonyPatch(nameof(GiantKiwiAI.AnimationEventB))]
     [HarmonyPrefix]
-    static void AnimationEventB_Prefix(GiantKiwiAI __instance)
+    static void GiantKiwiAI_Pre_AnimationEventB(GiantKiwiAI __instance)
     {
-        CruiserXLController controller = References.vanController;
-        if (controller == null)
+        CruiserXLController vanController = VehicleUtils.vanController;
+        if (vanController == null)
             return;
 
-        PlayerControllerB playerControllerB = GameNetworkManager.Instance.localPlayerController;
-        if (playerControllerB == null ||
-            !playerControllerB.isPlayerControlled ||
-            playerControllerB.isPlayerDead)
+        PlayerControllerB playerController = GameNetworkManager.Instance.localPlayerController;
+        if (playerController == null ||
+            !playerController.isPlayerControlled ||
+            playerController.isPlayerDead)
             return;
 
+        BoxCollider truckNavMeshBounds = vanController.collisionTrigger.insideTruckNavMeshBounds;
+        bool enemyInVan = VehicleUtils.IsEnemyInVan(__instance, truckNavMeshBounds);
+        bool playerOnVan = VehicleUtils.IsPlayerInVanBounds(playerController, vanController);
+        bool playerInStorage = VehicleUtils.IsPlayerInVanStorage(playerController, vanController);
+        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(playerController, vanController);
+        bool storageEnclosed = VehicleUtils.IsVanStorageEnclosed(vanController);
 
-        if (VehicleUtils.IsPlayerSeatedInVan())
+        if (playerSeated)
         {
-            if (VehicleUtils.IsSeatedPlayerProtected(playerController: playerControllerB, vanController: controller, checkWindows: true, windshieldCheck: true, velocityCheck: true, velocityMagnitude: 10f))
-            {
+            if (VehicleUtils.IsSeatedPlayerProtected(playerController, vanController, checkWindows: true, windshieldCheck: true, velocityCheck: true, velocityMagnitude: 10f))
                 __instance.timeSinceHittingPlayer = 0.4f;
-            }
             return;
         }
 
-        bool enemyInVan = VehicleUtils.IsEnemyInVan(enemyScript: __instance, vanController: controller);
-        bool playerInStorage = VehicleUtils.IsPlayerInVanStorage(vanController: controller);
-        bool backDoorsOpen = controller.liftGateOpen || controller.sideDoorOpen;
-        if (VehicleUtils.IsPlayerInVanBounds(vanController: controller))
+        if (!playerOnVan)
         {
-            if (playerInStorage && !backDoorsOpen && !enemyInVan || !playerInStorage && enemyInVan)
-            {
+            if (enemyInVan)
                 __instance.timeSinceHittingPlayer = 0.4f;
-                return;
-            }
-            if (VehicleUtils.IsPlayerProtectedByVan(playerController: playerControllerB, vanController: controller, checkWindows: true, windshieldCheck: true, velocityCheck: true, velocityMagnitude: 10f))
-            {
-                __instance.timeSinceHittingPlayer = 0.4f;
-                return;
-            }
             return;
         }
-        if (enemyInVan)
+
+        bool protectedByStorage =
+            playerInStorage &&
+            storageEnclosed &&
+            !enemyInVan;
+
+        if (protectedByStorage)
         {
             __instance.timeSinceHittingPlayer = 0.4f;
             return;
         }
+
+        if (enemyInVan && playerInStorage)
+            return;
+
+        if (VehicleUtils.IsPlayerProtectedByVan(playerController, vanController, checkWindows: true, windshieldCheck: true, velocityCheck: true, velocityMagnitude: 10f))
+            __instance.timeSinceHittingPlayer = 0.4f;
     }
 }

@@ -80,7 +80,7 @@ public class VanPlayerZone : MonoBehaviour
             physicsCollider.enabled = false;
             return;
         }
-        if (VehicleUtils.IsPlayerSeatedInVan())
+        if (VehicleUtils.IsPlayerSeatedInVan(GameNetworkManager.Instance.localPlayerController, vanController))
         {
             if (setInZoneWhileSeated)
             {

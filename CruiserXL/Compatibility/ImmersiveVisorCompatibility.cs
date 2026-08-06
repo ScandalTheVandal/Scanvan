@@ -1,15 +1,6 @@
-﻿using BepInEx.Bootstrap;
-using ScanVan.Utils;
-using GameNetcodeStuff;
+﻿using GameNetcodeStuff;
 using HarmonyLib;
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
-using Unity.Netcode;
-using UnityEngine;
-using System.Runtime.CompilerServices;
-using UnityEngine.VFX;
+using ScanVan.Utils;
 using Woecust.ImmersiveVisor;
 
 namespace ScanVan.Compatibility;
@@ -21,32 +12,21 @@ namespace ScanVan.Compatibility;
 ///  Available from BrutalCompanyMinusExtraReborn, licensed under GNU General Public License.
 ///  Source: https://github.com/TheSoftDiamond/BrutalCompanyMinusExtraReborn
 /// </summary>
-
+[HarmonyPatch]
 public static class ImmersiveVisorCompatibility
 {
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    public static void PatchAllCompatibilityMethods(Harmony harmony)
-    {
-        ApplyVisorPatch(harmony);
-    }
-
+    [HarmonyPatch(typeof(VisorRainState), nameof(VisorRainState.LineCastForCeiling))]
     [HarmonyPrefix]
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    public static void ApplyVisorPatch(Harmony harmony)
+    public static bool VisorRainState_Pre_LineCastForCeiling(VisorRainState __instance, ref bool __result)
     {
-        var linecastMethod = AccessTools.Method(typeof(VisorRainState), nameof(VisorRainState.LineCastForCeiling));
-        var prefixLinecastMethod = AccessTools.Method(typeof(ImmersiveVisorCompatibility), nameof(LineCastForCeiling_Prefix));
-
-        harmony.Patch(linecastMethod, prefix: new HarmonyMethod(prefixLinecastMethod));
-    }
-
-    public static bool LineCastForCeiling_Prefix(VisorRainState __instance, ref bool __result)
-    {
-        CruiserXLController controller = References.vanController;
-        if (controller == null)
+        CruiserXLController vanController = VehicleUtils.vanController;
+        if (vanController == null)
             return true;
 
-        if (PlayerUtils.isSeatedInVan || VehicleUtils.IsPlayerInVanCabin(controller) || VehicleUtils.IsPlayerInVanStorage(controller))
+        PlayerControllerB playerController = GameNetworkManager.Instance.localPlayerController;
+        if (VehicleUtils.IsPlayerSeatedInVan(playerController, vanController) || 
+            VehicleUtils.IsPlayerInVanCabin(playerController, vanController) || 
+            VehicleUtils.IsPlayerInVanStorage(playerController, vanController))
         {
             __result = true;
             return false;

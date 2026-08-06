@@ -9,28 +9,27 @@ public static class SandWormAIPatches
 {
     [HarmonyPatch(nameof(SandWormAI.EatPlayer))]
     [HarmonyPrefix]
-    static bool EatPlayer_Prefix(SandWormAI __instance, PlayerControllerB playerScript, bool __runOriginal)
+    static bool SandWormAI_Pre_EatPlayer(SandWormAI __instance, PlayerControllerB playerScript, bool __runOriginal)
     {
         if (!__runOriginal)
             return false;
 
-        CruiserXLController controller = References.vanController;
-        if (controller == null)
+        CruiserXLController vanController = VehicleUtils.vanController;
+        if (vanController == null)
             return true;
 
-        if (VehicleUtils.IsPlayerSeatedInVan())
-        {
+        bool playerOnVan = VehicleUtils.IsPlayerInVanBounds(playerScript, vanController);
+        bool playerInCab = VehicleUtils.IsPlayerInVanCabin(playerScript, vanController);
+        bool playerInStorage = VehicleUtils.IsPlayerInVanStorage(playerScript, vanController);
+        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(playerScript, vanController);
+
+        if (playerSeated)
             return false;
-        }
-        if (VehicleUtils.IsPlayerInVanBounds(vanController: controller))
-        {
-            if (VehicleUtils.IsPlayerInVanCabin(vanController: controller) ||
-                VehicleUtils.IsPlayerInVanStorage(vanController: controller))
-            {
-                return false;
-            }
+
+        if (!playerOnVan)
             return true;
-        }
-        return true;
+
+        return !playerInCab &&
+               !playerInStorage;
     }
 }

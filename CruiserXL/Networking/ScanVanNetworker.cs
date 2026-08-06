@@ -27,7 +27,7 @@ internal class ScanVanNetworker : NetworkBehaviour
     {
         if (networkPrefab != null)
         {
-            Plugin.Logger.LogDebug("Skipped network handler registration, because it has already been initialized");
+            Plugin.LogDebug("Skipped network handler registration, because it has already been initialized.");
             return;
         }
         try
@@ -49,12 +49,12 @@ internal class ScanVanNetworker : NetworkBehaviour
             // register it, and then it can be spawned
             NetworkManager.Singleton.PrefabHandler.AddNetworkPrefab(networkPrefab);
 
-            Plugin.Logger.LogDebug("Successfully registered network handler. This is good news!");
+            Plugin.LogDebug("Successfully registered network handler. This is good news.");
             return;
         }
         catch (System.Exception e)
         {
-            Plugin.Logger.LogError($"Encountered some fatal error while registering network handler. The mod will not function like this!\n{e}");
+            Plugin.LogError($"Encountered some fatal error while registering network handler. The mod will not function like this.\n{e}");
         }
     }
 
@@ -67,7 +67,7 @@ internal class ScanVanNetworker : NetworkBehaviour
         }
         catch
         {
-            Plugin.Logger.LogError($"Encountered some fatal error while spawning network handler. It is likely that registration failed earlier on start-up, please consult your logs.");
+            Plugin.LogError($"Encountered some fatal error while spawning network handler. It is likely that registration failed earlier on start-up, please consult your logs.");
         }
     }
 
@@ -84,11 +84,11 @@ internal class ScanVanNetworker : NetworkBehaviour
             if (Instance != null && Instance.TryGetComponent(out NetworkObject netObj) && !netObj.IsSpawned && Instance != networkPrefab)
                 Destroy(Instance);
 
-            Plugin.Logger.LogWarning($"There are 2 {nameof(ScanVanNetworker)}s instantiated, and the wrong one was assigned as Instance. This shouldn't happen, but is recoverable");
+            Plugin.LogWarning($"There are 2 {nameof(ScanVanNetworker)}s instantiated, and the wrong one was assigned as Instance. This shouldn't happen, but is recoverable.");
 
             Instance = this;
         }
-        Plugin.Logger.LogDebug("Successfully spawned network handler.");
+        Plugin.LogDebug("Successfully spawned network handler.");
     }
 
     // --- NETWORKING ---
@@ -103,7 +103,7 @@ internal class ScanVanNetworker : NetworkBehaviour
     }
 
     // config
-    internal NetworkVariable<bool> NoMusic { get; private set; } = new NetworkVariable<bool>(value: true, writePerm: NetworkVariableWritePermission.Server, readPerm: NetworkVariableReadPermission.Everyone);
+    internal NetworkVariable<bool> StreamerRadio { get; private set; } = new NetworkVariable<bool>(value: true, writePerm: NetworkVariableWritePermission.Server, readPerm: NetworkVariableReadPermission.Everyone);
 
     void UpdateConfig()
     {
@@ -111,32 +111,30 @@ internal class ScanVanNetworker : NetworkBehaviour
             return;
 
         // grab all values that should be server synced
-        NoMusic.Value = (bool)UserConfig.NoMusic.Value;
+        StreamerRadio.Value = (bool)UserConfig.StreamerRadio.Value;
     }
 
     [Rpc(SendTo.NotMe, RequireOwnership = false)]
-    internal void SyncPlayerZoneRpc(NetworkObjectReference player, bool setSeated, bool setStorage, bool setCab, bool setRiding)
+    internal void SyncPlayerZoneRpc(NetworkObjectReference player, bool setStorage, bool setCab, bool setRiding)
     {
         if (player.TryGet(out NetworkObject netObj))
         {
             if (!netObj.TryGetComponent<PlayerControllerB>(out var playerObj))
             {
-                Plugin.Logger.LogError("ScanVan: Failed to find player network object!");
+                Plugin.LogError("Failed to find player network object!");
                 return;
             }
             var playerObjData = PlayerControllerBPatches.playerData[playerObj];
             if (playerObjData == null)
             {
-                Plugin.Logger.LogError($"ScanVan: Failed to find player data. clientId? {playerObj.playerClientId}");
+                Plugin.LogError($"Failed to find player data. clientId? {playerObj.playerClientId}");
                 return;
             }
-            //Plugin.Logger.LogDebug($"ScanVan: Setting zones for player {playerObj.playerClientId} with params: seated? {setSeated}, storage? {setStorage}, cabin? {setCab}, riding? {setRiding}");
-            playerObjData.playerSeatedInVan = setSeated;
             playerObjData.playerRidingInVanCab = setCab;
             playerObjData.playerRidingInVanStorage = setStorage;
             playerObjData.playerRidingOnVan = setRiding;
         }
         else
-            Plugin.Logger.LogError($"ScanVan: Failed to set player zone data.");
+            Plugin.LogError("Failed to set player zone data.");
     }
 }

@@ -1,19 +1,11 @@
-﻿using BepInEx.Bootstrap;
-using ScanVan.Utils;
-using GameNetcodeStuff;
+﻿using GameNetcodeStuff;
 using HarmonyLib;
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
-using Unity.Netcode;
+using ScanVan.Utils;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using VoxxWeatherPlugin.Patches;
-using System.Runtime.CompilerServices;
-using VoxxWeatherPlugin.Weathers;
 using VoxxWeatherPlugin.Utils;
-using UnityEngine.VFX;
-using UnityEngine.InputSystem.XR;
+using VoxxWeatherPlugin.Weathers;
 
 namespace ScanVan.Compatibility;
 
@@ -24,88 +16,76 @@ namespace ScanVan.Compatibility;
 ///  Available from BrutalCompanyMinusExtraReborn, licensed under GNU General Public License.
 ///  Source: https://github.com/TheSoftDiamond/BrutalCompanyMinusExtraReborn
 /// </summary>
-
+[HarmonyPatch]
 public static class LethalElementsCompatibility
 {
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    public static void PatchAllCompatibilityMethods(Harmony harmony)
+    public static bool IsVanCabinEnclosed(CruiserXLController controller)
     {
-        ApplyElementsPatch(harmony);
+        return !controller.driverSideDoor.boolValue && !controller.passengerSideDoor.boolValue &&
+               !controller.frontLeftWindow.isWindowOpen && !controller.frontRightWindow.isWindowOpen &&
+               !controller.windshieldBroken;
     }
 
+    public static bool IsVanBlowerOnAndHot(CruiserXLController controller)
+    {
+        return controller.ignitionStarted && 
+               controller.heaterOn && 
+               controller.isHeaterWarm && 
+               !controller.isHeaterCold;
+    }
+
+    public static bool IsVanBlowerOnAndCool(CruiserXLController controller)
+    {
+        return controller.ignitionStarted &&
+               controller.heaterOn &&
+               !controller.isHeaterWarm &&
+               controller.isHeaterCold;
+    }
+
+    public static bool IsIndoorLighting(PlayerControllerB playerScript)
+    {
+        return playerScript.currentAudioTrigger != null && playerScript.currentAudioTrigger.insideLighting;
+    }
+
+    [HarmonyPatch(typeof(PlayerEffectsManager), nameof(PlayerEffectsManager.SetPlayerTemperature))]
     [HarmonyPrefix]
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
-    public static void ApplyElementsPatch(Harmony harmony)
-    {
-        var originalSetTempMethod = AccessTools.Method(typeof(PlayerEffectsManager), nameof(PlayerEffectsManager.SetPlayerTemperature));
-        var originalHeatwaveStopMethod = AccessTools.Method(typeof(HeatwavePatches), nameof(HeatwavePatches.CheckConditionsForHeatingStop));
-        var originalHeatwavePauseMethod = AccessTools.Method(typeof(HeatwavePatches), nameof(HeatwavePatches.CheckConditionsForHeatingPause));
-        var originalUpdateMethod = AccessTools.Method(typeof(BlizzardWeather), nameof(BlizzardWeather.Update));
-        var originalVFXUpdateMethod = AccessTools.Method(typeof(SnowfallVFXManager), nameof(SnowfallVFXManager.Update));
-        var originalSetZoneMethod = AccessTools.Method(typeof(BlizzardWeather), nameof(BlizzardWeather.SetColdZoneState));
-        var originalBaseSetZoneMethod = AccessTools.Method(typeof(SnowfallWeather), nameof(SnowfallWeather.SetColdZoneState));
-
-        // patching my own shit???
-        // yeah, i am, try and stop me if you can
-        var originalVehicleStartMethod = AccessTools.Method(typeof(CruiserXLController), nameof(CruiserXLController.Start));
-        var originalVehicleFixedUpdateMethod = AccessTools.Method(typeof(CruiserXLController), nameof(CruiserXLController.FixedUpdate));
-
-        var prefixSetTempMethod = AccessTools.Method(typeof(LethalElementsCompatibility), nameof(SetPlayerTemperature_Heatwave));
-        var prefixHeatwaveStopMethod = AccessTools.Method(typeof(LethalElementsCompatibility), nameof(CheckConditionsForHeatingStop_Prefix));
-        var prefixHeatwavePauseMethod = AccessTools.Method(typeof(LethalElementsCompatibility), nameof(CheckConditionsForHeatingPause_Prefix));
-        var prefixUpdateMethod = AccessTools.Method(typeof(LethalElementsCompatibility), nameof(Update_Prefix));
-        var postfixVFXUpdateMethod = AccessTools.Method(typeof(LethalElementsCompatibility), nameof(VFXUpdate_Postfix));
-        var prefixSetZoneMethod = AccessTools.Method(typeof(LethalElementsCompatibility), nameof(SetColdZoneState_Prefix));
-        var prefixBaseSetZoneMethod = AccessTools.Method(typeof(LethalElementsCompatibility), nameof(SetBaseColdZoneState_Prefix));
-
-        // and again
-        var prefixVehicleStartMethod = AccessTools.Method(typeof(LethalElementsCompatibility), nameof(VehicleSnowTracksPatch_Prefix));
-        var prefixVehicleFixedUpdateMethod = AccessTools.Method(typeof(LethalElementsCompatibility), nameof(VehicleSnowTracksFixedUpdatePatch_Prefix));
-
-        harmony.Patch(originalHeatwaveStopMethod, prefix: new HarmonyMethod(prefixHeatwaveStopMethod));
-        harmony.Patch(originalHeatwavePauseMethod, prefix: new HarmonyMethod(prefixHeatwavePauseMethod));
-        harmony.Patch(originalSetTempMethod, prefix: new HarmonyMethod(prefixSetTempMethod));
-        harmony.Patch(originalUpdateMethod, prefix: new HarmonyMethod(prefixUpdateMethod));
-        harmony.Patch(originalVFXUpdateMethod, postfix: new HarmonyMethod(postfixVFXUpdateMethod));
-        harmony.Patch(originalSetZoneMethod, prefix: new HarmonyMethod(prefixSetZoneMethod));
-        harmony.Patch(originalBaseSetZoneMethod, prefix: new HarmonyMethod(prefixBaseSetZoneMethod));
-
-        harmony.Patch(originalVehicleStartMethod, prefix: new HarmonyMethod(prefixVehicleStartMethod));
-        harmony.Patch(originalVehicleFixedUpdateMethod, prefix: new HarmonyMethod(prefixVehicleFixedUpdateMethod));
-    }
-
-    // hacky method to alter the heat transfer rate during heatwave
-    public static void SetPlayerTemperature_Heatwave(PlayerEffectsManager __instance, float temperatureDelta)
+    public static void PlayerEffectsManager_Pre_SetPlayerTemperature(PlayerEffectsManager __instance, float temperatureDelta)
     {
         if (HeatwaveWeather.Instance == null || !HeatwaveWeather.Instance.IsActive)
             return;
 
-        CruiserXLController controller = References.vanController;
-        if (controller == null)
+        CruiserXLController vanController = VehicleUtils.vanController;
+        if (vanController == null)
             return;
 
-        if (!VehicleUtils.IsPlayerInVanBounds(controller) &&
-            !VehicleUtils.IsPlayerInVanCabin(controller) &&
-            !VehicleUtils.IsPlayerInVanStorage(controller))
+        PlayerControllerB playerController = GameNetworkManager.Instance.localPlayerController;
+
+        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(playerController, vanController);
+        bool playerOnVan = VehicleUtils.IsPlayerInVanBounds(playerController, vanController);
+        bool playerInCab = VehicleUtils.IsPlayerInVanCabin(playerController, vanController);
+        bool playerInStorage = VehicleUtils.IsPlayerInVanStorage(playerController, vanController);
+
+        if (!playerSeated &&
+            !playerOnVan &&
+            !playerInCab &&
+            !playerInStorage)
             return;
 
-        bool isCabEnclosed = !controller.driverSideDoor.boolValue && !controller.passengerSideDoor.boolValue &&
-             !controller.driversSideWindowTrigger.boolValue && !controller.passengersSideWindowTrigger.boolValue &&
-             !controller.windshieldBroken;
-        bool isStorageEnclosed = !controller.liftGateOpen && !controller.sideDoorOpen;
-        bool isHeaterOnAndCool = controller.ignitionStarted && controller.heaterOn && !controller.isHeaterWarm && controller.isHeaterCold;
-        bool isHeaterOnAndWarm = controller.ignitionStarted && controller.heaterOn && controller.isHeaterWarm && !controller.isHeaterCold;
-        bool outsideOfTruck = VehicleUtils.IsPlayerInVanBounds(controller) && !VehicleUtils.IsPlayerInVanCabin(controller) && !VehicleUtils.IsPlayerInVanStorage(controller);
-        PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
-        bool inDoorLighting = localPlayer.currentAudioTrigger != null && localPlayer.currentAudioTrigger.insideLighting;
+        bool playerInCabOrSeated = playerSeated || playerInCab;
+        bool isCabEnclosed = IsVanCabinEnclosed(vanController);
+        bool isStorageEnclosed = VehicleUtils.IsVanStorageEnclosed(vanController);
+        bool isHeaterOnAndCool = IsVanBlowerOnAndCool(vanController);
+        bool isHeaterOnAndWarm = IsVanBlowerOnAndHot(vanController);
+        bool outsideOfTruck = VehicleUtils.IsPlayerOnOutsideOfVan(playerController, vanController);
+        bool inDoorLighting = IsIndoorLighting(playerController);
 
-        if ((VehicleUtils.IsPlayerInVanCabin(controller) && isCabEnclosed) ||
-            (VehicleUtils.IsPlayerInVanStorage(controller) && isStorageEnclosed))
+        if ((playerInCabOrSeated && isCabEnclosed) || 
+             (playerInStorage && isStorageEnclosed))
         {
             if (!inDoorLighting)
             {
-                if (isHeaterOnAndCool) PlayerEffectsManager.heatTransferRate = 0.25f * controller.heaterSpeed;
-                else if (isHeaterOnAndWarm) PlayerEffectsManager.heatTransferRate = 1.15f * controller.heaterSpeed;
+                if (isHeaterOnAndCool) PlayerEffectsManager.heatTransferRate = 0.25f * vanController.heaterSpeed;
+                else if (isHeaterOnAndWarm) PlayerEffectsManager.heatTransferRate = 1.15f * vanController.heaterSpeed;
                 else PlayerEffectsManager.heatTransferRate = 0.75f;
             }
             else PlayerEffectsManager.heatTransferRate = 1f;
@@ -114,144 +94,180 @@ public static class LethalElementsCompatibility
         if (outsideOfTruck) PlayerEffectsManager.heatTransferRate = 1f;
     }
 
-    public static void VehicleSnowTracksPatch_Prefix(CruiserXLController __instance)
+    [HarmonyPatch(typeof(CruiserXLController), nameof(CruiserXLController.Start))]
+    [HarmonyPostfix]
+    public static void CruiserXLController_Post_Start(CruiserXLController __instance)
     {
         SnowTrackersManager.AddFootprintTracker(__instance, 6f, 0.75f, 1f, new Vector3(0, 0, -1f));
     }
 
-    public static void VehicleSnowTracksFixedUpdatePatch_Prefix(CruiserXLController __instance)
+    [HarmonyPatch(typeof(CruiserXLController), nameof(CruiserXLController.FixedUpdate))]
+    [HarmonyPostfix]
+    public static void CruiserXLController_Post_FixedUpdate(CruiserXLController __instance)
     {
         if (!SnowPatches.IsSnowActive())
         {
             return;
         }
-
-        bool enableTracker = __instance.FrontLeftWheel.isGrounded ||
-                                __instance.FrontRightWheel.isGrounded ||
-                                __instance.BackLeftWheel.isGrounded ||
-                                __instance.BackRightWheel.isGrounded;
-        SnowTrackersManager.UpdateFootprintTracker(__instance, enableTracker);
+        SnowTrackersManager.UpdateFootprintTracker(__instance, !__instance.allWheelsAirborne);
     }
 
-    public static void VFXUpdate_Postfix()
+    [HarmonyPatch(typeof(SnowfallVFXManager), nameof(SnowfallVFXManager.Update))]
+    [HarmonyPostfix]
+    public static void SnowfallVFXManager_Post_Update_VFX()
     {
-        CruiserXLController controller = References.vanController;
-        if (controller == null)
+        CruiserXLController vanController = VehicleUtils.vanController;
+        if (vanController == null)
             return;
 
-        if (!VehicleUtils.IsPlayerInVanBounds(controller) &&
-            !VehicleUtils.IsPlayerInVanCabin(controller) &&
-            !VehicleUtils.IsPlayerInVanStorage(controller))
+        PlayerControllerB playerController = GameNetworkManager.Instance.localPlayerController;
+
+        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(playerController, vanController);
+        bool playerOnVan = VehicleUtils.IsPlayerInVanBounds(playerController, vanController);
+        bool playerInCab = VehicleUtils.IsPlayerInVanCabin(playerController, vanController);
+        bool playerInStorage = VehicleUtils.IsPlayerInVanStorage(playerController, vanController);
+
+        if (!playerSeated &&
+            !playerOnVan &&
+            !playerInCab &&
+            !playerInStorage)
             return;
 
-        if (VehicleUtils.IsPlayerInVanCabin(controller) || VehicleUtils.IsPlayerInVanStorage(controller))
+        bool playerInCabOrStorage = playerSeated || playerInCab || playerInStorage;
+        if (playerInCabOrStorage)
         {
             PlayerEffectsManager.isUnderSnow = false;
             SnowfallVFXManager.snowMovementHindranceMultiplier = 1f;
         }
     }
 
-    public static bool SetColdZoneState_Prefix(BlizzardWeather __instance)
+    [HarmonyPatch(typeof(BlizzardWeather), nameof(BlizzardWeather.SetColdZoneState))]
+    [HarmonyPrefix]
+    public static bool BlizzardWeather_Pre_SetColdZoneState(BlizzardWeather __instance)
     {
-        CruiserXLController controller = References.vanController;
-        if (controller == null)
+        CruiserXLController vanController = VehicleUtils.vanController;
+        if (vanController == null)
             return true;
 
-        if (VehicleUtils.IsPlayerInVanBounds(controller) ||
-            VehicleUtils.IsPlayerInVanCabin(controller) ||
-            VehicleUtils.IsPlayerInVanStorage(controller))
+        PlayerControllerB playerController = GameNetworkManager.Instance.localPlayerController;
+
+        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(playerController, vanController);
+        bool playerOnVan = VehicleUtils.IsPlayerInVanBounds(playerController, vanController);
+        bool playerInCab = VehicleUtils.IsPlayerInVanCabin(playerController, vanController);
+        bool playerInStorage = VehicleUtils.IsPlayerInVanStorage(playerController, vanController);
+
+        if (playerSeated ||
+            playerOnVan ||
+            playerInCab ||
+            playerInStorage)
             return false;
+
         return true;
     }
 
-    public static bool SetBaseColdZoneState_Prefix(SnowfallWeather __instance)
+    [HarmonyPatch(typeof(SnowfallWeather), nameof(SnowfallWeather.SetColdZoneState))]
+    [HarmonyPrefix]
+    public static bool SnowfallWeather_Pre_SetColdZoneState(SnowfallWeather __instance)
     {
         if (BlizzardWeather.Instance == null)
             return true;
 
-        CruiserXLController controller = References.vanController;
-        if (controller == null)
+        CruiserXLController vanController = VehicleUtils.vanController;
+        if (vanController == null)
             return true;
 
-        if (!VehicleUtils.IsPlayerInVanBounds(controller) &&
-            !VehicleUtils.IsPlayerInVanCabin(controller) &&
-            !VehicleUtils.IsPlayerInVanStorage(controller))
+        PlayerControllerB playerController = GameNetworkManager.Instance.localPlayerController;
+
+        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(playerController, vanController);
+        bool playerOnVan = VehicleUtils.IsPlayerInVanBounds(playerController, vanController);
+        bool playerInCab = VehicleUtils.IsPlayerInVanCabin(playerController, vanController);
+        bool playerInStorage = VehicleUtils.IsPlayerInVanStorage(playerController, vanController);
+
+        if (!playerSeated &&
+            !playerOnVan &&
+            !playerInCab &&
+            !playerInStorage)
             return true;
 
-        bool isCabEnclosed = !controller.driverSideDoor.boolValue && !controller.passengerSideDoor.boolValue &&
-            !controller.driversSideWindowTrigger.boolValue && !controller.passengersSideWindowTrigger.boolValue &&
-            !controller.windshieldBroken;
-        bool isStorageEnclosed = !controller.liftGateOpen && !controller.sideDoorOpen;
-        bool outsideOfTruck = VehicleUtils.IsPlayerInVanBounds(controller) && !VehicleUtils.IsPlayerInVanCabin(controller) && !VehicleUtils.IsPlayerInVanStorage(controller);
-        PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
-        bool inDoorLighting = localPlayer.currentAudioTrigger != null && localPlayer.currentAudioTrigger.insideLighting;
+        bool playerInCabOrSeated = playerSeated || playerInCab;
+        bool isCabEnclosed = IsVanCabinEnclosed(vanController);
+        bool isStorageEnclosed = VehicleUtils.IsVanStorageEnclosed(vanController);
+        bool outsideOfTruck = VehicleUtils.IsPlayerOnOutsideOfVan(playerController, vanController);
+        bool inDoorLighting = IsIndoorLighting(playerController);
 
-        if (VehicleUtils.IsPlayerInVanCabin(controller))
+        if (playerInCabOrSeated)
         {
             if (isCabEnclosed)
             {
-                if (controller.ignitionStarted && controller.heaterOn)
-                    PlayerEffectsManager.isInColdZone = controller.isHeaterCold;
+                if (vanController.ignitionStarted && vanController.heaterOn)
+                    PlayerEffectsManager.isInColdZone = vanController.isHeaterCold;
                 else PlayerEffectsManager.isInColdZone = !inDoorLighting;
             }
             else
             {
-                PlayerEffectsManager.isInColdZone = IsWindAllowedVehicle(localPlayer, controller) && BlizzardWeather.Instance.isLocalPlayerInWind;
+                PlayerEffectsManager.isInColdZone = IsWindAllowedVehicle(playerController, vanController) && BlizzardWeather.Instance.isLocalPlayerInWind;
             }
             return false;
         }
-        else if (VehicleUtils.IsPlayerInVanStorage(controller))
+        else if (playerInStorage)
         {
             if (isStorageEnclosed)
             {
-                if (controller.ignitionStarted && controller.heaterOn)
-                    PlayerEffectsManager.isInColdZone = controller.isHeaterCold;
+                if (vanController.ignitionStarted && vanController.heaterOn)
+                    PlayerEffectsManager.isInColdZone = vanController.isHeaterCold;
                 else PlayerEffectsManager.isInColdZone = !inDoorLighting;
             }
             else
             {
-                PlayerEffectsManager.isInColdZone = IsWindAllowedVehicle(localPlayer, controller) && BlizzardWeather.Instance.isLocalPlayerInWind;
+                PlayerEffectsManager.isInColdZone = IsWindAllowedVehicle(playerController, vanController) && BlizzardWeather.Instance.isLocalPlayerInWind;
             }
             return false;
         }
         else if (outsideOfTruck)
         {
-            PlayerEffectsManager.isInColdZone = IsWindAllowedVehicle(localPlayer, controller) && BlizzardWeather.Instance.isLocalPlayerInWind;
+            PlayerEffectsManager.isInColdZone = IsWindAllowedVehicle(playerController, vanController) && BlizzardWeather.Instance.isLocalPlayerInWind;
             return false;
         }
         return true;
     }
 
-    public static bool Update_Prefix(BlizzardWeather __instance)
+    [HarmonyPatch(typeof(BlizzardWeather), nameof(BlizzardWeather.Update))]
+    [HarmonyPrefix]
+    public static bool BlizzardWeather_Pre_Update(BlizzardWeather __instance)
     {
-        CruiserXLController controller = References.vanController;
-        if (controller == null)
+        CruiserXLController vanController = VehicleUtils.vanController;
+        if (vanController == null)
             return true;
 
-        if (!VehicleUtils.IsPlayerInVanBounds(controller) &&
-            !VehicleUtils.IsPlayerInVanCabin(controller) &&
-            !VehicleUtils.IsPlayerInVanStorage(controller))
+        PlayerControllerB playerController = GameNetworkManager.Instance.localPlayerController;
+
+        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(playerController, vanController);
+        bool playerOnVan = VehicleUtils.IsPlayerInVanBounds(playerController, vanController);
+        bool playerInCab = VehicleUtils.IsPlayerInVanCabin(playerController, vanController);
+        bool playerInStorage = VehicleUtils.IsPlayerInVanStorage(playerController, vanController);
+
+        if (!playerSeated &&
+            !playerOnVan &&
+            !playerInCab &&
+            !playerInStorage)
             return true;
 
-        bool isCabEnclosed = !controller.driverSideDoor.boolValue && !controller.passengerSideDoor.boolValue &&
-            !controller.driversSideWindowTrigger.boolValue && !controller.passengersSideWindowTrigger.boolValue &&
-            !controller.windshieldBroken;
-        bool isStorageEnclosed = !controller.liftGateOpen && !controller.sideDoorOpen;
-        bool inCabOrStorage = VehicleUtils.IsPlayerInVanCabin(controller) || VehicleUtils.IsPlayerInVanStorage(controller);
-        bool outsideOfTruck = VehicleUtils.IsPlayerInVanBounds(controller) && !VehicleUtils.IsPlayerInVanCabin(controller) && !VehicleUtils.IsPlayerInVanStorage(controller);
-        PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
-        bool inDoorLighting = localPlayer.currentAudioTrigger != null && localPlayer.currentAudioTrigger.insideLighting;
+        bool isCabEnclosed = IsVanCabinEnclosed(vanController);
+        bool isStorageEnclosed = VehicleUtils.IsVanStorageEnclosed(vanController);
+        bool playerInCabOrStorage = playerSeated || playerInCab || playerInStorage;
+        bool outsideOfTruck = VehicleUtils.IsPlayerOnOutsideOfVan(playerController, vanController);
+        bool inDoorLighting = IsIndoorLighting(playerController);
+        bool playerInCabOrSeated = playerSeated || playerInCab;
 
         SnowfallWeather.Instance?.Update();
 
-        if (inCabOrStorage)
+        if (playerInCabOrStorage)
         {
-            if ((VehicleUtils.IsPlayerInVanCabin(controller) && isCabEnclosed) ||
-                (VehicleUtils.IsPlayerInVanStorage(controller) && isStorageEnclosed)) __instance.isPlayerInBlizzard = false;
+            if ((playerInCabOrSeated && isCabEnclosed) || (playerInStorage && isStorageEnclosed)) __instance.isPlayerInBlizzard = false;
             else __instance.isPlayerInBlizzard = __instance.isLocalPlayerInWind;
 
-            if (controller.ignitionStarted && controller.heaterOn)
-                PlayerEffectsManager.heatTransferRate = (0.25f * controller.heaterSpeed);
+            if (vanController.ignitionStarted && vanController.heaterOn)
+                PlayerEffectsManager.heatTransferRate = (0.25f * vanController.heaterSpeed);
             else PlayerEffectsManager.heatTransferRate = 0.75f;
         }
         if (outsideOfTruck)
@@ -262,19 +278,20 @@ public static class LethalElementsCompatibility
         return false;
     }
 
-    public static bool IsWindAllowedVehicle(PlayerControllerB localPlayer, CruiserXLController controller)
+    public static bool IsWindAllowedVehicle(PlayerControllerB playerController, CruiserXLController vanController)
     {
-        if (localPlayer.currentAudioTrigger != null &&
-                localPlayer.currentAudioTrigger.insideLighting) return false;
+        if (IsIndoorLighting(playerController)) return false;
 
-        bool isCabEnclosed = !controller.driverSideDoor.boolValue && !controller.passengerSideDoor.boolValue &&
-            !controller.driversSideWindowTrigger.boolValue && !controller.passengersSideWindowTrigger.boolValue &&
-            !controller.windshieldBroken;
-        bool isStorageEnclosed = !controller.liftGateOpen && !controller.sideDoorOpen;
-        bool outsideOfTruck = VehicleUtils.IsPlayerInVanBounds(controller) && !VehicleUtils.IsPlayerInVanCabin(controller) && !VehicleUtils.IsPlayerInVanStorage(controller);
+        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(playerController, vanController);
+        bool playerInCab = VehicleUtils.IsPlayerInVanCabin(playerController, vanController);
+        bool playerInCabOrSeated = playerSeated || playerInCab;
+        bool isCabEnclosed = IsVanCabinEnclosed(vanController);
+        bool playerInStorage = VehicleUtils.IsPlayerInVanStorage(playerController, vanController);
+        bool isStorageEnclosed = VehicleUtils.IsVanStorageEnclosed(vanController);
+        bool outsideOfTruck = VehicleUtils.IsPlayerOnOutsideOfVan(playerController, vanController);
 
-        if ((VehicleUtils.IsPlayerInVanCabin(controller) && !isCabEnclosed) ||
-            (VehicleUtils.IsPlayerInVanStorage(controller) && !isStorageEnclosed))
+        if ((playerInCabOrSeated && !isCabEnclosed) || 
+            (playerInStorage && !isStorageEnclosed))
         {
             return true;
         }
@@ -284,29 +301,36 @@ public static class LethalElementsCompatibility
         }
         return false;
     }
-
-    public static bool CheckConditionsForHeatingStop_Prefix(PlayerControllerB playerController, ref bool __result)
+   
+    [HarmonyPatch(typeof(HeatwavePatches), nameof(HeatwavePatches.CheckConditionsForHeatingStop))]
+    [HarmonyPrefix]
+    public static bool HeatwavePatches_Pre_CheckConditionsForHeatingStop(PlayerControllerB playerController, ref bool __result)
     {
-        CruiserXLController controller = References.vanController;
-        if (controller == null)
+        CruiserXLController vanController = VehicleUtils.vanController;
+        if (vanController == null)
             return true;
 
-        if (!VehicleUtils.IsPlayerInVanBounds(controller) &&
-            !VehicleUtils.IsPlayerInVanCabin(controller) &&
-            !VehicleUtils.IsPlayerInVanStorage(controller))
+        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(playerController, vanController);
+        bool playerOnVan = VehicleUtils.IsPlayerInVanBounds(playerController, vanController);
+        bool playerInCab = VehicleUtils.IsPlayerInVanCabin(playerController, vanController);
+        bool playerInStorage = VehicleUtils.IsPlayerInVanStorage(playerController, vanController);
+
+        if (!playerSeated &&
+            !playerOnVan &&
+            !playerInCab &&
+            !playerInStorage)
             return true;
 
-        bool isCabEnclosed = !controller.driverSideDoor.boolValue && !controller.passengerSideDoor.boolValue &&
-             !controller.driversSideWindowTrigger.boolValue && !controller.passengersSideWindowTrigger.boolValue &&
-             !controller.windshieldBroken;
-        bool isStorageEnclosed = !controller.liftGateOpen && !controller.sideDoorOpen;
-        bool isHeaterOnAndCool = controller.ignitionStarted && controller.heaterOn && !controller.isHeaterWarm && controller.isHeaterCold;
-        bool isHeaterOnAndWarm = controller.ignitionStarted && controller.heaterOn && controller.isHeaterWarm && !controller.isHeaterCold;
-        bool outsideOfTruck = VehicleUtils.IsPlayerInVanBounds(controller) && !VehicleUtils.IsPlayerInVanCabin(controller) && !VehicleUtils.IsPlayerInVanStorage(controller);
-        bool inDoorLighting = playerController.currentAudioTrigger != null && playerController.currentAudioTrigger.insideLighting;
+        bool playerInCabOrSeated = playerSeated || playerInCab;
+        bool isCabEnclosed = IsVanCabinEnclosed(vanController);
+        bool isStorageEnclosed = VehicleUtils.IsVanStorageEnclosed(vanController);
+        bool isHeaterOnAndCool = IsVanBlowerOnAndCool(vanController);
+        bool isHeaterOnAndWarm = IsVanBlowerOnAndHot(vanController);
+        bool outsideOfTruck = VehicleUtils.IsPlayerOnOutsideOfVan(playerController, vanController);
+        bool inDoorLighting = IsIndoorLighting(playerController);
 
-        if ((VehicleUtils.IsPlayerInVanCabin(controller) && isCabEnclosed) ||
-            (VehicleUtils.IsPlayerInVanStorage(controller) && isStorageEnclosed))
+        if ((playerInCabOrSeated && isCabEnclosed) ||
+            (playerInStorage && isStorageEnclosed))
         {
             if (isHeaterOnAndCool) __result = true;
             else if (isHeaterOnAndWarm) __result = false;
@@ -320,15 +344,23 @@ public static class LethalElementsCompatibility
         return false;
     }
 
-    public static bool CheckConditionsForHeatingPause_Prefix(PlayerControllerB playerController, ref bool __result)
+    [HarmonyPatch(typeof(HeatwavePatches), nameof(HeatwavePatches.CheckConditionsForHeatingPause))]
+    [HarmonyPrefix]
+    public static bool HeatwavePatches_Pre_CheckConditionsForHeatingPause(PlayerControllerB playerController, ref bool __result)
     {
-        CruiserXLController controller = References.vanController;
-        if (controller == null)
+        CruiserXLController vanController = VehicleUtils.vanController;
+        if (vanController == null)
             return true;
 
-        if (!VehicleUtils.IsPlayerInVanBounds(controller) &&
-            !VehicleUtils.IsPlayerInVanCabin(controller) &&
-            !VehicleUtils.IsPlayerInVanStorage(controller))
+        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(playerController, vanController);
+        bool playerOnVan = VehicleUtils.IsPlayerInVanBounds(playerController, vanController);
+        bool playerInCab = VehicleUtils.IsPlayerInVanCabin(playerController, vanController);
+        bool playerInStorage = VehicleUtils.IsPlayerInVanStorage(playerController, vanController);
+
+        if (!playerSeated &&
+            !playerOnVan &&
+            !playerInCab &&
+            !playerInStorage)
             return true;
 
         __result = false;

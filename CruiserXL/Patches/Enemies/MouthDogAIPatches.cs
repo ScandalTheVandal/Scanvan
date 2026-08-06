@@ -10,35 +10,29 @@ public static class MouthDogAIPatches
 {
     [HarmonyPatch(nameof(MouthDogAI.OnCollideWithPlayer))]
     [HarmonyPrefix]
-    static bool OnCollideWithPlayer_Prefix(MouthDogAI __instance, Collider other, bool __runOriginal)
+    static bool MouthDogAI_Pre_OnCollideWithPlayer(MouthDogAI __instance, Collider other, bool __runOriginal)
     {
         if (!__runOriginal)
             return false;
 
-        CruiserXLController controller = References.vanController;
-        if (controller == null)
+        CruiserXLController vanController = VehicleUtils.vanController;
+        if (vanController == null)
             return true;
 
-        PlayerControllerB playerControllerB = __instance.MeetsStandardPlayerCollisionConditions(other, __instance.inKillAnimation, false);
-        if (playerControllerB == null)
+        PlayerControllerB playerController =
+            __instance.MeetsStandardPlayerCollisionConditions(other, __instance.inKillAnimation, false);
+        if (playerController == null)
             return true;
 
-        if (VehicleUtils.IsPlayerSeatedInVan())
-        {
-            if (VehicleUtils.IsSeatedPlayerProtected(playerController: playerControllerB, vanController: controller, checkWindows: false, windshieldCheck: true, velocityCheck: true, velocityMagnitude: 10f))
-            {
-                return false;
-            }
+        bool playerOnVan = VehicleUtils.IsPlayerInVanBounds(playerController, vanController);
+        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(playerController, vanController);
+
+        if (playerSeated)
+            return !VehicleUtils.IsSeatedPlayerProtected(playerController, vanController, checkWindows: false, windshieldCheck: true, velocityCheck: true, velocityMagnitude: 10f);
+
+        if (!playerOnVan)
             return true;
-        }
-        if (VehicleUtils.IsPlayerInVanBounds(vanController: controller))
-        {
-            if (VehicleUtils.IsPlayerProtectedByVan(playerController: playerControllerB, vanController: controller, checkWindows: false, windshieldCheck: true, velocityCheck: true, velocityMagnitude: 10f))
-            {
-                return false;
-            }
-            return true;
-        }
-        return true;
+
+        return !VehicleUtils.IsPlayerProtectedByVan(playerController, vanController, checkWindows: false, windshieldCheck: true, velocityCheck: true, velocityMagnitude: 10f);
     }
 }

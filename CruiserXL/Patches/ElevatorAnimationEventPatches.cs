@@ -2,6 +2,7 @@
 using GameNetcodeStuff;
 using HarmonyLib;
 using UnityEngine;
+using UnityEngine.InputSystem.XR;
 
 namespace ScanVan.Patches;
 
@@ -10,25 +11,28 @@ public static class ElevatorAnimationEventsPatches
 {
     [HarmonyPatch(nameof(ElevatorAnimationEvents.ElevatorFullyRunning))]
     [HarmonyPrefix]
-    static void ElevatorFullyRunning_PlayerSafety_Prefix()
+    static void ElevatorAnimationEvents_Pre_ElevatorFullyRunning()
     {
-        CruiserXLController controller = References.vanController;
-        if (controller == null) 
-            return;
-        if (!controller.magnetedToShip) 
+        CruiserXLController vanController = VehicleUtils.vanController;
+        if (vanController == null)
             return;
 
-        TryDespawnItemsInVan(vanController: controller);
+        TryDespawnItemsInVan(vanController);
 
-        // save players who are on the magneted truck from being abandoned
-        PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
-        if (PlayerUtils.isSeatedInVan || VehicleUtils.IsPlayerInVanBounds(controller))
-            localPlayer.isInElevator = true;
+        PlayerControllerB playerController = GameNetworkManager.Instance.localPlayerController;
+
+        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(playerController, vanController);
+        bool playerOnVan = VehicleUtils.IsPlayerInVanBounds(playerController, vanController);
+        bool playerInStorage = VehicleUtils.IsPlayerInVanStorage(playerController, vanController);
+        bool playerInCab = VehicleUtils.IsPlayerInVanCabin(playerController, vanController);
+
+        if (playerSeated || playerOnVan || playerInStorage || playerInCab)
+            playerController.isInElevator = true;
     }
 
     static void TryDespawnItemsInVan(CruiserXLController vanController)
     {
-        if (!RoundManager.Instance.IsServer)
+        if (!RoundManager.Instance.NetworkManager.IsServer)
             return;
 
         Bounds onTopOfVanBounds = vanController.ontopOfTruckCollider.bounds;
@@ -43,7 +47,7 @@ public static class ElevatorAnimationEventsPatches
             if ((inBackOfVanBounds.ClosestPoint(vanItem.transform.position) == vanItem.transform.position && vanController.liftGateOpen) || 
                 onTopOfVanBounds.ClosestPoint(vanItem.transform.position) == vanItem.transform.position)
             {
-                Plugin.Logger.LogDebug($"ScanVan: Item \"{vanItem.name}\" (#{vanItem.GetInstanceID()}) lost in orbit");
+                Plugin.LogDebug($"Item \"{vanItem.name}\" (#{vanItem.GetInstanceID()}) lost in orbit.");
                 if (vanItem.NetworkObject != null && vanItem.NetworkObject.IsSpawned)
                     vanItem.NetworkObject.Despawn();
                 else

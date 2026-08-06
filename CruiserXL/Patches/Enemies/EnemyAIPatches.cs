@@ -10,25 +10,40 @@ public static class EnemyAIPatches
 {
     [HarmonyPatch(nameof(EnemyAI.PlayerIsTargetable))]
     [HarmonyPostfix]
-    static void PlayerIsTargetable_Postfix(EnemyAI __instance, PlayerControllerB playerScript, bool cannotBeInShip, bool overrideInsideFactoryCheck, bool checkForMineshaftStartTile, ref bool __result)
+    static void EnemyAI_Post_PlayerIsTargetable(EnemyAI __instance, PlayerControllerB playerScript, bool cannotBeInShip, bool overrideInsideFactoryCheck, bool checkForMineshaftStartTile, ref bool __result)
     {
         if (__instance is not BushWolfEnemy)
             return;
 
-        CruiserXLController controller = References.vanController;
-        if (controller == null)
+        CruiserXLController vanController = VehicleUtils.vanController;
+        if (vanController == null)
             return;
 
-        var playerData = PlayerControllerBPatches.playerData[playerScript];
-        bool isOccupant = controller.currentDriver == playerScript ||
-                          controller.currentMiddlePassenger == playerScript ||
-                          controller.currentPassenger == playerScript;
+        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(playerScript, vanController);
+        bool playerInCab = VehicleUtils.IsPlayerInVanCabin(playerScript, vanController, usePlayerData: true);
+        bool playerInStorage = VehicleUtils.IsPlayerInVanStorage(playerScript, vanController, usePlayerData: true);
+        bool storageEnclosed = VehicleUtils.IsVanStorageEnclosed(vanController);
 
-        if (isOccupant && VehicleUtils.IsSeatedPlayerProtected(playerController: playerScript, vanController: controller, checkWindows: true))
-            __result = false;
+        if (playerSeated)
+        {
+            if (VehicleUtils.IsSeatedPlayerProtected(playerScript, vanController, checkWindows: true))
+            {
+                __result = false;
+                return;
+            }
 
-        if (playerData.playerRidingInVanCab && !controller.driverSideDoor.boolValue && !controller.passengerSideDoor.boolValue ||
-            playerData.playerRidingInVanStorage && !controller.liftGateOpen && !controller.sideDoorOpen)
+            return;
+        }
+
+        bool protectedInCab =
+            playerInCab &&
+            VehicleUtils.IsPlayerProtectedByVan(playerScript, vanController, checkWindows: true);
+
+        bool protectedInStorage =
+            playerInStorage &&
+            storageEnclosed;
+
+        if (protectedInCab || protectedInStorage)
             __result = false;
     }
 }

@@ -23,7 +23,6 @@ public static class PlayerControllerBPatches
     {
         public bool applyVoiceEffects = false;
 
-        public bool playerSeatedInVan;
         public bool playerRidingInVanCab;
         public bool playerRidingInVanStorage;
         public bool playerRidingOnVan;
@@ -36,11 +35,11 @@ public static class PlayerControllerBPatches
     private static Quaternion armsMetarigParentRot = Quaternion.Euler(90f, 0f, 0f);
     private static Quaternion armsMetarigRot = Quaternion.Euler(-90f, 0f, 0f);
 
-    private static Vector3 localArmsPos = new Vector3(0, -0.008f, -0.43f);
+    private static Vector3 localArmsPos = new Vector3(0f, -0.008f, -0.43f);
     private static Quaternion localArmsRot = Quaternion.Euler(84.78056f, 0f, 0f);
 
     private static Vector3 playerBodyPos = Vector3.zero;
-    private static Quaternion playerBodyRot = Quaternion.Euler(-90, 0, 0);
+    private static Quaternion playerBodyRot = Quaternion.Euler(-90f, 0f, 0f);
 
 
     private static void RemoveStalePlayerData()
@@ -62,7 +61,7 @@ public static class PlayerControllerBPatches
 
     [HarmonyPatch(nameof(PlayerControllerB.Awake))]
     [HarmonyPostfix]
-    static void Awake_Postfix(PlayerControllerB __instance)
+    static void PlayerControllerB_Post_Awake(PlayerControllerB __instance)
     {
         RemoveStalePlayerData();
         if (!playerData.ContainsKey(__instance))
@@ -72,21 +71,10 @@ public static class PlayerControllerBPatches
         }
     }
 
-    [HarmonyPatch(nameof(PlayerControllerB.UpdatePlayerAnimationsToOtherClients))]
-    [HarmonyPrefix]
-    static bool UpdatePlayerAnimationsToOtherClients_Prefix(PlayerControllerB __instance, Vector2 moveInputVector)
-    {
-        if (__instance != GameNetworkManager.Instance.localPlayerController)
-            return true;
-
-        if (PlayerUtils.disableAnimationSync) return false;
-        return true;
-    }
-
     // i'm not sure if this actually works, i'll need to look into this
     [HarmonyPatch(nameof(PlayerControllerB.SpawnPlayerAnimation))]
     [HarmonyPostfix]
-    static void SpawnPlayerAnimation_Postfix(PlayerControllerB __instance)
+    static void PlayerControllerB_Post_SpawnPlayerAnimation(PlayerControllerB __instance)
     {
         if (__instance != GameNetworkManager.Instance.localPlayerController) 
             return;
@@ -105,8 +93,8 @@ public static class PlayerControllerBPatches
     }
 
     [HarmonyPatch(nameof(PlayerControllerB.LateUpdate))]
-    [HarmonyPostfix]
-    public static void LateUpdate_Zone_Postfix(PlayerControllerB __instance)
+    [HarmonyPrefix]
+    public static void PlayerControllerB_Pre_LateUpdate(PlayerControllerB __instance)
     {
         if (__instance == null ||
             !__instance.isPlayerControlled ||
@@ -119,28 +107,24 @@ public static class PlayerControllerBPatches
 
     private static void SetPlayerVehicleZone(PlayerControllerB playerController)
     {
-        CruiserXLController vanController = References.vanController;
+        CruiserXLController vanController = VehicleUtils.vanController;
 
-        var localPlayerData = playerData[playerController];
-        bool sittingInVan = PlayerUtils.isSeatedInVan;
+        var playerData = PlayerControllerBPatches.playerData[playerController];
         bool ridingInVanCab = vanController?.vanCabinZone.playerInZone ?? false;
         bool ridingInVanStorage = vanController?.vanStorageZone.playerInZone ?? false;
         bool ridingOnVan = vanController?.vanZone.playerInZone ?? false;
 
-        if (localPlayerData.playerSeatedInVan == sittingInVan && 
-            localPlayerData.playerRidingInVanCab == ridingInVanCab && 
-            localPlayerData.playerRidingInVanStorage == ridingInVanStorage &&
-            localPlayerData.playerRidingOnVan == ridingOnVan)
+        if (playerData.playerRidingInVanCab == ridingInVanCab && 
+            playerData.playerRidingInVanStorage == ridingInVanStorage &&
+            playerData.playerRidingOnVan == ridingOnVan)
         {
             return;
         }
 
-        playerData[playerController].playerSeatedInVan = PlayerUtils.isSeatedInVan;
-        playerData[playerController].playerRidingInVanCab = ridingInVanCab;
-        playerData[playerController].playerRidingInVanStorage = ridingInVanStorage;
-        playerData[playerController].playerRidingOnVan = ridingOnVan;
+        playerData.playerRidingInVanCab = ridingInVanCab;
+        playerData.playerRidingInVanStorage = ridingInVanStorage;
+        playerData.playerRidingOnVan = ridingOnVan;
         ScanVanNetworker.Instance?.SyncPlayerZoneRpc(playerController.NetworkObject,
-                                                 sittingInVan,
                                                  ridingInVanStorage,
                                                  ridingInVanCab,
                                                  ridingOnVan);
@@ -148,7 +132,7 @@ public static class PlayerControllerBPatches
 
     [HarmonyPatch(nameof(PlayerControllerB.Update))]
     [HarmonyPrefix]
-    public static void Update_Prefix(PlayerControllerB __instance)
+    public static void PlayerControllerB_Prefix_Update(PlayerControllerB __instance)
     {
         if (__instance == null ||
             __instance.isPlayerDead ||
@@ -158,14 +142,22 @@ public static class PlayerControllerBPatches
         if (__instance != GameNetworkManager.Instance.localPlayerController)
             return;
 
-        if (usingSeatCamera && !PlayerUtils.isSeatedInVan)
+        CruiserXLController vanController = VehicleUtils.vanController;
+        if (vanController == null)
+            return;
+
+        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(__instance, vanController);
+        if (!playerSeated)
+            return;
+
+        if (usingSeatCamera && !playerSeated)
         {
             usingSeatCamera = false;
             __instance.gameplayCamera.transform.localPosition = Vector3.zero;
             __instance.horizontalClamp = 70f;
             return;
         }
-        if (PlayerUtils.isSeatedInVan && UserConfig.PreventKnockback.Value)
+        if (playerSeated && UserConfig.PreventKnockback.Value)
         {
             __instance.externalForceAutoFade = Vector3.zero;
             __instance.externalForces = Vector3.zero;
@@ -178,7 +170,7 @@ public static class PlayerControllerBPatches
     /// </summary>
     [HarmonyPatch(nameof(PlayerControllerB.Update))]
     [HarmonyPostfix]
-    public static void Update_Postfix(PlayerControllerB __instance)
+    public static void PlayerControllerB_Post_Update(PlayerControllerB __instance)
     {
         if (__instance == null ||
             __instance.isPlayerDead ||
@@ -188,11 +180,11 @@ public static class PlayerControllerBPatches
         if (__instance != GameNetworkManager.Instance.localPlayerController)
             return;
 
-        CruiserXLController controller = References.vanController;
-        if (controller == null)
+        CruiserXLController vanController = VehicleUtils.vanController;
+        if (vanController == null)
             return;
 
-        if (!PlayerUtils.isSeatedInVan)
+        if (!VehicleUtils.IsPlayerSeatedInVan(__instance, vanController))
             return;
 
         usingSeatCamera = true;
@@ -205,7 +197,7 @@ public static class PlayerControllerBPatches
         Vector3 lookFlat = __instance.gameplayCamera.transform.localRotation * Vector3.forward;
         lookFlat.y = 0;
         float angleToBack = Vector3.Angle(lookFlat, Vector3.back);
-        if (angleToBack < 70 && __instance != controller.currentMiddlePassenger)
+        if (angleToBack < 70 && __instance != vanController.currentMiddlePassenger)
         {
             // if we're looking backwards, offset the camera to the side ('leaning')
             cameraOffset.x = Mathf.Sign(lookFlat.x) * ((70f - angleToBack) / 70f);
@@ -215,18 +207,18 @@ public static class PlayerControllerBPatches
         // extremely hacky method to prevent leaning through a closed window, while
         // still allowing leaning through the cabin window, since you cannot directly
         // clamp both left and right directions seperately from each-other
-        if (__instance == controller.currentDriver)
+        if (__instance == vanController.currentDriver)
         {
-            __instance.horizontalClamp = controller.driversSideWindowTrigger.boolValue ? 163f : 105f;
+            __instance.horizontalClamp = vanController.frontLeftWindow.isWindowOpen ? 163f : 105f;
             if (__instance.ladderCameraHorizontal > 0)
             {
                 __instance.horizontalClamp = 163f;
                 return;
             }
         }
-        else if (__instance == controller.currentPassenger)
+        else if (__instance == vanController.currentPassenger)
         {
-            __instance.horizontalClamp = controller.passengersSideWindowTrigger.boolValue ? 163f : 105f;
+            __instance.horizontalClamp = vanController.frontRightWindow.isWindowOpen ? 163f : 105f;
             if (__instance.ladderCameraHorizontal < 0)
             {
                 __instance.horizontalClamp = 163f;
@@ -241,7 +233,9 @@ public static class PlayerControllerBPatches
     // aligning properly during the ignition animation, or even causing
     // the players body to shift backwards, resulting in their hands
     // not visually holding anything such as the steering wheel
-    private static void LateUpdate_Postfix(PlayerControllerB __instance)
+    [HarmonyPatch(nameof(PlayerControllerB.LateUpdate))]
+    [HarmonyPostfix]
+    private static void PlayerControllerB_Post_LateUpdate(PlayerControllerB __instance)
     {
         if (__instance == null ||
             __instance.isPlayerDead ||
@@ -250,17 +244,23 @@ public static class PlayerControllerBPatches
             return;
         }
 
-        if (!__instance.inVehicleAnimation || 
-            !playerData[__instance].playerSeatedInVan)
-        {
+        CruiserXLController vanController = VehicleUtils.vanController;
+        if (vanController == null)
             return;
-        }
 
-        __instance.playerModelArmsMetarig.parent.transform.localRotation = armsMetarigParentRot;
-        __instance.playerModelArmsMetarig.localRotation = armsMetarigRot;
-        __instance.localArmsTransform.localPosition = localArmsPos;
-        __instance.localArmsTransform.localRotation = localArmsRot;
-        __instance.playerBodyAnimator.transform.localPosition = playerBodyPos;
-        __instance.playerBodyAnimator.transform.localRotation = playerBodyRot;
+        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(__instance, vanController);
+        if (!playerSeated)
+            return;
+
+        var playerModelArmsRig = __instance.playerModelArmsMetarig;
+        var localArmsTransform = __instance.localArmsTransform;
+        var playerBodyAnimator = __instance.playerBodyAnimator.transform;
+
+        playerModelArmsRig.parent.transform.localRotation = armsMetarigParentRot;
+        playerModelArmsRig.localRotation = armsMetarigRot;
+        localArmsTransform.localPosition = localArmsPos;
+        localArmsTransform.localRotation = localArmsRot;
+        playerBodyAnimator.localPosition = playerBodyPos;
+        playerBodyAnimator.localRotation = playerBodyRot;
     }
 }

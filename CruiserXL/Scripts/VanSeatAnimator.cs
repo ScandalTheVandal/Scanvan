@@ -1,5 +1,5 @@
 ﻿using GameNetcodeStuff;
-using ScandalsTweaks.Scripts;
+using ScandalLib.Scripts;
 using ScanVan.Patches;
 using ScanVan.Utils;
 
@@ -20,10 +20,5 @@ public class VanSeatAnimator : VehicleSeatAnimator
     public override void ResetPlayerData(PlayerControllerB player)
     {
         player.ladderCameraHorizontal = 0f;
-    }
-
-    public override void SetPlayerSeated(bool setSeated, PlayerControllerB localPlayer)
-    {
-        PlayerUtils.isSeatedInVan = setSeated;
     }
 }

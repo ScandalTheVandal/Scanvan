@@ -11,7 +11,7 @@ public static class GrabbableObjectPatches
 {
     [HarmonyPatch(nameof(GrabbableObject.Update))]
     [HarmonyPostfix]
-    private static void Update_Postfix(GrabbableObject __instance)
+    private static void GrabbableObject_Post_Update(GrabbableObject __instance)
     {
         if (__instance == null)
             return;
@@ -19,7 +19,7 @@ public static class GrabbableObjectPatches
         if (GameNetworkManager.Instance.localPlayerController == null)
             return;
 
-        CruiserXLController vanController = References.vanController;
+        CruiserXLController vanController = VehicleUtils.vanController;
         if (vanController == null)
             return;
 
@@ -34,7 +34,7 @@ public static class GrabbableObjectPatches
 
     [HarmonyPatch(nameof(GrabbableObject.OnDestroy))]
     [HarmonyPostfix]
-    private static void OnDestroy_Postfix(GrabbableObject __instance)
+    private static void GrabbableObject_Post_OnDestroy(GrabbableObject __instance)
     {
         References.itemsInTruck.Remove(__instance);
     }

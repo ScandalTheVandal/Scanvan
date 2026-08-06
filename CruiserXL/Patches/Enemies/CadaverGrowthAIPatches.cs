@@ -11,7 +11,7 @@ public static class CadaverGrowthAIPatches
     // OnEnable would be too early to check this (?)
     [HarmonyPatch(nameof(CadaverGrowthAI.Start))]
     [HarmonyPostfix]
-    static void Start_Postfix(CadaverGrowthAI __instance)
+    static void CadaverGrowthAI_Post_Start(CadaverGrowthAI __instance)
     {
         if (References.cadaverGrowthAI == null)
             References.cadaverGrowthAI = __instance;
@@ -19,7 +19,7 @@ public static class CadaverGrowthAIPatches
 
     [HarmonyPatch(nameof(CadaverGrowthAI.OnDisable))]
     [HarmonyPostfix]
-    static void OnDisable_Postfix(CadaverGrowthAI __instance)
+    static void CadaverGrowthAI_Post_OnDisable(CadaverGrowthAI __instance)
     {
         if (References.cadaverGrowthAI == __instance)
             References.cadaverGrowthAI = null!;

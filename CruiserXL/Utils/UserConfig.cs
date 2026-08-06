@@ -9,7 +9,7 @@ namespace ScanVan.Utils;
 internal class UserConfig
 {
     // Host
-    internal static ConfigEntry<bool> NoMusic = null!;
+    internal static ConfigEntry<bool> StreamerRadio = null!;
 
     // General
     internal static ConfigEntry<bool> MirrorsEnabled = null!;
@@ -31,7 +31,7 @@ internal class UserConfig
         config.SaveOnConfigSet = false;
 
         // Host
-        NoMusic = config.Bind("Host", "No Music", true, "[Host] If true, disable the radio entirely, including the live radio");
+        StreamerRadio = config.Bind("Host", "Public-Domain Music", true, "[Host] If true, the radio will only be able to play vintage public-domain music");
 
         // General
         MirrorsEnabled = config.Bind("General", "Enable Mirrors", true, "Enable rendering for the side mirrors? (may impact performance for low end hardware)");

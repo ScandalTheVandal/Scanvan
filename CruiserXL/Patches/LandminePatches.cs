@@ -3,7 +3,6 @@ using GameNetcodeStuff;
 using HarmonyLib;
 using Unity.Netcode;
 using UnityEngine;
-using ScandalsTweaks.Utils;
 using ScandalsTweaks.Patches;
 
 namespace ScanVan.Patches;
@@ -13,47 +12,66 @@ public static class LandminePatches
 {
     [HarmonyPatch(nameof(Landmine.SpawnExplosion))]
     [HarmonyPostfix]
-    private static void SpawnExplosion_Postfix(Landmine __instance, ref Vector3 explosionPosition, bool spawnExplosionEffect, ref float killRange, ref float damageRange, int nonLethalDamage, float physicsForce, GameObject overridePrefab, bool goThroughCar)
+    private static void Landmine_Post_SpawnExplosion(Landmine __instance, ref Vector3 explosionPosition, bool spawnExplosionEffect, ref float killRange, ref float damageRange, int nonLethalDamage, float physicsForce, GameObject overridePrefab, bool goThroughCar)
     {
         if (!NetworkManager.Singleton.IsHost)
             return;
 
-        CruiserXLController controller = References.vanController;
-        if (controller == null)
+        CruiserXLController vanController = VehicleUtils.vanController;
+        if (vanController == null)
+            return;
+        if (!vanController.IsSpawned || !vanController.hasBeenSpawned)
+            return;
+        if (vanController.carDestroyed || vanController.magnetedToShip)
+            return;
+        if (vanController.keyIgnitionCoroutine != null || vanController.ignitionOn)
+            return;
+        if (vanController.alarmDebounce)
             return;
 
-        if (!controller.IsSpawned ||
-            !controller.hasBeenSpawned ||
-            controller.alarmDebounce ||
-            controller.ignitionStarted ||
-            controller.carDestroyed ||
-            controller.magnetedToShip)
+        if (Vector3.Distance(vanController.transform.position, explosionPosition) > 7.5f)
             return;
-
-        if (Vector3.Distance(controller.transform.position, explosionPosition) > 7.5f)
-            return;
-
         if ((float)Random.Range(9, 85) > 12f)
             return;
 
-        controller.alarmDebounce = true;
-        controller.TryBeginAlarm();
+        vanController.alarmDebounce = true;
+        vanController.TryBeginAlarm();
     }
 
     [HarmonyPatch(nameof(Landmine.SpawnExplosion))]
     [HarmonyPrefix]
-    private static void SpawnExplosion_Prefix(Landmine __instance, Vector3 explosionPosition, bool spawnExplosionEffect, ref float killRange, ref float damageRange, int nonLethalDamage, float physicsForce, GameObject overridePrefab, bool goThroughCar)
+    private static void Landmine_Pre_SpawnExplosion(Landmine __instance, Vector3 explosionPosition, bool spawnExplosionEffect, ref float killRange, ref float damageRange, int nonLethalDamage, float physicsForce, GameObject overridePrefab, bool goThroughCar)
     {
-        CruiserXLController controller = References.vanController;
-        if (controller == null)
+        CruiserXLController vanController = VehicleUtils.vanController;
+        if (vanController == null)
             return;
 
-        if (!VehicleUtils.IsPlayerNearVan(GameNetworkManager.Instance.localPlayerController, vanController: controller))
+        PlayerControllerB playerController = GameNetworkManager.Instance.localPlayerController;
+        if (!VehicleUtils.IsPlayerNearVan(playerController, vanController))
             return;
 
-        if (!goThroughCar &&
-            ((VehicleUtils.IsPlayerInVanStorage(controller) && controller.storageCompartment.ClosestPoint(explosionPosition) != explosionPosition) || 
-            VehicleUtils.IsPlayerInVanCabin(controller) || PlayerUtils.isSeatedInVan))
+        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(playerController, vanController);
+        bool playerInCab = VehicleUtils.IsPlayerInVanCabin(playerController, vanController);
+        bool playerInStorage = VehicleUtils.IsPlayerInVanStorage(playerController, vanController);
+
+        bool explosionOutsideStorage =
+            vanController.storageCompartment.ClosestPoint(explosionPosition) !=
+            explosionPosition;
+
+        bool isProbablyLightning =
+            !goThroughCar &&
+            !spawnExplosionEffect &&
+            killRange == 2.4f &&
+            damageRange == 5f &&
+            nonLethalDamage == 1 &&
+            physicsForce == 0f;
+
+        if (!isProbablyLightning)
+            return;
+
+        if ((playerInStorage && explosionOutsideStorage) ||
+            playerInCab ||
+            playerSeated)
         {
             killRange = -1f;
             damageRange = -1f;
