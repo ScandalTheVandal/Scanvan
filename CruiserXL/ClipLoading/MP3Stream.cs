@@ -74,7 +74,7 @@ public class MP3Stream
         {
             if (e.Status != WebExceptionStatus.RequestCanceled)
             {
-                System.Console.WriteLine(e.Message);
+                Plugin.LogInfo(e.Message);
             }
             return;
         }
@@ -138,7 +138,7 @@ public class MP3Stream
                     }
 
                 } while (playbackState != StreamingPlaybackState.Stopped);
-                System.Console.WriteLine("Exiting Thread");
+                Plugin.LogInfo("Exiting Thread");
                 // was doing this in a finally block, but for some reason
                 // we are hanging on response stream .Dispose so never get there
                 decompressor.Dispose();

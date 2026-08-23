@@ -6,29 +6,37 @@ using System.Reflection;
 
 namespace ScanVan.Utils;
 
-internal class UserConfig
+public class UserConfig
 {
+    // DEBUG
+    public static ConfigEntry<bool> EnableDebugLogging = null!;
+    public static ConfigEntry<bool> EnableDebugContent = null!;
+
     // Host
-    internal static ConfigEntry<bool> StreamerRadio = null!;
+    public static ConfigEntry<bool> StreamerRadio = null!;
 
     // General
-    internal static ConfigEntry<bool> MirrorsEnabled = null!;
-    internal static ConfigEntry<bool> SeatBoostEnabled = null!;
-    internal static ConfigEntry<float> SeatBoostScale = null!;
-    internal static ConfigEntry<bool> PreventKnockback = null!;
-    internal static ConfigEntry<float> VoiceAlertVolume = null!;
+    public static ConfigEntry<bool> MirrorsEnabled = null!;
+    public static ConfigEntry<bool> SeatBoostEnabled = null!;
+    public static ConfigEntry<float> SeatBoostScale = null!;
+    public static ConfigEntry<bool> PreventKnockback = null!;
+    public static ConfigEntry<float> VoiceAlertVolume = null!;
 
     // QOL
-    internal static ConfigEntry<bool> RecenterWheel = null!;
-    internal static ConfigEntry<bool> SmoothWheel = null!;
+    public static ConfigEntry<bool> RecenterWheel = null!;
+    public static ConfigEntry<bool> SmoothWheel = null!;
 
     // Experimental
-    //internal static ConfigEntry<bool> MuffleVoices = null!;
+    //public static ConfigEntry<bool> MuffleVoices = null!;
 
     internal static void InitConfig()
     {
         ConfigFile config = Plugin.Instance.Config;
         config.SaveOnConfigSet = false;
+
+        // DEBUG
+        EnableDebugLogging = config.Bind("Debug", "Debug-Logging", false, "If true, activates debug logging");
+        EnableDebugContent = config.Bind("Debug", "Debug-Content", false, "If true, activates debug content");
 
         // Host
         StreamerRadio = config.Bind("Host", "Public-Domain Music", true, "[Host] If true, the radio will only be able to play vintage public-domain music");

@@ -26,12 +26,13 @@ public static class GameNetworkManagerPatches
                 SaveManager.Save(SaveManager.SavedVanRotation, controller.magnetTargetRotation.eulerAngles);
                 SaveManager.Save(SaveManager.SavedVanPosition, controller.magnetTargetPosition);
                 SaveManager.Save(SaveManager.SavedVanTurbo, controller.turboBoosts);
-                SaveManager.Save(SaveManager.SavedVanVariant, controller.isSpecialVariant);
+                SaveManager.Save(SaveManager.SavedVanVariant, (int)controller.vanVariant);
                 SaveManager.Save(SaveManager.SavedVanIgnition, controller.ignitionStarted);
                 SaveManager.Save(SaveManager.SavedVanSteering, controller.steeringWheelAnimFloat);
                 SaveManager.Save(SaveManager.SavedVanHealth, controller.carHP);
                 SaveManager.Save(SaveManager.SavedVanServiceAlert, controller.voiceModule.randomServiceAlert);
                 SaveManager.Save(SaveManager.SavedVanAltAlerts, controller.voiceModule.useAltAudio);
+                SaveManager.Save(SaveManager.SavedVanMileage, controller.odometerValue);
 
                 Plugin.LogMessage("Successfully saved Van data.");
             }
@@ -46,6 +47,7 @@ public static class GameNetworkManagerPatches
                 SaveManager.Delete(SaveManager.SavedVanHealth);
                 SaveManager.Delete(SaveManager.SavedVanServiceAlert);
                 SaveManager.Delete(SaveManager.SavedVanAltAlerts);
+                SaveManager.Delete(SaveManager.SavedVanMileage);
 
                 Plugin.LogMessage("Successfully deleted Van data.");
             }

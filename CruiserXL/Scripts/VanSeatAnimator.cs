@@ -11,9 +11,9 @@ public class VanSeatAnimator : VehicleSeatAnimator
 
     public override void OnPlayerLeaveGame()
     {
-        if (seatTrigger == vehicleController.driverSeatTrigger) vehicleController.OnDriverLeaveGameServerRpc((int)seatTrigger.playerScriptInSpecialAnimation.playerClientId);
-        else if (seatTrigger == vehicleController.middlePassengerSeatTrigger) vehicleController.OnMiddlePassengerLeaveGameRpc((int)seatTrigger.playerScriptInSpecialAnimation.playerClientId);
-        else if (seatTrigger == vehicleController.passengerSeatTrigger) vehicleController.OnPassengerLeaveGameRpc((int)seatTrigger.playerScriptInSpecialAnimation.playerClientId);
+        if (seatTrigger == vehicleController.driverSeatTrigger) vehicleController.OnDriverLeaveGameServerRpc(seatTrigger.playerScriptInSpecialAnimation);
+        else if (seatTrigger == vehicleController.middlePassengerSeatTrigger) vehicleController.OnMiddlePassengerLeaveGameRpc(seatTrigger.playerScriptInSpecialAnimation);
+        else if (seatTrigger == vehicleController.passengerSeatTrigger) vehicleController.OnPassengerLeaveGameRpc(seatTrigger.playerScriptInSpecialAnimation);
         else return;
     }
 

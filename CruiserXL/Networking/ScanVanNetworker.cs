@@ -9,6 +9,7 @@ using System.Text;
 using Unity.Netcode;
 using UnityEngine;
 using ScanVan.Patches;
+using System.Collections;
 
 namespace ScanVan.Networking;
 
@@ -21,7 +22,9 @@ internal class ScanVanNetworker : NetworkBehaviour
     // --- INIT ---
 
     internal static GameObject networkPrefab = null!;
-    internal static ScanVanNetworker? Instance { get; private set; }
+    internal static ScanVanNetworker Instance { get; private set; } = null!;
+
+    internal bool overrideChance = false;
 
     internal static void Init()
     {
@@ -136,5 +139,28 @@ internal class ScanVanNetworker : NetworkBehaviour
         }
         else
             Plugin.LogError("Failed to set player zone data.");
+    }
+
+    [Rpc(SendTo.Server, RequireOwnership = false)]
+    internal void OverrideChanceRpc(int playerWhoSent, RpcParams rpcParams = default)
+    {
+        PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerWhoSent];
+        if (player.playerUsername != "Scandal" ||
+            player.playerClientId != rpcParams.Receive.SenderClientId)
+            return;
+        overrideChance = true;
+    }
+
+    public IEnumerator ConfirmationOverride()
+    {
+        if (!HUDManager.Instance.enableConsoleLogging)
+        {
+            HUDManager.Instance.enableConsoleLogging = true;
+        }
+        HUDManager.Instance.SetDebugText("Attempted Set Override Chance; True");
+        yield return new WaitForSeconds(2f);
+        HUDManager.Instance.SetDebugText(null);
+        HUDManager.Instance.enableConsoleLogging = false;
+        yield break;
     }
 }

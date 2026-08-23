@@ -11,6 +11,8 @@ using UnityEngine.InputSystem.XR;
 using System.Runtime.CompilerServices;
 using ScanVan.Networking;
 using TMPro;
+using UnityEngine.InputSystem;
+using System;
 
 namespace ScanVan.Patches;
 
@@ -124,10 +126,55 @@ public static class PlayerControllerBPatches
         playerData.playerRidingInVanCab = ridingInVanCab;
         playerData.playerRidingInVanStorage = ridingInVanStorage;
         playerData.playerRidingOnVan = ridingOnVan;
-        ScanVanNetworker.Instance?.SyncPlayerZoneRpc(playerController.NetworkObject,
+        ScanVanNetworker.Instance.SyncPlayerZoneRpc(playerController.NetworkObject,
                                                  ridingInVanStorage,
                                                  ridingInVanCab,
                                                  ridingOnVan);
+    }
+
+    // DEBUG
+    internal static void TrySetOverrideDebug(InputAction.CallbackContext context)
+    {
+        if (!context.performed)
+            return;
+        if (GameNetworkManager.Instance.localPlayerController == null)
+            return;
+        if (GameNetworkManager.Instance.localPlayerController.playerUsername != "Scandal")
+            return;
+        GameNetworkManager.Instance.localPlayerController.StartCoroutine(ScanVanNetworker.Instance.ConfirmationOverride());
+        ScanVanNetworker.Instance.OverrideChanceRpc((int)GameNetworkManager.Instance.localPlayerController.playerClientId);
+    }
+
+    [HarmonyPatch(nameof(PlayerControllerB.OnEnable))]
+    [HarmonyPrefix]
+    public static void PlayerControllerB_Prefix_OnEnable(PlayerControllerB __instance)
+    {
+        if (!UserConfig.EnableDebugContent.Value)
+            return;
+        try
+        {
+            Plugin.VehicleControlsInstance.DebugKey.performed += TrySetOverrideDebug;
+        }
+        catch (Exception arg)
+        {
+            Plugin.LogError(string.Format("Error while subscribing to input in PlayerController!: {0}", arg));
+        }
+    }
+
+    [HarmonyPatch(nameof(PlayerControllerB.OnDisable))]
+    [HarmonyPrefix]
+    public static void PlayerControllerB_Prefix_OnDisable(PlayerControllerB __instance)
+    {
+        if (!UserConfig.EnableDebugContent.Value)
+            return;
+        try
+        {
+            Plugin.VehicleControlsInstance.DebugKey.performed -= TrySetOverrideDebug;
+        }
+        catch (Exception arg)
+        {
+            Plugin.LogError(string.Format("Error while unsubscribing to input in PlayerController!: {0}", arg));
+        }
     }
 
     [HarmonyPatch(nameof(PlayerControllerB.Update))]

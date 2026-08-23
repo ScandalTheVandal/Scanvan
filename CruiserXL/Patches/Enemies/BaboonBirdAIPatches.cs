@@ -25,11 +25,14 @@ public static class BaboonBirdAIPatches
         if (playerController == null)
             return true;
 
+        // LethalBots stuff
+        bool useData = !VehicleUtils.IsPlayerLocal(playerController);
+
         BoxCollider truckNavMeshBounds = vanController.collisionTrigger.insideTruckNavMeshBounds;
         bool enemyInVan = VehicleUtils.IsEnemyInVan(__instance, truckNavMeshBounds);
-        bool playerOnVan = VehicleUtils.IsPlayerInVanBounds(playerController, vanController);
-        bool playerInCab = VehicleUtils.IsPlayerInVanCabin(playerController, vanController);
-        bool playerInStorage = VehicleUtils.IsPlayerInVanStorage(playerController, vanController);
+        bool playerOnVan = VehicleUtils.IsPlayerInVanBounds(playerController, vanController, useData);
+        bool playerInCab = VehicleUtils.IsPlayerInVanCabin(playerController, vanController, useData);
+        bool playerInStorage = VehicleUtils.IsPlayerInVanStorage(playerController, vanController, useData);
         bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(playerController, vanController);
         bool storageEnclosed = VehicleUtils.IsVanStorageEnclosed(vanController);
 
@@ -53,6 +56,6 @@ public static class BaboonBirdAIPatches
         if (!playerInCab)
             return true;
 
-        return !VehicleUtils.IsPlayerProtectedByVan(playerController, vanController, checkWindows: true, windshieldCheck: true, velocityCheck: true, velocityMagnitude: 5f);
+        return !VehicleUtils.IsPlayerProtectedByVan(playerController, vanController, checkWindows: true, windshieldCheck: true, velocityCheck: true, velocityMagnitude: 5f, usePlayerData: useData);
     }
 }

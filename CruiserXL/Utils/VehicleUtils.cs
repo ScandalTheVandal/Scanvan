@@ -1,5 +1,6 @@
 ﻿using GameNetcodeStuff;
 using ScanVan.Patches;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 namespace ScanVan.Utils;
@@ -7,23 +8,30 @@ public static class VehicleUtils
 {
     internal static CruiserXLController vanController = null!;
 
+    // This can be used for smaller functions, one-liners, etc.
+    // No-Inlining is used for soft dependancy functions. Only when it's not a Harmony patch otherwise TypeLoadExceptions can occur!
+    // Thanks T-Rizzle =]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsEnemyInVan(EnemyAI enemyScript, BoxCollider navMeshBounds)
     {
         return (navMeshBounds.ClosestPoint(enemyScript.transform.position) == enemyScript.transform.position) ||
                (navMeshBounds.ClosestPoint(enemyScript.agent.destination) == enemyScript.agent.destination);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsVanStorageEnclosed(CruiserXLController vanScript)
     {
         return !vanScript.liftGateOpen &&
                !vanScript.sideDoorOpen;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsPlayerSeatedInVan(PlayerControllerB playerScript, CruiserXLController vanScript)
     {
         return vanScript != null && playerScript?.overridePhysicsParent == vanScript?.transform;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsPlayerInVanBounds(PlayerControllerB playerScript, CruiserXLController vanScript, bool usePlayerData = false)
     {
         return usePlayerData
@@ -31,6 +39,7 @@ public static class VehicleUtils
             : vanScript.vanZone.playerInZone;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsPlayerInVanCabin(PlayerControllerB playerScript, CruiserXLController vanScript, bool usePlayerData = false)
     {
         return usePlayerData
@@ -38,6 +47,7 @@ public static class VehicleUtils
             : vanScript.vanCabinZone.playerInZone;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsPlayerInVanStorage(PlayerControllerB playerScript, CruiserXLController vanScript, bool usePlayerData = false)
     {
         return usePlayerData
@@ -45,6 +55,7 @@ public static class VehicleUtils
             : vanScript.vanStorageZone.playerInZone;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsPlayerOnOutsideOfVan(PlayerControllerB playerScript, CruiserXLController vanScript, bool usePlayerData = false)
     {
         return IsPlayerInVanBounds(playerScript, vanScript, usePlayerData) &&
@@ -53,6 +64,7 @@ public static class VehicleUtils
                !IsPlayerSeatedInVan(playerScript, vanScript);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsVanMovingFastEnough(CruiserXLController vanScript, float threshold)
     {
         return vanScript.averageVelocity.magnitude > threshold;
@@ -122,11 +134,16 @@ public static class VehicleUtils
         return true;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    // internal is like public, but only we can use this!
+    internal static bool IsPlayerLocal(PlayerControllerB? player)
+    {
+        return player != null && player == GameNetworkManager.Instance.localPlayerController;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsPlayerNearVan(PlayerControllerB playerController, CruiserXLController vanController)
     {
-        Vector3 vehicleTransform = vanController.mainRigidbody.position;
-        Vector3 playerTransform = playerController.transform.position;
-
-        return Vector3.Distance(playerTransform, vehicleTransform) <= 10f;
+        return Vector3.Distance(playerController.transform.position, vanController.mainRigidbody.position) <= 10f;
     }
 }

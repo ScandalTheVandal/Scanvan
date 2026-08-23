@@ -14,6 +14,9 @@ namespace ScanVan.Utils;
 
 internal class VehicleControls : LcInputActions
 {
+    [InputAction(KeyboardControl.Unbound, Name = "DEBUG [TEST]", GamepadControl = GamepadControl.Unbound, ActionType = InputActionType.Value)]
+    public InputAction DebugKey { get; set; } = null!;
+
     [InputAction(KeyboardControl.W, Name = "Gas Pedal", GamepadControl = GamepadControl.Unbound, ActionType = InputActionType.Value)]
     public InputAction GasPedalKey { get; set; } = null!;
 

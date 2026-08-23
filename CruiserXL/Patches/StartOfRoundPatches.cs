@@ -61,10 +61,10 @@ public static class StartOfRoundPatches
                 Plugin.LogError("Attempted to load saved data, but the Van is null? please report this to Scandal.");
                 return;
             }
-            if (SaveManager.TryLoad<bool>(SaveManager.SavedVanVariant, out var variant))
+            if (SaveManager.TryLoad<int>(SaveManager.SavedVanVariant, out var variant))
             {
-                controller.isSpecialVariant = variant;
-                controller.SetVariant(controller.isSpecialVariant);
+                controller.vanVariant = (VanVariant)variant;
+                controller.SetVanVariant();
             }
             if (SaveManager.TryLoad<Vector3>(SaveManager.SavedVanPosition, out var position) &&
                 SaveManager.TryLoad<Vector3>(SaveManager.SavedVanRotation, out var rotation))
@@ -78,36 +78,42 @@ public static class StartOfRoundPatches
             }
             if (SaveManager.TryLoad<bool>(SaveManager.SavedVanIgnition, out var ignition))
             {
-                controller.voiceModule.ignitionChimeStarted = ignition;
-                controller.voiceModule.ignitionChimeFinished = ignition;
-
+                if (controller.vanVariant != VanVariant.Creasman)
+                {
+                    controller.voiceModule.ignitionChimeStarted = ignition;
+                    controller.voiceModule.ignitionChimeFinished = ignition;
+                }
                 controller.disableAnimations = !ignition;
-                controller.inIgnitionAnimation = !ignition;
-                controller.ignitionOn = ignition;
 
                 controller.ignitionOn = ignition;
                 controller.keyIsInIgnition = ignition;
 
-                controller.SetIgnitionValues(trying: false, keyInHand: false, keyInSlot: ignition);
+                controller.SetIgnitionKeyValues(setKeyInHand: false, setKeyInSlot: ignition);
                 controller.SetIgnition(ignition, ignition);
-                controller.SetFrontCabinLightOn(setOn: ignition);
-                controller.SetIgnitionTrigger();
+                controller.SetIgnitionInteractTrigger();
 
-                if (ignition) controller.dashboardSweepCoroutine = controller.StartCoroutine(controller.DashboardSweepCoroutine());
-                controller.SetSymbolActive(controller.vehicleDisplay, controller.vehicleDisplayLight, ignition);
-                controller.driversSideWindow.interactable = ignition;
-                controller.passengersSideWindow.interactable = ignition;
+                if (ignition)
+                {
+                    controller.dashboardSweepCoroutine = controller.StartCoroutine(controller.DashboardSweepCoroutine());
+                    controller.TrySetMirrorsFolded(setFolded: ignition);
+                }
+                if (controller.hasVehicleDisplay)
+                {
+                    controller.SetSymbolActive(controller.vehicleDisplay, controller.vehicleDisplayLight, ignition);
+                }
+                controller.SetWindowInteractTriggers(isIgnitionOn: ignition);
                 controller.ignitionCollider.enabled = ignition;
-                controller.ignitionAnimator.SetInteger("SAIgnition_Anim", ignition ? 1 : 0);
+                const string IGNITION_ANIM = "SA_IgnitionAnim";
+                controller.ignitionAnimator.SetInteger(IGNITION_ANIM, ignition ? 1 : 0);
             }
             if (SaveManager.TryLoad<float>(SaveManager.SavedVanSteering, out var wheelPosition))
             {
                 controller.syncedSteeringWheelRotation = wheelPosition;
                 controller.steeringWheelAnimFloat = wheelPosition;
             }
-            if (SaveManager.TryLoad<int>(SaveManager.SavedVanHealth, out var carHealth))
+            if (SaveManager.TryLoad<int>(SaveManager.SavedVanHealth, out var vanHealth))
             {
-                controller.carHP = carHealth;
+                controller.carHP = vanHealth;
             }
             if (SaveManager.TryLoad<int>(SaveManager.SavedVanServiceAlert, out var voiceAlert))
             {
@@ -116,6 +122,10 @@ public static class StartOfRoundPatches
             if (SaveManager.TryLoad<bool>(SaveManager.SavedVanAltAlerts, out var altVoiceAlerts))
             {
                 controller.voiceModule.useAltAudio = altVoiceAlerts;
+            }
+            if (SaveManager.TryLoad<float>(SaveManager.SavedVanMileage, out var odometerMileage))
+            {
+                controller.odometerValue = odometerMileage;
             }
         }
         catch (Exception e)

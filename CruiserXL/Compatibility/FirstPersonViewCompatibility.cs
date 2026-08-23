@@ -13,7 +13,7 @@ namespace ScanVan.Compatibility;
 [HarmonyPatch]
 public static class FirstPersonViewCompatibility
 {
-    [HarmonyPatch(typeof(CruiserXLController), nameof(CruiserXLController.SetIgnitionKey))]
+    [HarmonyPatch(typeof(CruiserXLController), nameof(CruiserXLController.SetCarIgnitionKey))]
     [HarmonyPrefix]
     public static void HaulerController_Pre_SetCarKeyEffects(CruiserXLController __instance, ref bool localUseBodyHands)
     {

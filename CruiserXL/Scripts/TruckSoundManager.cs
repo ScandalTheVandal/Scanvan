@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using ScandalsTweaks.Utils;
+using System.Linq;
 
 namespace ScanVan.Behaviour;
 
@@ -13,16 +14,21 @@ public class TruckSoundManager : MonoBehaviour
 {
     public CruiserXLController controller = null!;
 
+    public AudioSource[] dopplerAudios = null!;
+
     public OccludeAudio[] insideOcclusion = null!;
     public OccludeAudio[] outsideOcclusion = null!;
 
-    public float checkInterval;
+    private bool isAudioDopplerActive = true;
+    private bool isRainAudioActive;
+
+    private float checkInterval;
 
     public void Start()
     {
         for (int i = 0; i < insideOcclusion.Length; i++)
         {
-            insideOcclusion[i].lowPassOverride = 3500f;
+            insideOcclusion[i].lowPassOverride = 2500f;
         }
         for (int j = 0; j < outsideOcclusion.Length; j++)
         {
@@ -56,24 +62,30 @@ public class TruckSoundManager : MonoBehaviour
 
         var perspectiveData = PlayerControllerBPatches.playerData[perspectivePlayer];
 
+        bool perspectiveOnVehicle = perspectiveData?.playerRidingOnVan ?? false;
         bool perspectiveInCab = perspectiveData?.playerRidingInVanCab ?? false;
         bool perspectiveInStorage = perspectiveData?.playerRidingInVanStorage ?? false;
         bool perspectiveInVehicle = perspectiveInCab || perspectiveInStorage;
+        bool perspectiveInOrOnVehicle = perspectiveOnVehicle || perspectiveInVehicle;
 
         UpdateRainAudio(perspectiveInVehicle);
+        UpdateDopplerAudioEffect(perspectiveInOrOnVehicle && !vehicleDestroyed);
+
         bool soundAudible = vehicleDestroyed || 
-                           (controller.driverSideDoor.boolValue ||
+                            controller.driverSideDoor.boolValue ||
                             controller.frontLeftWindow.isWindowOpen ||
                             controller.passengerSideDoor.boolValue ||
                             controller.frontRightWindow.isWindowOpen ||
-                            controller.windshieldBroken);
+                            controller.windshieldBroken;
 
         bool storageOpen = vehicleDestroyed || 
-                           (controller.sideDoorOpen || controller.liftGateOpen);
+                           controller.sideDoorOpen || 
+                           controller.liftGateOpen;
 
-        for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
+        var allPlayerScriptsSOR = StartOfRound.Instance.allPlayerScripts;
+        for (int i = 0; i < allPlayerScriptsSOR.Length; i++)
         {
-            PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[i];
+            PlayerControllerB player = allPlayerScriptsSOR[i];
 
             if (player == null ||
                 player.isPlayerDead ||
@@ -184,10 +196,30 @@ public class TruckSoundManager : MonoBehaviour
         }
     }
 
-    public void UpdateRainAudio(bool perspectiveInVan = false)
+    public void UpdateDopplerAudioEffect(bool setDoppler)
+    {
+        if (isAudioDopplerActive == setDoppler)
+            return;
+        isAudioDopplerActive = setDoppler;
+        float level = setDoppler ? 0f : 1f;
+        for (int i = 0; i < dopplerAudios.Length; i++)
+        {
+            dopplerAudios[i].dopplerLevel = level;
+        }
+    }
+
+    public void UpdateRainAudio(bool perspectiveInVan)
     {
         if (controller.carDestroyed)
+        {
+            if (isRainAudioActive)
+                isRainAudioActive = false;
             return;
-        controller.roofRainAudioActive = Utilities.IsItRaining() && perspectiveInVan;
+        }
+        bool setRainAudio = Utilities.IsItRaining() && perspectiveInVan;
+        if (isRainAudioActive == setRainAudio)
+            return;
+        isRainAudioActive = setRainAudio;
+        controller.roofRainAudioActive = setRainAudio;
     }
 }

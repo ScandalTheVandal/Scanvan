@@ -112,7 +112,10 @@ namespace ScanVan
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void LogDebug(string debugLog)
         {
-            Logger.LogDebug(debugLog);
+            if (UserConfig.EnableDebugLogging.Value)
+            {
+                Logger.LogDebug(debugLog);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

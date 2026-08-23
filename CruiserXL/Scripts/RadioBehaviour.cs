@@ -220,8 +220,8 @@ public class RadioBehaviour : NetworkBehaviour
     public string GetRandomFrequency()
     {
         float randomFreq = UnityEngine.Random.Range(
-            _controller.minFrequency,
-            _controller.maxFrequency);
+            CruiserXLController.minFrequency,
+            CruiserXLController.maxFrequency);
         string formattedFreq = randomFreq.ToString("0.##");
         _currentFrequency = $"FM {formattedFreq}";
         return _currentFrequency;

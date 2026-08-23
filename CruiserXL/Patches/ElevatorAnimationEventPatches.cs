@@ -14,13 +14,12 @@ public static class ElevatorAnimationEventsPatches
     static void ElevatorAnimationEvents_Pre_ElevatorFullyRunning()
     {
         CruiserXLController vanController = VehicleUtils.vanController;
-        if (vanController == null)
+        if (vanController == null || !vanController.magnetedToShip)
             return;
 
         TryDespawnItemsInVan(vanController);
 
         PlayerControllerB playerController = GameNetworkManager.Instance.localPlayerController;
-
         bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(playerController, vanController);
         bool playerOnVan = VehicleUtils.IsPlayerInVanBounds(playerController, vanController);
         bool playerInStorage = VehicleUtils.IsPlayerInVanStorage(playerController, vanController);

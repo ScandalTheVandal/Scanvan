@@ -151,7 +151,7 @@ public class VanPhysicsRegion : PlayerPhysicsRegion
         }
         isRegionActive = IsPhysicsRegionActive();
         UpdatePhysicsRegion();
-        SetPhysicsRegionAndZone(ref checkInterval, ref removePlayerNextFrame, ref hasLocalPlayer, true);
+        SetPhysicsRegionAndZone(ref checkInterval, ref removePlayerNextFrame, ref hasLocalPlayer);
     }
 
     public void UpdatePhysicsRegion()
@@ -178,7 +178,7 @@ public class VanPhysicsRegion : PlayerPhysicsRegion
         playerInsideInterval = 0f;
     }
 
-    public void SetPhysicsRegionAndZone(ref float interval, ref bool removeNextFrame, ref bool hasPlayer, bool removeFromPhysicsList = false)
+    public void SetPhysicsRegionAndZone(ref float interval, ref bool removeNextFrame, ref bool hasPlayer)
     {
         if (!hasPlayer)
         {
@@ -197,7 +197,6 @@ public class VanPhysicsRegion : PlayerPhysicsRegion
         removeNextFrame = false;
         interval = 0f;
         hasPlayer = false;
-        if (removeFromPhysicsList)
-            TryRemovePhysicsRegionFromList();
+        TryRemovePhysicsRegionFromList();
     }
 }
