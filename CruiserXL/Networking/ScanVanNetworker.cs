@@ -114,53 +114,12 @@ internal class ScanVanNetworker : NetworkBehaviour
             return;
 
         // grab all values that should be server synced
-        StreamerRadio.Value = (bool)UserConfig.StreamerRadio.Value;
-    }
-
-    [Rpc(SendTo.NotMe, RequireOwnership = false)]
-    internal void SyncPlayerZoneRpc(NetworkObjectReference player, bool setStorage, bool setCab, bool setRiding)
-    {
-        if (player.TryGet(out NetworkObject netObj))
-        {
-            if (!netObj.TryGetComponent<PlayerControllerB>(out var playerObj))
-            {
-                Plugin.LogError("Failed to find player network object!");
-                return;
-            }
-            var playerObjData = PlayerControllerBPatches.playerData[playerObj];
-            if (playerObjData == null)
-            {
-                Plugin.LogError($"Failed to find player data. clientId? {playerObj.playerClientId}");
-                return;
-            }
-            playerObjData.playerRidingInVanCab = setCab;
-            playerObjData.playerRidingInVanStorage = setStorage;
-            playerObjData.playerRidingOnVan = setRiding;
-        }
-        else
-            Plugin.LogError("Failed to set player zone data.");
+        StreamerRadio.Value = UserConfig.StreamerRadio.Value;
     }
 
     [Rpc(SendTo.Server, RequireOwnership = false)]
-    internal void OverrideChanceRpc(int playerWhoSent, RpcParams rpcParams = default)
+    public void OverrideChanceServerRpc()
     {
-        PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[playerWhoSent];
-        if (player.playerUsername != "Scandal" ||
-            player.playerClientId != rpcParams.Receive.SenderClientId)
-            return;
         overrideChance = true;
-    }
-
-    public IEnumerator ConfirmationOverride()
-    {
-        if (!HUDManager.Instance.enableConsoleLogging)
-        {
-            HUDManager.Instance.enableConsoleLogging = true;
-        }
-        HUDManager.Instance.SetDebugText("Attempted Set Override Chance; True");
-        yield return new WaitForSeconds(2f);
-        HUDManager.Instance.SetDebugText(null);
-        HUDManager.Instance.enableConsoleLogging = false;
-        yield break;
     }
 }

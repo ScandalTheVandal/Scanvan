@@ -6,27 +6,17 @@ using UnityEngine.InputSystem.XR;
 
 namespace ScanVan.Patches;
 
-[HarmonyPatch(typeof(ElevatorAnimationEvents))]
+[HarmonyPatch]
 public static class ElevatorAnimationEventsPatches
 {
-    [HarmonyPatch(nameof(ElevatorAnimationEvents.ElevatorFullyRunning))]
+    [HarmonyPatch(typeof(ElevatorAnimationEvents), nameof(ElevatorAnimationEvents.ElevatorFullyRunning))]
     [HarmonyPrefix]
     static void ElevatorAnimationEvents_Pre_ElevatorFullyRunning()
     {
         CruiserXLController vanController = VehicleUtils.vanController;
         if (vanController == null || !vanController.magnetedToShip)
             return;
-
         TryDespawnItemsInVan(vanController);
-
-        PlayerControllerB playerController = GameNetworkManager.Instance.localPlayerController;
-        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(playerController, vanController);
-        bool playerOnVan = VehicleUtils.IsPlayerInVanBounds(playerController, vanController);
-        bool playerInStorage = VehicleUtils.IsPlayerInVanStorage(playerController, vanController);
-        bool playerInCab = VehicleUtils.IsPlayerInVanCabin(playerController, vanController);
-
-        if (playerSeated || playerOnVan || playerInStorage || playerInCab)
-            playerController.isInElevator = true;
     }
 
     static void TryDespawnItemsInVan(CruiserXLController vanController)

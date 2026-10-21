@@ -73,9 +73,6 @@ public class EVAModule : NetworkBehaviour
     public bool isKeysForgotten;
     public float alertSystemInterval;
 
-    public bool setThankYouClip;
-    public bool stopThankYouClip;
-
     public bool hasAlertedOnEngineStart;
     public bool ignitionChimeStarted;
     public bool ignitionChimeFinished;
@@ -125,33 +122,12 @@ public class EVAModule : NetworkBehaviour
             },
             new VoiceAlertDefinition
             {
-                alertType = ElectronicVoiceAlert.ThankYou,
-                triggerCondition = () => setThankYouClip,
-                resetCondition = () => stopThankYouClip,
-                priority = VoiceAlertPriority.Override
-            },
-            new VoiceAlertDefinition
-            {
                 alertType = ElectronicVoiceAlert.ParkBrakeOn,
                 triggerCondition = () => audioTimedCoroutine == null && controller.handbrakeEngaged && controller.drivePedalPressed && controller.ignitionStarted,
                 resetCondition = () => !controller.handbrakeEngaged || !controller.ignitionStarted,
                 canThankYou = true,
                 setThankYou = () => !controller.handbrakeEngaged,
                 priority = VoiceAlertPriority.Low
-            },
-            new VoiceAlertDefinition
-            {
-                alertType = ElectronicVoiceAlert.KeyInIgnition,
-                triggerCondition = () => controller.keyIsInIgnition && !controller.ignitionStarted && controller.driverSideDoor.boolValue,
-                resetCondition = () => !controller.driverSideDoor.boolValue || !controller.keyIsInIgnition || controller.ignitionStarted,
-                priority = VoiceAlertPriority.IsImportant,
-            },
-            new VoiceAlertDefinition
-            {
-                alertType = ElectronicVoiceAlert.HeadlampsOn,
-                triggerCondition = () => controller.headlightsContainer.activeSelf && !controller.ignitionStarted && controller.driverSideDoor.boolValue,
-                resetCondition = () => !controller.driverSideDoor.boolValue || !controller.headlightsContainer.activeSelf || controller.ignitionStarted,
-                priority = VoiceAlertPriority.IsImportant,
             },
             new VoiceAlertDefinition
             {
@@ -259,6 +235,10 @@ public class EVAModule : NetworkBehaviour
             if (!off)
             {
                 off = true;
+                if (voiceAudio.isPlaying)
+                {
+                    voiceAudio.Stop();
+                }
                 if (audioTimedCoroutine != null)
                 {
                     StopCoroutine(audioTimedCoroutine);
@@ -273,11 +253,7 @@ public class EVAModule : NetworkBehaviour
                     StopCoroutine(playAudioCoroutine);
                     playAudioCoroutine = null!;
                 }
-                if (voiceAudio.isPlaying)
-                {
-                    voiceAudio.Stop();
-                    audioIsPlaying = false;
-                }
+                audioIsPlaying = false;
                 isPlayingIgnitionChime = false;
                 ignitionChimeStarted = false;
                 hasAlertedOnEngineStart = false;
@@ -417,10 +393,7 @@ public class EVAModule : NetworkBehaviour
             isImportantAlert = false;
             isKeysForgotten = false;
 
-            ResetAudioClip(ElectronicVoiceAlert.HeadlampsOn);
-            ResetAudioClip(ElectronicVoiceAlert.KeyInIgnition);
-
-            SetThankYouClip(setIgnitionOff: !controller.ignitionOn);
+            SetThankYouClip(setIgnitionOff: !controller.ignitionOn, resetImportant: true);
             return;
         }
         if (currentClipId != (int)ElectronicVoiceAlert.ThankYou)
@@ -459,10 +432,7 @@ public class EVAModule : NetworkBehaviour
             isImportantAlert = false;
             isKeysForgotten = false;
 
-            ResetAudioClip(ElectronicVoiceAlert.HeadlampsOn);
-            ResetAudioClip(ElectronicVoiceAlert.KeyInIgnition);
-
-            SetThankYouClip(setIgnitionOff: !controller.ignitionOn);
+            SetThankYouClip(setIgnitionOff: !controller.ignitionOn, resetImportant: true);
             return;
         }
         if (isKeysForgotten && !controller.keyIsInIgnition && currentClipId != (int)ElectronicVoiceAlert.ThankYou)
@@ -470,27 +440,28 @@ public class EVAModule : NetworkBehaviour
             isKeysForgotten = false;
             isImportantAlert = false;
 
-            ResetAudioClip(ElectronicVoiceAlert.HeadlampsOn);
-            ResetAudioClip(ElectronicVoiceAlert.KeyInIgnition);
-
-            SetThankYouClip(setIgnitionOff: !controller.ignitionOn);
+            SetThankYouClip(setIgnitionOff: !controller.ignitionOn, resetImportant: true);
             return;
         }
         if ((isKeysForgotten || isImportantAlert) && (!controller.driverSideDoor.boolValue || controller.currentDriver != null))
         {
             isKeysForgotten = false;
             isImportantAlert = false;
+            bool resetChime = false;
             if (isPlayingIgnitionChime)
             {
+                resetChime = true;
                 ignitionChimeStarted = false;
                 hasAlertedOnEngineStart = false;
             }
+            bool resetOnStart = false;
             if (isPlayingOnEngineStart)
             {
+                resetOnStart = true;
                 hasAlertedOnEngineStart = false;
                 ResetAudioClip(ElectronicVoiceAlert.AllSystemsOk);
             }
-            StopAudioClipIfPlaying();
+            StopAudioClipIfPlaying(resetChime, resetOnStart);
             return;
         }
         if (controller.ignitionOn)
@@ -501,10 +472,6 @@ public class EVAModule : NetworkBehaviour
                 isPlayingOnEngineStart = true;
                 ignitionChimeStarted = true;
                 hasAlertedOnEngineStart = false;
-
-                ResetAudioClip(ElectronicVoiceAlert.HeadlampsOn);
-                ResetAudioClip(ElectronicVoiceAlert.KeyInIgnition);
-                ResetAudioClip(ElectronicVoiceAlert.AllSystemsOk);
 
                 SetIgnitionChime();
                 return;
@@ -519,11 +486,40 @@ public class EVAModule : NetworkBehaviour
             alert.hasPlayed = false;
 
         }
-        ResetAudioClip(ElectronicVoiceAlert.ThankYou);
+        if (ignitionChimeFinished || ignitionChimeStarted || hasAlertedOnEngineStart)
+        {
+            ignitionChimeFinished = false;
+            ignitionChimeStarted = false;
+            hasAlertedOnEngineStart = false;
+            ResetAudioClip(ElectronicVoiceAlert.ThankYou);
+            if (playAudioCoroutine != null)
+            {
+                StopCoroutine(playAudioCoroutine);
+                playAudioCoroutine = null!;
+            }
+            audioIsPlaying = false;
+            alertClipQueue.Clear();
+            Plugin.LogDebug("Reset ignition chime; A");
+            ResetIgnitionChimeRpc();
+        }
+        randomOverheatClipToPlay = 0;
+    }
+
+    [Rpc(SendTo.NotMe, RequireOwnership = false)]
+    public void ResetIgnitionChimeRpc()
+    {
         ignitionChimeFinished = false;
         ignitionChimeStarted = false;
         hasAlertedOnEngineStart = false;
-        randomOverheatClipToPlay = 0;
+        ResetAudioClip(ElectronicVoiceAlert.ThankYou);
+        if (playAudioCoroutine != null)
+        {
+            StopCoroutine(playAudioCoroutine);
+            playAudioCoroutine = null!;
+        }
+        audioIsPlaying = false;
+        alertClipQueue.Clear();
+        Plugin.LogDebug("Reset ignition chime; RPC; A");
     }
 
     private void TryPlayQueuedClips()
@@ -531,17 +527,17 @@ public class EVAModule : NetworkBehaviour
         if (alertClipQueue.Count == 0)
             return;
 
-        if (audioTimedCoroutine != null || playAudioCoroutine != null)
-            return;
-
         bool doesNotMeetConditionsToPlay = isImportantAlert || isKeysForgotten || !ignitionChimeFinished;
         if (doesNotMeetConditionsToPlay)
+            return;
+
+        if (audioTimedCoroutine != null || playAudioCoroutine != null)
             return;
 
         playAudioCoroutine = StartCoroutine(TryPlayAudioClipsInQueue());
     }
 
-    private void StopAudioClipIfPlaying()
+    private void StopAudioClipIfPlaying(bool resetChime, bool resetOnStart)
     {
         CancelVoiceAudioCoroutine();
         voiceAudio.Stop();
@@ -550,15 +546,25 @@ public class EVAModule : NetworkBehaviour
         clusterScreen.text = null;
         Plugin.LogDebug("Voice alert stop; A");
         clusterLight.enabled = false;
-        StopAudioClipRpc(isKeysForgotten, isImportantAlert);
+        StopAudioClipRpc(resetChime, resetOnStart, isKeysForgotten, isImportantAlert);
     }
 
     [Rpc(SendTo.NotMe, RequireOwnership = false)]
-    public void StopAudioClipRpc(bool setKeys, bool setImportant)
+    public void StopAudioClipRpc(bool resetChime, bool resetOnStart, bool setKeys, bool setImportant)
     {
         CancelVoiceAudioCoroutine();
         isKeysForgotten = setKeys;
         isImportantAlert = setImportant;
+        if (resetChime)
+        {
+            ignitionChimeStarted = false;
+            hasAlertedOnEngineStart = false;
+        }
+        if (resetOnStart)
+        {
+            hasAlertedOnEngineStart = false;
+            ResetAudioClip(ElectronicVoiceAlert.AllSystemsOk);
+        }
         voiceAudio.Stop();
         voiceAudio.clip = null;
         currentClipId = -1;
@@ -585,7 +591,7 @@ public class EVAModule : NetworkBehaviour
         int alertClipId = (int)alert;
         if (IsClipInQueue(alertClipId, out _))
             return;
-        alertClipQueue.Add(new VoiceStruct { clipId = alertClipId, hasThankYou = isThankYouClip, isImportant = isImportantWarning, isIgnition = isIgnitionChime, importantType = importantType });
+        alertClipQueue.Add(new VoiceStruct { clipId = alertClipId, isThankYou = isThankYouClip, isImportant = isImportantWarning, isIgnition = isIgnitionChime, importantType = importantType });
     }
 
     public bool IsClipInQueue(int alertInt, out int foundIndex)
@@ -603,79 +609,105 @@ public class EVAModule : NetworkBehaviour
         return false;
     }
 
-    public void SetThankYouClip(bool setIgnitionOff = false)
+    public void SetThankYouClip(bool setIgnitionOff = false, bool resetImportant = false)
     {
         if (setIgnitionOff)
         {
             ResetIgnitionOnStart();
         }
+        int clipToSet = -1;
         if (voiceAudio.clip != null && voiceAudio.isPlaying && voiceAudio.clip != voiceAudioClips[(int)ElectronicVoiceAlert.ThankYou] &&
             voiceAudio.time < voiceAudio.clip.length / 2f && currentClipId != -1 && voiceAudio.clip != voiceAudioClips[(int)ElectronicVoiceAlert.ParkBrakeOn])
         {
             var alert = alerts.FirstOrDefault(i => (int)i.alertType == currentClipId);
             if (alert != null && alert.triggerCondition())
             {
+                clipToSet = currentClipId;
                 SetClipInQueue((ElectronicVoiceAlert)currentClipId, false, false);
             }
         }
-        CancelVoiceAudioCoroutine();
+        CancelVoiceAudioCoroutine(withPlayback: true);
+        if (resetImportant)
+        {
+            ResetAudioClip(ElectronicVoiceAlert.KeyInIgnition);
+            ResetAudioClip(ElectronicVoiceAlert.HeadlampsOn);
+        }
         voiceAudio.Stop();
         alertClipQueue.Clear();
-        PlayAudioClip(new VoiceStruct { clipId = 2, hasThankYou = true, isImportant = false, isIgnition = false, importantType = 0 });
-        SetThankYouClipRpc(isImportantAlert, isKeysForgotten, setIgnitionOff);
+        PlayAudioClip(new VoiceStruct { clipId = 2, isThankYou = true, isImportant = false, isIgnition = false, importantType = -1 });
+        SetThankYouClipRpc(isImportantAlert, isKeysForgotten, setIgnitionOff, resetImportant);
     }
 
     [Rpc(SendTo.NotMe, RequireOwnership = false)]
-    public void SetThankYouClipRpc(bool isLamps, bool isKeys, bool setIgnitionOff)
+    public void SetThankYouClipRpc(bool isLamps, bool isKeys, bool setIgnitionOff, bool resetImportant)
     {
         if (setIgnitionOff)
         {
             ResetIgnitionOnStart();
         }
-        CancelVoiceAudioCoroutine();
+        /*
+        if (clipToSet != -1)
+        {
+            SetClipInQueue((ElectronicVoiceAlert)clipToSet, false, false);
+        }
+        */
+        CancelVoiceAudioCoroutine(withPlayback: true);
+        if (resetImportant)
+        {
+            ResetAudioClip(ElectronicVoiceAlert.KeyInIgnition);
+            ResetAudioClip(ElectronicVoiceAlert.HeadlampsOn);
+        }
         isKeysForgotten = isKeys;
         isImportantAlert = isLamps;
         voiceAudio.Stop();
         alertClipQueue.Clear();
-        PlayAudioClip(new VoiceStruct { clipId = 2, hasThankYou = true, isImportant = false, isIgnition = false, importantType = 0 });
+        PlayAudioClip(new VoiceStruct { clipId = 2, isThankYou = true, isImportant = false, isIgnition = false, importantType = -1 });
     }
 
     public void SetImportantAlert(int clipToPlay, int clipType)
     {
-        CancelVoiceAudioCoroutine();
+        CancelVoiceAudioCoroutine(withPlayback: true);
         voiceAudio.Stop();
         alertClipQueue.Clear();
-        PlayAudioClip(new VoiceStruct { clipId = clipToPlay, hasThankYou = false, isImportant = true, isIgnition = false, importantType = clipType });
+        PlayAudioClip(new VoiceStruct { clipId = clipToPlay, isThankYou = false, isImportant = true, isIgnition = false, importantType = clipType });
         SetImportantAlertRpc(clipToPlay, clipType, isKeysForgotten, isImportantAlert);
     }
 
     [Rpc(SendTo.NotMe, RequireOwnership = false)]
     public void SetImportantAlertRpc(int clipToPlay, int clipType, bool isKeys, bool isLamps)
     {
-        CancelVoiceAudioCoroutine();
+        CancelVoiceAudioCoroutine(withPlayback: true);
         isKeysForgotten = isKeys;
         isImportantAlert = isLamps;
         voiceAudio.Stop();
         alertClipQueue.Clear();
-        PlayAudioClip(new VoiceStruct { clipId = clipToPlay, hasThankYou = false, isImportant = true, isIgnition = false, importantType = clipType });
+        PlayAudioClip(new VoiceStruct { clipId = clipToPlay, isThankYou = false, isImportant = true, isIgnition = false, importantType = clipType });
     }
 
     public void SetIgnitionChime()
     {
-        CancelVoiceAudioCoroutine();
+        CancelVoiceAudioCoroutine(withPlayback: true);
+        ResetAudioClip(ElectronicVoiceAlert.HeadlampsOn);
+        ResetAudioClip(ElectronicVoiceAlert.KeyInIgnition);
+        ResetAudioClip(ElectronicVoiceAlert.AllSystemsOk);
         voiceAudio.Stop();
         alertClipQueue.Clear();
-        PlayAudioClip(new VoiceStruct { clipId = -1, hasThankYou = false, isImportant = false, isIgnition = true, importantType = -1 });
-        SetIgnitionChimeRpc();
+        PlayAudioClip(new VoiceStruct { clipId = -1, isThankYou = false, isImportant = false, isIgnition = true, importantType = -1 });
+        SetIgnitionChimeRpc(isKeysForgotten, isImportantAlert);
     }
 
     [Rpc(SendTo.NotMe, RequireOwnership = false)]
-    public void SetIgnitionChimeRpc()
+    public void SetIgnitionChimeRpc(bool isKeys, bool isLamps)
     {
-        CancelVoiceAudioCoroutine();
+        CancelVoiceAudioCoroutine(withPlayback: true);
+        ResetAudioClip(ElectronicVoiceAlert.HeadlampsOn);
+        ResetAudioClip(ElectronicVoiceAlert.KeyInIgnition);
+        ResetAudioClip(ElectronicVoiceAlert.AllSystemsOk);
+        isKeysForgotten = isKeys;
+        isImportantAlert = isLamps;
         voiceAudio.Stop();
         alertClipQueue.Clear();
-        PlayAudioClip(new VoiceStruct { clipId = -1, hasThankYou = false, isImportant = false, isIgnition = true, importantType = -1 });
+        PlayAudioClip(new VoiceStruct { clipId = -1, isThankYou = false, isImportant = false, isIgnition = true, importantType = -1 });
     }
 
     [Rpc(SendTo.NotMe, RequireOwnership = false)]
@@ -685,15 +717,27 @@ public class EVAModule : NetworkBehaviour
             alertClipQueue.Clear();
 
         alertClipQueue.Add(voice);
-        playAudioCoroutine = StartCoroutine(TryPlayAudioClipsInQueue());
+        TryPlayQueuedClips();
     }
 
-    public void CancelVoiceAudioCoroutine()
+    public void CancelVoiceAudioCoroutine(bool withPlayback = false)
     {
         if (audioTimedCoroutine != null)
         {
             StopCoroutine(audioTimedCoroutine);
             audioTimedCoroutine = null!;
+        }
+        if (withPlayback)
+        {
+            if (playAudioCoroutine != null)
+            {
+                StopCoroutine(playAudioCoroutine);
+                playAudioCoroutine = null!;
+            }
+            currentClipId = -1;
+            clusterScreen.text = null;
+            clusterLight.enabled = false;
+            audioIsPlaying = false;
         }
     }
 
@@ -704,14 +748,14 @@ public class EVAModule : NetworkBehaviour
         {
             var currentAlertToPlay = alertClipQueue[0];
             alertClipQueue.RemoveAt(0);
-            if (NetworkManager.Singleton.IsServer)
-            {
-                PlayAudioClipRpc(currentAlertToPlay);
-            }
-            if (currentAlertToPlay.hasThankYou || currentAlertToPlay.isImportant || currentAlertToPlay.isIgnition)
+            if (currentAlertToPlay.isThankYou || currentAlertToPlay.isImportant || currentAlertToPlay.isIgnition)
             {
                 CancelVoiceAudioCoroutine();
                 alertClipQueue.Clear();
+            }
+            if (NetworkManager.Singleton.IsServer)
+            {
+                PlayAudioClipRpc(currentAlertToPlay);
             }
             PlayAudioClip(currentAlertToPlay);
             yield return new WaitUntil(() => audioTimedCoroutine == null);
@@ -726,7 +770,7 @@ public class EVAModule : NetworkBehaviour
     {
         if (voice.isImportant) return VoiceAlertPriority.IsImportant;
         if (voice.isIgnition) return VoiceAlertPriority.IsIgnition;
-        if (voice.hasThankYou) return VoiceAlertPriority.Override;
+        if (voice.isThankYou) return VoiceAlertPriority.Override;
         for (int i = 0; i < alerts.Length; i++)
         {
             var alert = alerts[i];
@@ -756,7 +800,7 @@ public class EVAModule : NetworkBehaviour
             audioTimedCoroutine = StartCoroutine(PlayImportantAlert(voice.clipId, voice.importantType));
             return;
         }
-        if (voice.hasThankYou)
+        if (voice.isThankYou)
         {
             audioTimedCoroutine = StartCoroutine(PlayThankYouAudio(voice.clipId));
             return;
@@ -816,6 +860,11 @@ public class EVAModule : NetworkBehaviour
             currentPriority = VoiceAlertPriority.None;
         ignitionChimeFinished = true;
         audioTimedCoroutine = null!;
+        // if a message arrives before the chime is finished on a client,
+        // it can refuse to play till another alert is queued to play by the host,
+        // mainly affects the all systems okay message
+        if (!NetworkManager.Singleton.IsServer)
+            TryPlayQueuedClips();
         yield break;
     }
 
@@ -837,7 +886,7 @@ public class EVAModule : NetworkBehaviour
         voiceAudio.loop = false;
         if (clipId == -1 && clipType == -1)
         {
-            while (isImportantAlert || isKeysForgotten)
+            while (isImportantAlert && isKeysForgotten)
             {
                 yield return SetScreenTextAfterDelay((int)ElectronicVoiceAlert.KeyInIgnition, 0.08f);
                 yield return PlayImportantAlertAudio((int)ElectronicVoiceAlert.KeyInIgnition, highToneAlertAlt);
@@ -873,6 +922,10 @@ public class EVAModule : NetworkBehaviour
 
     private IEnumerator PlayVoiceAlert(int clipId)
     {
+        Plugin.LogDebug(
+            $"Voice alert clipId?; {clipId} " +
+            $"audioTimed?; {audioTimedCoroutine != null}"
+        );
         if (NetworkManager.Singleton.IsHost)
         {
             RemoveClipFromQueue(clipId);
@@ -889,12 +942,15 @@ public class EVAModule : NetworkBehaviour
         voiceAudio.clip = voiceAudioClips[clipId];
         voiceAudio.Play();
         yield return new WaitForSeconds(voiceAudio.clip.length + 0.45f);
-        StopVoiceAlertCoroutine();
-        Plugin.LogDebug("Voice alert stop; F");
         if (clipId == (int)ElectronicVoiceAlert.AllSystemsOk)
         {
             isPlayingOnEngineStart = false;
         }
+        Plugin.LogDebug($"Voice alert stop; F" +
+                        $"Voice alert clipId?; {clipId}" + 
+                        $"currentClipId={currentClipId}" + 
+                        $"actualClip={voiceAudio.clip?.name}");
+        StopVoiceAlertCoroutine();
         yield break;
     }
 

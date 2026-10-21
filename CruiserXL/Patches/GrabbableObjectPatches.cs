@@ -6,10 +6,10 @@ using System.Text;
 
 namespace ScanVan.Patches;
 
-[HarmonyPatch(typeof(GrabbableObject))]
+[HarmonyPatch]
 public static class GrabbableObjectPatches
 {
-    [HarmonyPatch(nameof(GrabbableObject.Update))]
+    [HarmonyPatch(typeof(GrabbableObject), nameof(GrabbableObject.Update))]
     [HarmonyPostfix]
     private static void GrabbableObject_Post_Update(GrabbableObject __instance)
     {
@@ -32,7 +32,7 @@ public static class GrabbableObjectPatches
         References.itemsInTruck.Add(__instance);
     }
 
-    [HarmonyPatch(nameof(GrabbableObject.OnDestroy))]
+    [HarmonyPatch(typeof(GrabbableObject), nameof(GrabbableObject.OnDestroy))]
     [HarmonyPostfix]
     private static void GrabbableObject_Post_OnDestroy(GrabbableObject __instance)
     {

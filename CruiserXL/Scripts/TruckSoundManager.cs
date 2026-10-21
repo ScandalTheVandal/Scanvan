@@ -5,8 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
-using ScandalsTweaks.Utils;
+using ScandalLib.Utils;
 using System.Linq;
+using ScandalLib.Interfaces;
 
 namespace ScanVan.Behaviour;
 
@@ -21,6 +22,9 @@ public class TruckSoundManager : MonoBehaviour
 
     private bool isAudioDopplerActive = true;
     private bool isRainAudioActive;
+
+    private bool isInsideOccluded;
+    private bool isOutsideOccluded;
 
     private float checkInterval;
 
@@ -60,15 +64,15 @@ public class TruckSoundManager : MonoBehaviour
 
         bool vehicleDestroyed = controller.carDestroyed;
 
-        var perspectiveData = PlayerControllerBPatches.playerData[perspectivePlayer];
-
-        bool perspectiveOnVehicle = perspectiveData?.playerRidingOnVan ?? false;
-        bool perspectiveInCab = perspectiveData?.playerRidingInVanCab ?? false;
-        bool perspectiveInStorage = perspectiveData?.playerRidingInVanStorage ?? false;
+        bool inDoorLighting = perspectivePlayer.currentAudioTrigger != null && perspectivePlayer.currentAudioTrigger.insideLighting;
+        bool perspectiveOnVehicle = controller.IsPlayerAttached(perspectivePlayer);
+        bool perspectiveInCab = controller.IsPlayerInCabinOrSeated(perspectivePlayer);
+        bool perspectiveInStorage = controller.IsPlayerInStorage(perspectivePlayer);
         bool perspectiveInVehicle = perspectiveInCab || perspectiveInStorage;
         bool perspectiveInOrOnVehicle = perspectiveOnVehicle || perspectiveInVehicle;
+        bool perspectiveInVanNotIndoors = perspectiveInVehicle && !inDoorLighting;
 
-        UpdateRainAudio(perspectiveInVehicle);
+        UpdateRainAudio(perspectiveInVanNotIndoors);
         UpdateDopplerAudioEffect(perspectiveInOrOnVehicle && !vehicleDestroyed);
 
         bool soundAudible = vehicleDestroyed || 
@@ -97,8 +101,7 @@ public class TruckSoundManager : MonoBehaviour
             if (player == localPlayerController)
                 continue;
 
-            var playerData = PlayerControllerBPatches.playerData[player];
-            if (playerData == null)
+            if (player is not IPlayerManager playerInterface)
                 continue;
 
             if (player.currentVoiceChatIngameSettings?.voiceAudio == null)
@@ -107,15 +110,15 @@ public class TruckSoundManager : MonoBehaviour
             if (!player.currentVoiceChatIngameSettings.voiceAudio.TryGetComponent<OccludeAudio>(out var audioOcclusion))
                 continue;
 
-            bool playerInCab = playerData.playerRidingInVanCab;
-            bool playerInStorage = playerData.playerRidingInVanStorage;
+            bool playerInCab = controller.IsPlayerInCabinOrSeated(player);
+            bool playerInStorage = controller.IsPlayerInStorage(player);
             bool playerInVehicle = playerInCab || playerInStorage;
 
             if (playerInVehicle || perspectiveInVehicle)
             {
                 if (player.speakingToWalkieTalkie && perspectivePlayer.holdingWalkieTalkie)
                 {
-                    playerData.applyVoiceEffects = false;
+                    playerInterface.ApplyVoiceEffects = false;
                     player.voiceMuffledByEnemy = false;
                     audioOcclusion.overridingLowPass = true;
                     audioOcclusion.lowPassOverride = 4000f;
@@ -125,15 +128,15 @@ public class TruckSoundManager : MonoBehaviour
 
             if (!playerInVehicle && !perspectiveInVehicle)
             {
-                if (playerData.applyVoiceEffects)
+                if (playerInterface.ApplyVoiceEffects)
                 {
-                    playerData.applyVoiceEffects = false;
+                    playerInterface.ApplyVoiceEffects = false;
                     player.voiceMuffledByEnemy = false;
                     audioOcclusion.overridingLowPass = false;
                 }
                 continue;
             }
-            playerData.applyVoiceEffects = true;
+            playerInterface.ApplyVoiceEffects = true;
 
             bool muffled = false;
             if (perspectiveInVehicle)
@@ -178,21 +181,31 @@ public class TruckSoundManager : MonoBehaviour
             audioOcclusion.overridingLowPass = muffled;
             if (muffled) audioOcclusion.lowPassOverride = 600f;
         }
+        UpdateInsideOcclusion(!perspectiveInVehicle && !soundAudible);
+        UpdateOutsideOcclusion(perspectiveInVehicle && !soundAudible);
+    }
 
+    public void UpdateInsideOcclusion(bool setOccluded)
+    {
+        if (isInsideOccluded == setOccluded)
+            return;
+
+        isInsideOccluded = setOccluded;
         for (int i = 0; i < insideOcclusion.Length; i++)
         {
-            if (perspectiveInVehicle)
-                insideOcclusion[i].overridingLowPass = false;
-            else
-                insideOcclusion[i].overridingLowPass = !soundAudible;
+            insideOcclusion[i].overridingLowPass = setOccluded;
         }
+    }
 
+    public void UpdateOutsideOcclusion(bool setOccluded)
+    {
+        if (isOutsideOccluded == setOccluded)
+            return;
+
+        isOutsideOccluded = setOccluded;
         for (int i = 0; i < outsideOcclusion.Length; i++)
         {
-            if (perspectiveInVehicle)
-                outsideOcclusion[i].overridingLowPass = !soundAudible;
-            else
-                outsideOcclusion[i].overridingLowPass = false;
+            outsideOcclusion[i].overridingLowPass = setOccluded;
         }
     }
 
@@ -200,6 +213,7 @@ public class TruckSoundManager : MonoBehaviour
     {
         if (isAudioDopplerActive == setDoppler)
             return;
+
         isAudioDopplerActive = setDoppler;
         float level = setDoppler ? 0f : 1f;
         for (int i = 0; i < dopplerAudios.Length; i++)
@@ -208,7 +222,7 @@ public class TruckSoundManager : MonoBehaviour
         }
     }
 
-    public void UpdateRainAudio(bool perspectiveInVan)
+    public void UpdateRainAudio(bool perspectiveInVanNotIndoors)
     {
         if (controller.carDestroyed)
         {
@@ -216,7 +230,7 @@ public class TruckSoundManager : MonoBehaviour
                 isRainAudioActive = false;
             return;
         }
-        bool setRainAudio = Utilities.IsItRaining() && perspectiveInVan;
+        bool setRainAudio = Utilities.IsItRaining() && perspectiveInVanNotIndoors;
         if (isRainAudioActive == setRainAudio)
             return;
         isRainAudioActive = setRainAudio;

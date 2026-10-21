@@ -7,6 +7,5 @@ namespace ScanVan.Utils;
 
 public static class References
 {
-    internal static CadaverGrowthAI cadaverGrowthAI = null!;
     internal static HashSet<GrabbableObject> itemsInTruck = new HashSet<GrabbableObject>();
 }

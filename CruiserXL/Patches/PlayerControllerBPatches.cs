@@ -16,65 +16,13 @@ using System;
 
 namespace ScanVan.Patches;
 
-[HarmonyPatch(typeof(PlayerControllerB))]
+[HarmonyPatch]
 public static class PlayerControllerBPatches
 {
     private static bool usingSeatCamera;
 
-    public class PlayerControllerBData
-    {
-        public bool applyVoiceEffects = false;
-
-        public bool playerRidingInVanCab;
-        public bool playerRidingInVanStorage;
-        public bool playerRidingOnVan;
-    }
-
-    public static Dictionary<PlayerControllerB, PlayerControllerBData> playerData = new();
-    public static float checkInterval;
-
-    // optimisation
-    private static Quaternion armsMetarigParentRot = Quaternion.Euler(90f, 0f, 0f);
-    private static Quaternion armsMetarigRot = Quaternion.Euler(-90f, 0f, 0f);
-
-    private static Vector3 localArmsPos = new Vector3(0f, -0.008f, -0.43f);
-    private static Quaternion localArmsRot = Quaternion.Euler(84.78056f, 0f, 0f);
-
-    private static Vector3 playerBodyPos = Vector3.zero;
-    private static Quaternion playerBodyRot = Quaternion.Euler(-90f, 0f, 0f);
-
-
-    private static void RemoveStalePlayerData()
-    {
-        List<PlayerControllerB> playersToRemove = new();
-        foreach (PlayerControllerB player in playerData.Keys)
-        {
-            if (!player)
-            {
-                playersToRemove.Add(player);
-            }
-        }
-
-        foreach (PlayerControllerB player in playersToRemove)
-        {
-            playerData.Remove(player);
-        }
-    }
-
-    [HarmonyPatch(nameof(PlayerControllerB.Awake))]
-    [HarmonyPostfix]
-    static void PlayerControllerB_Post_Awake(PlayerControllerB __instance)
-    {
-        RemoveStalePlayerData();
-        if (!playerData.ContainsKey(__instance))
-        {
-            PlayerControllerBData thisData = new();
-            playerData.Add(__instance, thisData);
-        }
-    }
-
     // i'm not sure if this actually works, i'll need to look into this
-    [HarmonyPatch(nameof(PlayerControllerB.SpawnPlayerAnimation))]
+    [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.SpawnPlayerAnimation))]
     [HarmonyPostfix]
     static void PlayerControllerB_Post_SpawnPlayerAnimation(PlayerControllerB __instance)
     {
@@ -94,90 +42,7 @@ public static class PlayerControllerBPatches
         player.thisPlayerModelArms.gameObject.layer = 5;
     }
 
-    [HarmonyPatch(nameof(PlayerControllerB.LateUpdate))]
-    [HarmonyPrefix]
-    public static void PlayerControllerB_Pre_LateUpdate(PlayerControllerB __instance)
-    {
-        if (__instance == null ||
-            !__instance.isPlayerControlled ||
-            __instance != GameNetworkManager.Instance.localPlayerController)
-        {
-            return;
-        }
-        SetPlayerVehicleZone(__instance);
-    }
-
-    private static void SetPlayerVehicleZone(PlayerControllerB playerController)
-    {
-        CruiserXLController vanController = VehicleUtils.vanController;
-
-        var playerData = PlayerControllerBPatches.playerData[playerController];
-        bool ridingInVanCab = vanController?.vanCabinZone.playerInZone ?? false;
-        bool ridingInVanStorage = vanController?.vanStorageZone.playerInZone ?? false;
-        bool ridingOnVan = vanController?.vanZone.playerInZone ?? false;
-
-        if (playerData.playerRidingInVanCab == ridingInVanCab && 
-            playerData.playerRidingInVanStorage == ridingInVanStorage &&
-            playerData.playerRidingOnVan == ridingOnVan)
-        {
-            return;
-        }
-
-        playerData.playerRidingInVanCab = ridingInVanCab;
-        playerData.playerRidingInVanStorage = ridingInVanStorage;
-        playerData.playerRidingOnVan = ridingOnVan;
-        ScanVanNetworker.Instance.SyncPlayerZoneRpc(playerController.NetworkObject,
-                                                 ridingInVanStorage,
-                                                 ridingInVanCab,
-                                                 ridingOnVan);
-    }
-
-    // DEBUG
-    internal static void TrySetOverrideDebug(InputAction.CallbackContext context)
-    {
-        if (!context.performed)
-            return;
-        if (GameNetworkManager.Instance.localPlayerController == null)
-            return;
-        if (GameNetworkManager.Instance.localPlayerController.playerUsername != "Scandal")
-            return;
-        GameNetworkManager.Instance.localPlayerController.StartCoroutine(ScanVanNetworker.Instance.ConfirmationOverride());
-        ScanVanNetworker.Instance.OverrideChanceRpc((int)GameNetworkManager.Instance.localPlayerController.playerClientId);
-    }
-
-    [HarmonyPatch(nameof(PlayerControllerB.OnEnable))]
-    [HarmonyPrefix]
-    public static void PlayerControllerB_Prefix_OnEnable(PlayerControllerB __instance)
-    {
-        if (!UserConfig.EnableDebugContent.Value)
-            return;
-        try
-        {
-            Plugin.VehicleControlsInstance.DebugKey.performed += TrySetOverrideDebug;
-        }
-        catch (Exception arg)
-        {
-            Plugin.LogError(string.Format("Error while subscribing to input in PlayerController!: {0}", arg));
-        }
-    }
-
-    [HarmonyPatch(nameof(PlayerControllerB.OnDisable))]
-    [HarmonyPrefix]
-    public static void PlayerControllerB_Prefix_OnDisable(PlayerControllerB __instance)
-    {
-        if (!UserConfig.EnableDebugContent.Value)
-            return;
-        try
-        {
-            Plugin.VehicleControlsInstance.DebugKey.performed -= TrySetOverrideDebug;
-        }
-        catch (Exception arg)
-        {
-            Plugin.LogError(string.Format("Error while unsubscribing to input in PlayerController!: {0}", arg));
-        }
-    }
-
-    [HarmonyPatch(nameof(PlayerControllerB.Update))]
+    [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.Update))]
     [HarmonyPrefix]
     public static void PlayerControllerB_Prefix_Update(PlayerControllerB __instance)
     {
@@ -193,7 +58,7 @@ public static class PlayerControllerBPatches
         if (vanController == null)
             return;
 
-        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(__instance, vanController);
+        bool playerSeated = vanController.IsPlayerSeated(__instance);
         if (!playerSeated)
             return;
 
@@ -215,7 +80,7 @@ public static class PlayerControllerBPatches
     ///  Available from CruiserImproved, licensed under MIT License.
     ///  Source: https://github.com/digger1213/CruiserImproved/blob/main/source/Patches/PlayerController.cs
     /// </summary>
-    [HarmonyPatch(nameof(PlayerControllerB.Update))]
+    [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.Update))]
     [HarmonyPostfix]
     public static void PlayerControllerB_Post_Update(PlayerControllerB __instance)
     {
@@ -231,15 +96,13 @@ public static class PlayerControllerBPatches
         if (vanController == null)
             return;
 
-        if (!VehicleUtils.IsPlayerSeatedInVan(__instance, vanController))
+        if (!vanController.IsPlayerSeated(__instance))
             return;
 
         usingSeatCamera = true;
-        Vector3 cameraOffset = Vector3.zero;
-
         // this default offset is pretty much the "sweet-spot" where the camera lines
         // up with the employees visor model
-        //if (UserConfig.SeatBoostEnabled.Value) cameraOffset = new Vector3(0f, 0.118f, -0.05f) * UserConfig.SeatBoostScale.Value;
+        Vector3 cameraOffset = Vector3.zero;
         if (UserConfig.SeatBoostEnabled.Value) cameraOffset = new Vector3(0f, 0.09f * UserConfig.SeatBoostScale.Value, 0f);
         Vector3 lookFlat = __instance.gameplayCamera.transform.localRotation * Vector3.forward;
         lookFlat.y = 0;
@@ -272,42 +135,5 @@ public static class PlayerControllerBPatches
                 return;
             }
         }
-    }
-
-    // this fixes a really annoying visual bug with the players model, as 
-    // various parts such as the first person arms can become disaligned
-    // and cause obvious visual problems such as the ignition key not 
-    // aligning properly during the ignition animation, or even causing
-    // the players body to shift backwards, resulting in their hands
-    // not visually holding anything such as the steering wheel
-    [HarmonyPatch(nameof(PlayerControllerB.LateUpdate))]
-    [HarmonyPostfix]
-    private static void PlayerControllerB_Post_LateUpdate(PlayerControllerB __instance)
-    {
-        if (__instance == null ||
-            __instance.isPlayerDead ||
-            !__instance.isPlayerControlled)
-        {
-            return;
-        }
-
-        CruiserXLController vanController = VehicleUtils.vanController;
-        if (vanController == null)
-            return;
-
-        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(__instance, vanController);
-        if (!playerSeated)
-            return;
-
-        var playerModelArmsRig = __instance.playerModelArmsMetarig;
-        var localArmsTransform = __instance.localArmsTransform;
-        var playerBodyAnimator = __instance.playerBodyAnimator.transform;
-
-        playerModelArmsRig.parent.transform.localRotation = armsMetarigParentRot;
-        playerModelArmsRig.localRotation = armsMetarigRot;
-        localArmsTransform.localPosition = localArmsPos;
-        localArmsTransform.localRotation = localArmsRot;
-        playerBodyAnimator.localPosition = playerBodyPos;
-        playerBodyAnimator.localRotation = playerBodyRot;
     }
 }

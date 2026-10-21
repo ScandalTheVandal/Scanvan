@@ -7,10 +7,10 @@ using ScandalsTweaks.Patches;
 
 namespace ScanVan.Patches;
 
-[HarmonyPatch(typeof(Landmine))]
+[HarmonyPatch]
 public static class LandminePatches
 {
-    [HarmonyPatch(nameof(Landmine.SpawnExplosion))]
+    [HarmonyPatch(typeof(Landmine), nameof(Landmine.SpawnExplosion))]
     [HarmonyPostfix]
     private static void Landmine_Post_SpawnExplosion(Landmine __instance, ref Vector3 explosionPosition, bool spawnExplosionEffect, ref float killRange, ref float damageRange, int nonLethalDamage, float physicsForce, GameObject overridePrefab, bool goThroughCar)
     {
@@ -38,7 +38,7 @@ public static class LandminePatches
         vanController.TryBeginAlarm();
     }
 
-    [HarmonyPatch(nameof(Landmine.SpawnExplosion))]
+    [HarmonyPatch(typeof(Landmine), nameof(Landmine.SpawnExplosion))]
     [HarmonyPrefix]
     private static void Landmine_Pre_SpawnExplosion(Landmine __instance, Vector3 explosionPosition, bool spawnExplosionEffect, ref float killRange, ref float damageRange, int nonLethalDamage, float physicsForce, GameObject overridePrefab, bool goThroughCar)
     {
@@ -50,9 +50,9 @@ public static class LandminePatches
         if (!VehicleUtils.IsPlayerNearVan(playerController, vanController))
             return;
 
-        bool playerSeated = VehicleUtils.IsPlayerSeatedInVan(playerController, vanController);
-        bool playerInCab = VehicleUtils.IsPlayerInVanCabin(playerController, vanController);
-        bool playerInStorage = VehicleUtils.IsPlayerInVanStorage(playerController, vanController);
+        bool playerSeated = vanController.IsPlayerSeated(playerController);
+        bool playerInCab = vanController.IsPlayerInCabin(playerController);
+        bool playerInStorage = vanController.IsPlayerInStorage(playerController);
 
         bool explosionOutsideStorage =
             vanController.storageCompartment.ClosestPoint(explosionPosition) !=

@@ -10,7 +10,6 @@ namespace ScanVan.Compatibility;
 ///  Available from BrutalCompanyMinusExtraReborn, licensed under GNU General Public License.
 ///  Source: https://github.com/TheSoftDiamond/BrutalCompanyMinusExtraReborn
 /// </summary>
-[HarmonyPatch]
 public static class FirstPersonViewCompatibility
 {
     [HarmonyPatch(typeof(CruiserXLController), nameof(CruiserXLController.SetCarIgnitionKey))]

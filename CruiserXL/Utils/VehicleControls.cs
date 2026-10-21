@@ -14,28 +14,17 @@ namespace ScanVan.Utils;
 
 internal class VehicleControls : LcInputActions
 {
-    [InputAction(KeyboardControl.Unbound, Name = "DEBUG [TEST]", GamepadControl = GamepadControl.Unbound, ActionType = InputActionType.Value)]
-    public InputAction DebugKey { get; set; } = null!;
-
     [InputAction(KeyboardControl.W, Name = "Gas Pedal", GamepadControl = GamepadControl.Unbound, ActionType = InputActionType.Value)]
     public InputAction GasPedalKey { get; set; } = null!;
 
 
-    [InputAction(KeyboardControl.Unbound, Name = "(Arcade) Reverse Pedal", GamepadControl = GamepadControl.Unbound, ActionType = InputActionType.Value)]
+    [InputAction(KeyboardControl.Unbound, Name = "[In reverse-gear] Gas Pedal", GamepadControl = GamepadControl.Unbound, ActionType = InputActionType.Value)]
     public InputAction ReversePedalKey { get; set; } = null!;
 
-    /*
-    [InputAction(KeyboardControl.A, Name = "Steer Left", GamepadControl = GamepadControl.Unbound, ActionType = InputActionType.Value)]
-    public InputAction SteerLeftKey { get; set; } = null!;
-    */
 
     [InputAction(KeyboardControl.S, Name = "Brake Pedal", GamepadControl = GamepadControl.Unbound, ActionType = InputActionType.Value)]
     public InputAction BrakePedalKey { get; set; } = null!;
 
-    /*
-    [InputAction(KeyboardControl.D, Name = "Steer Right", GamepadControl = GamepadControl.Unbound, ActionType = InputActionType.Value)]
-    public InputAction SteerRightKey { get; set; } = null!;
-    */
 
     [InputAction(KeyboardControl.LeftShift, Name = "Clutch Pedal", GamepadControl = GamepadControl.Unbound, ActionType = InputActionType.Value)]
     public InputAction ClutchPedalKey { get; set; } = null!;

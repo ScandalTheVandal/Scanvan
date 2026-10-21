@@ -10,7 +10,6 @@ public class UserConfig
 {
     // DEBUG
     public static ConfigEntry<bool> EnableDebugLogging = null!;
-    public static ConfigEntry<bool> EnableDebugContent = null!;
 
     // Host
     public static ConfigEntry<bool> StreamerRadio = null!;
@@ -26,9 +25,6 @@ public class UserConfig
     public static ConfigEntry<bool> RecenterWheel = null!;
     public static ConfigEntry<bool> SmoothWheel = null!;
 
-    // Experimental
-    //public static ConfigEntry<bool> MuffleVoices = null!;
-
     internal static void InitConfig()
     {
         ConfigFile config = Plugin.Instance.Config;
@@ -36,7 +32,6 @@ public class UserConfig
 
         // DEBUG
         EnableDebugLogging = config.Bind("Debug", "Debug-Logging", false, "If true, activates debug logging");
-        EnableDebugContent = config.Bind("Debug", "Debug-Content", false, "If true, activates debug content");
 
         // Host
         StreamerRadio = config.Bind("Host", "Public-Domain Music", true, "[Host] If true, the radio will only be able to play vintage public-domain music");
@@ -47,15 +42,12 @@ public class UserConfig
         AcceptableValueRange<float> seatScale = new(1.0f, 2.0f);
         SeatBoostScale = config.Bind("General", "Seat Boost Scale", 1.0f, new ConfigDescription("How much to boost the seat up? (Default: 1.0)", seatScale));
         PreventKnockback = config.Bind("General", "Prevent Seated Knockback", true, "Prevent explosions kicking you out of the front seats?");
-        AcceptableValueRange<float> alertVolume = new(0.25f, 1.0f);
+        AcceptableValueRange<float> alertVolume = new(0.5f, 1.0f);
         VoiceAlertVolume = config.Bind("General", "Voice Alert Volume", 1.0f, new ConfigDescription("How much to reduce the voice alert volume by? (Full volume: 1.0)", alertVolume));
 
         // QOL
         RecenterWheel = config.Bind("Quality Of Life", "Automatically Center Wheel", false, "Should the wheel be automatically re-centered?");
         SmoothWheel = config.Bind("Quality Of Life", "Smooth Wheel", true, "Should the wheels inputs be smoothened?");
-
-        // Experimental
-        //MuffleVoices = config.Bind("Experimental", "Muffle Player Voices", true, "Should player voices be muffled when in-side the truck with the doors shut? or vise-versa.");
 
         ClearOrphanedEntries(config);
         config.Save();

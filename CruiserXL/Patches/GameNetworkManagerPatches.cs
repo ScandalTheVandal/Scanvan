@@ -5,17 +5,17 @@ using HarmonyLib;
 
 namespace ScanVan.Patches;
 
-[HarmonyPatch(typeof(GameNetworkManager))]
+[HarmonyPatch]
 public static class GameNetworkManagerPatches
 {
-    [HarmonyPatch(nameof(GameNetworkManager.Start))]
+    [HarmonyPatch(typeof(GameNetworkManager), nameof(GameNetworkManager.Start))]
     [HarmonyPostfix]
     public static void GameNetworkManager_Post_Start()
     {
         ScanVanNetworker.Init();
     }
 
-    [HarmonyPatch(nameof(GameNetworkManager.SaveItemsInShip))]
+    [HarmonyPatch(typeof(GameNetworkManager), nameof(GameNetworkManager.SaveItemsInShip))]
     [HarmonyPostfix]
     static void GameNetworkManager_Post_SaveItemsInShip(GameNetworkManager __instance)
     {

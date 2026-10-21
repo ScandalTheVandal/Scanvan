@@ -104,17 +104,17 @@ public class CruiserXLCollisionTrigger : MonoBehaviour
             if (Time.realtimeSinceStartup - timeSinceHittingEnemy < 0.25f)
                 return;
 
-            if (!other.TryGetComponent<EnemyAICollisionDetect>(out var enemyAIcollision))
+            if (!other.TryGetComponent<EnemyAICollisionDetect>(out var enemyCollision))
                 return;
 
-            if (enemyAIcollision.mainScript == null)
+            if (enemyCollision.mainScript == null)
                 return;
 
-            if (enemyAIcollision.mainScript.isEnemyDead)
+            if (enemyCollision.mainScript.isEnemyDead)
                 return;
 
             // allow worms to catapult the vehicle
-            if (enemyAIcollision.mainScript is SandWormAI)
+            if (enemyCollision.mainScript is SandWormAI)
             {
                 timeSinceHittingEnemy = Time.realtimeSinceStartup;
                 mainScript.mainRigidbody.AddExplosionForce(mainScript.mainRigidbody.mass * 100f, mainScript.transform.position + mainScript.transform.forward + Vector3.up * 1.5f, 12f, 3f, ForceMode.Impulse);
@@ -122,27 +122,27 @@ public class CruiserXLCollisionTrigger : MonoBehaviour
             }
 
             // disallow killing the fox
-            if (enemyAIcollision.mainScript is BushWolfEnemy)
+            if (enemyCollision.mainScript is BushWolfEnemy)
                 return;
 
             // prevent tulip-snakes bouncing the vehicle if actively clinging to a player
-            if (enemyAIcollision.mainScript is FlowerSnakeEnemy flowerSnake && flowerSnake.clingingToPlayer)
+            if (enemyCollision.mainScript is FlowerSnakeEnemy flowerSnake && flowerSnake.clingingToPlayer)
                 return;
 
             // do not allow killing the fox (matches v80 cruiser behaviour)
-            if (enemyAIcollision.mainScript is BushWolfEnemy)
+            if (enemyCollision.mainScript is BushWolfEnemy)
                 return;
 
-            MouthDogAI? dog = enemyAIcollision.mainScript as MouthDogAI;
+            MouthDogAI? dog = enemyCollision.mainScript as MouthDogAI;
             bool isAngryDog = dog != null && dog && dog.suspicionLevel > 8;
             if (!isAngryDog && !mainScript.ignitionStarted)
                 return;
 
-            if (Vector3.Angle(mainScript.averageVelocity, enemyAIcollision.mainScript.transform.position - transform.position) > 130f)
+            if (Vector3.Angle(mainScript.averageVelocity, enemyCollision.mainScript.transform.position - transform.position) > 130f)
                 return;
 
-            if (insideTruckNavMeshBounds.ClosestPoint(enemyAIcollision.mainScript.transform.position) == enemyAIcollision.mainScript.transform.position ||
-                insideTruckNavMeshBounds.ClosestPoint(enemyAIcollision.mainScript.agent.destination) == enemyAIcollision.mainScript.agent.destination)
+            if (insideTruckNavMeshBounds.ClosestPoint(enemyCollision.mainScript.transform.position) == enemyCollision.mainScript.transform.position ||
+                insideTruckNavMeshBounds.ClosestPoint(enemyCollision.mainScript.agent.destination) == enemyCollision.mainScript.agent.destination)
             {
                 return;
             }
@@ -150,7 +150,7 @@ public class CruiserXLCollisionTrigger : MonoBehaviour
             bool dealDamage = false;
             for (int i = 0; i < enemiesLastHit.Length; i++)
             {
-                if (enemiesLastHit[i] == enemyAIcollision.mainScript)
+                if (enemiesLastHit[i] == enemyCollision.mainScript)
                 {
                     if (Time.realtimeSinceStartup - timeSinceHittingEnemy < 0.6f || mainScript.averageVelocity.magnitude < 4f)
                     {
@@ -160,32 +160,32 @@ public class CruiserXLCollisionTrigger : MonoBehaviour
             }
 
             timeSinceHittingEnemy = Time.realtimeSinceStartup;
-            Vector3 position = enemyAIcollision.transform.position;
+            Vector3 position = enemyCollision.transform.position;
             bool enemyDamageByCar = false;
 
-            switch (enemyAIcollision.mainScript.enemyType.EnemySize)
+            switch (enemyCollision.mainScript.enemyType.EnemySize)
             {
                 case EnemySize.Tiny:
-                    enemyDamageByCar = mainScript.CarReactToObstacle(mainScript.averageVelocity, position, mainScript.averageVelocity, CarObstacleType.Enemy, 1f, enemyAIcollision.mainScript, dealDamage);
+                    enemyDamageByCar = mainScript.CarReactToObstacle(mainScript.averageVelocity, position, mainScript.averageVelocity, CarObstacleType.Enemy, 1f, enemyCollision.mainScript, dealDamage);
                     break;
                 case EnemySize.Giant:
-                    enemyDamageByCar = mainScript.CarReactToObstacle(mainScript.averageVelocity, position, mainScript.averageVelocity, CarObstacleType.Enemy, 3f, enemyAIcollision.mainScript, dealDamage);
+                    enemyDamageByCar = mainScript.CarReactToObstacle(mainScript.averageVelocity, position, mainScript.averageVelocity, CarObstacleType.Enemy, 3f, enemyCollision.mainScript, dealDamage);
                     break;
                 case EnemySize.Medium:
-                    enemyDamageByCar = mainScript.CarReactToObstacle(mainScript.averageVelocity, position, mainScript.averageVelocity, CarObstacleType.Enemy, 2f, enemyAIcollision.mainScript, dealDamage);
+                    enemyDamageByCar = mainScript.CarReactToObstacle(mainScript.averageVelocity, position, mainScript.averageVelocity, CarObstacleType.Enemy, 2f, enemyCollision.mainScript, dealDamage);
                     break;
             }
 
             if (enemyDamageByCar)
             {
                 enemyIndex = (enemyIndex + 1) % 3;
-                enemiesLastHit[enemyIndex] = enemyAIcollision.mainScript;
+                enemiesLastHit[enemyIndex] = enemyCollision.mainScript;
                 return;
             }
 
             for (int j = 0; j < enemiesLastHit.Length; j++)
             {
-                if (enemiesLastHit[j] == enemyAIcollision.mainScript)
+                if (enemiesLastHit[j] == enemyCollision.mainScript)
                 {
                     enemiesLastHit[j] = null!;
                 }
